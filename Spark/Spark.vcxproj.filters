@@ -15,4 +15,7 @@
     <ClInclude Include="src\math.h" />
     <ClInclude Include="src\spark.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\spark.c" />
+  </ItemGroup>
 </Project>
