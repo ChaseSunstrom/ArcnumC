@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="app">
+      <UniqueIdentifier>{665E880B-D267-887C-5BE3-9E7CC7EB937C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{43339F7C-2F6A-A00D-D856-8610C46C1C0F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="window">
+      <UniqueIdentifier>{5DFE1E25-49A0-49FB-325B-5D4F1E9CD04B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\app\application.h">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\defines.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\pch.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\types.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\window\window.h">
+      <Filter>window</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\window\window.c">
+      <Filter>window</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
