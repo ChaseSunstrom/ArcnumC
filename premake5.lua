@@ -66,7 +66,7 @@ project "Arcnum"
     }
 
     includedirs {
-        "Spark"
+        "Spark/src"
     }
 
     libdirs {
@@ -74,7 +74,7 @@ project "Arcnum"
     }
 
     links {
-        "bin/" .. outputdir .. "/Spark"
+        "Spark"
     }
 
     filter "configurations:Debug"
