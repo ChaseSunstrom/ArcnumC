@@ -1,6 +1,7 @@
 
 #include "spark.h"
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #pragma region ENUM
@@ -165,6 +166,20 @@ SPARKAPI SparkError SparkStringToError(SparkConstString string) {
 	else if (strcmp(string, "SPARK_ERROR_INVALID_STATE") == 0) return SPARK_ERROR_INVALID_STATE;
 	else if (strcmp(string, "SPARK_ERROR_INVALID_FUNCTION_CALL") == 0) return SPARK_ERROR_INVALID_FUNCTION_CALL;
 	else return SPARK_ERROR_UNKNOWN;
+}
+
+SPARKAPI SparkConstString SparkResultToString(SparkResult result) {
+	switch (result) {
+	case SPARK_SUCCESS: return "SPARK_SUCCESS";
+	case SPARK_FAILURE: return "SPARK_FAILURE";
+	default: "SPARK_INVALID";
+	}
+}
+
+SPARKAPI SparkResult SparkStringToResult(SparkConstString string) {
+	if (strcmp(string, "SPARK_SUCCESS") == 0) return SPARK_SUCCESS;
+	else if (strcmp(string, "SPARK_FAILURE") == 0) return SPARK_FAILURE;
+	else return SPARK_INVALID;
 }
 
 SPARKAPI SparkConstString SparkAccessToString(SparkAccess access) {
@@ -717,13 +732,46 @@ SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string) {
 
 #pragma region UTIL
 
+SPARKAPI SparkVoid SetConsoleColor(SparkU32 color);
+
+#ifdef _WIN32
+
+#include <Windows.h>
+
+SPARKAPI SparkVoid SetConsoleColor(SparkU32 color) {
+	HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(console, color);
+}
+
+#else
+
+SPARKAPI SparkVoid SetConsoleColor(SparkU32 color) {}
+
+#endif
+
 SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString message) {
 	switch (log_level) {
-	case SPARK_LOG_LEVEL_DEBUG: printf("[DEBUG] %s\n", message); break;
-	case SPARK_LOG_LEVEL_INFO: printf("[INFO] %s\n", message); break;
-	case SPARK_LOG_LEVEL_WARN: printf("[WARN] %s\n", message); break;
-	case SPARK_LOG_LEVEL_ERROR: printf("[ERROR] %s\n", message); break;
-	case SPARK_LOG_LEVEL_FATAL: printf("[FATAL] %s\n", message); break;
+	case SPARK_LOG_LEVEL_DEBUG: 
+		SetConsoleColor(11);
+		printf("[DEBUG] %s\n", message); 
+		break;
+	case SPARK_LOG_LEVEL_INFO: 
+		SetConsoleColor(2);
+		printf("[INFO] %s\n", message); 
+		break;
+	case SPARK_LOG_LEVEL_WARN: 
+		SetConsoleColor(14);
+		printf("[WARN] %s\n", message); 
+		break;
+	case SPARK_LOG_LEVEL_ERROR: 
+		SetConsoleColor(4);
+		printf("[ERROR] %s\n", message); 
+		break;
+	case SPARK_LOG_LEVEL_FATAL: 
+		SetConsoleColor(4);
+		printf("[FATAL] %s\n", message);
+		SPARK_CRASH_PROGRAM("Fatal error occured!");
+		break;
 	default: break;
 	}
 }

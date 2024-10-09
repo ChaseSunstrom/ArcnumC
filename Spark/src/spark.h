@@ -34,6 +34,26 @@
 
 #define SPARK_VERSION_STRING SPARK_MAKE_VERSION_STRING(SPARK_VERSION_MAJOR, SPARK_VERSION_MINOR, SPARK_VERSION_PATCH)
 
+#if !defined(SPARK_NO_DEBUG) || !defined(NDEBUG) || !defined(RELEASE)
+#define SPARK_LOG_DEBUG(message) SparkLog(SPARK_LOG_LEVEL_DEBUG, message)
+#else
+#define SPARK_LOG_DEBUG(message)
+#endif
+#ifndef SPARK_NO_INFO
+#define SPARK_LOG_INFO(message) SparkLog(SPARK_LOG_LEVEL_INFO, message)
+#else
+#define SPARK_LOG_INFO(message)
+#endif
+#ifndef SPARK_NO_WARN
+#define SPARK_LOG_WARN(message) SparkLog(SPARK_LOG_LEVEL_WARN, message)
+#else
+#define SPARK_LOG_WARN(message)
+#endif
+#ifndef SPARK_NO_ERROR
+#define SPARK_LOG_ERROR(message) SparkLog(SPARK_LOG_LEVEL_ERROR, message)
+#else
+#define SPARK_LOG_ERROR(message)
+#endif
 
 /* Capabilities */
 #define SPARK_DEPTH_TEST    0x0B71
@@ -709,6 +729,8 @@ SPARKAPI SparkConstString SparkTypeToString(SparkType type);
 SPARKAPI SparkType SparkStringToType(SparkConstString string);
 SPARKAPI SparkConstString SparkErrorToString(SparkError error);
 SPARKAPI SparkError SparkStringToError(SparkConstString string);
+SPARKAPI SparkConstString SparkResultToString(SparkResult result);
+SPARKAPI SparkResult SparkStringToResult(SparkConstString string);
 SPARKAPI SparkConstString SparkAccessToString(SparkAccess access);
 SPARKAPI SparkAccess SparkStringToAccess(SparkConstString string);
 SPARKAPI SparkConstString SparkMouseButtonToString(SparkMouseButton button);
@@ -844,7 +866,7 @@ SPARKAPI SparkScalar SparkATan2(SparkScalar y, SparkScalar x);
 SPARKAPI SparkScalar SparkSqrt(SparkScalar value);
 SPARKAPI SparkScalar SparkPow(SparkScalar base, SparkScalar exponent);
 SPARKAPI SparkScalar SparkExp(SparkScalar exponent);
-SPARKAPI SparkScalar SparkLog(SparkScalar value);
+SPARKAPI SparkScalar SparkLogs(SparkScalar value);
 SPARKAPI SparkScalar SparkAbs(SparkScalar value);
 SPARKAPI SparkScalar SparkFloor(SparkScalar value);
 SPARKAPI SparkScalar SparkCeil(SparkScalar value);
@@ -985,7 +1007,6 @@ SPARKAPI SparkScalar SparkATan2(SparkScalar y, SparkScalar x);
 /* Exponential and logarithmic functions */
 
 SPARKAPI SparkScalar SparkExp(SparkScalar exponent);
-SPARKAPI SparkScalar SparkLog(SparkScalar value);
 SPARKAPI SparkScalar SparkLog2(SparkScalar value);
 SPARKAPI SparkScalar SparkPow(SparkScalar base, SparkScalar exponent);
 SPARKAPI SparkScalar SparkSqrt(SparkScalar value);
