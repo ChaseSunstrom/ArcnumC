@@ -98,7 +98,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\math.h" />
     <ClInclude Include="src\spark.h" />
   </ItemGroup>
   <ItemGroup>

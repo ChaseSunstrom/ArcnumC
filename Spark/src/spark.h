@@ -34,25 +34,25 @@
 
 #define SPARK_VERSION_STRING SPARK_MAKE_VERSION_STRING(SPARK_VERSION_MAJOR, SPARK_VERSION_MINOR, SPARK_VERSION_PATCH)
 
-#if !defined(SPARK_NO_DEBUG) || !defined(NDEBUG) || !defined(RELEASE)
-#define SPARK_LOG_DEBUG(message) SparkLog(SPARK_LOG_LEVEL_DEBUG, message)
+#if !defined(SPARK_NO_DEBUG) && !defined(NDEBUG) && !defined(RELEASE)
+#define SPARK_LOG_DEBUG(message, ...) SparkLog(SPARK_LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
 #else
-#define SPARK_LOG_DEBUG(message)
+	#define SPARK_LOG_DEBUG(message, ...)
 #endif
 #ifndef SPARK_NO_INFO
-#define SPARK_LOG_INFO(message) SparkLog(SPARK_LOG_LEVEL_INFO, message)
+	#define SPARK_LOG_INFO(message, ...) SparkLog(SPARK_LOG_LEVEL_INFO, message, ##__VA_ARGS__)
 #else
-#define SPARK_LOG_INFO(message)
+	#define SPARK_LOG_INFO(message, ...)
 #endif
 #ifndef SPARK_NO_WARN
-#define SPARK_LOG_WARN(message) SparkLog(SPARK_LOG_LEVEL_WARN, message)
+	#define SPARK_LOG_WARN(message, ...) SparkLog(SPARK_LOG_LEVEL_WARN, message, ##__VA_ARGS__)
 #else
-#define SPARK_LOG_WARN(message)
+	#define SPARK_LOG_WARN(message, ...)
 #endif
 #ifndef SPARK_NO_ERROR
-#define SPARK_LOG_ERROR(message) SparkLog(SPARK_LOG_LEVEL_ERROR, message)
+	#define SPARK_LOG_ERROR(message, ...) SparkLog(SPARK_LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
 #else
-#define SPARK_LOG_ERROR(message)
+	#define SPARK_LOG_ERROR(message, ...)
 #endif
 
 /* Capabilities */
@@ -99,25 +99,16 @@ typedef SparkU32 SparkFrequency;
 typedef SparkU32 SparkRate;
 
 typedef enum SparkType {
-	// Boolean values
 	SPARK_FALSE = 0,
 	SPARK_TRUE = 1,
-
-	// General statuses
 	SPARK_SUCCESS = 1,
 	SPARK_FAILURE = -1,
 	SPARK_ERROR = -2,
-
-	// Validation statuses
 	SPARK_VALID = 1,
 	SPARK_INVALID = -1,
-
-	// Null and undefined values
 	SPARK_NULL = 0,
 	SPARK_NONE = 0,
 	SPARK_UNKNOWN = -4,
-
-	// Additional statuses
 	SPARK_PENDING = -5,
 	SPARK_IN_PROGRESS = -6,
 	SPARK_COMPLETE = 2,
@@ -571,12 +562,11 @@ typedef struct SparkQuadT {
 typedef SparkHandle(*SparkAllocateFunction)(SparkSize size);
 typedef SparkHandle(*SparkReallocateFunction)(SparkHandle handle, SparkSize size);
 typedef SparkVoid(*SparkFreeFunction)(SparkHandle handle);
-
-typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf);
-
+typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
 typedef SparkVoid(*SparkSystemStartFunction)(SparkVoid);
 typedef SparkVoid(*SparkSystemUpdateFunction)(SparkF32 delta);
 typedef SparkVoid(*SparkSystemStopFunction)(SparkVoid);
+typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
 
 typedef struct SparkAllocatorT {
 	SparkAllocateFunction allocate;
@@ -587,17 +577,47 @@ typedef struct SparkAllocatorT {
 typedef struct SparkVectorT {
 	SparkSize size;
 	SparkSize capacity;
-	SparkSize element_size;
-	SparkHandle elements;
+	/* Destructor to be called on each element */
+	SparkFreeFunction destructor;
+	SparkHandle* elements;
 	SparkAllocator allocator;
+	SparkBool external_allocator;
 } *SparkVector;
+
+typedef struct SparkListNodeT {
+	SparkHandle data;
+	struct SparkListNodeT* next;
+} *SparkListNode;
 
 typedef struct SparkListT {
 	SparkSize size;
-	SparkHandle head;
-	SparkHandle tail;
+	/* Destructor to be called on each element */
+	SparkFreeFunction destructor;
+	SparkListNode head;
+	SparkListNode tail;
 	SparkAllocator allocator;
+	SparkBool external_allocator;
 } *SparkList;
+
+typedef struct SparkHashMapNodeT {
+	SparkHandle key;
+	SparkHandle value;
+	SparkSize key_size;
+	SparkSize hash;
+} *SparkHashMapNode;
+
+typedef struct SparkHashMapT {
+	SparkSize size;
+	SparkSize capacity;
+	SparkList* buckets;
+	/* Destructor to be called on each key and value */
+	SparkFreeFunction key_destructor;
+	SparkFreeFunction value_destructor;
+	SparkHashFunction hash;
+	SparkAllocator allocator;
+	SparkBool external_allocator;
+} *SparkHashMap;
+
 
 typedef struct SparkMapT {
 	SparkSize size;
@@ -605,47 +625,47 @@ typedef struct SparkMapT {
 	SparkAllocator allocator;
 } *SparkMap;
 
-typedef struct SparkHashMapT {
-	SparkSize size;
-	SparkSize capacity;
-	/* Allocator stored in the buckets */
-	SparkList buckets;
-	SparkHashFunction hash;
-} *SparkHashMap;
 
 typedef struct SparkSetT {
-	SparkSize size;
-	SparkHandle root;
 	SparkAllocator allocator;
+	SparkSize capacity;
+	SparkSize size;
+	SparkFreeFunction destructor;
+	SparkHandle* elements;
+	SparkBool external_allocator;
 } *SparkSet;
 
 typedef struct SparkHashSetT {
-	SparkSize size;
+	SparkAllocator allocator;
 	SparkSize capacity;
-	/* Allocator stored in the buckets */
-	SparkList buckets;
-	SparkHashFunction hash;
+	SparkSize size;
+	SparkSize element_size;
+	SparkFreeFunction destructor;
+	SparkHandle* elements;
+	SparkSize* hashes;
+	SparkHashFunction hash_function;
+	SparkBool external_allocator;
 } *SparkHashSet;
 
 typedef struct SparkQueueT {
+	SparkAllocator allocator;
+	SparkSize capacity;
 	SparkSize size;
-	SparkHandle head;
-	SparkHandle tail;
-	SparkList buckets;
+	SparkSize front;
+	SparkSize rear;
+	SparkFreeFunction destructor;
+	SparkHandle* elements;
+	SparkBool external_allocator;
 } *SparkQueue;
 
 typedef struct SparkStackT {
+	SparkAllocator allocator;
+	SparkSize capacity;
 	SparkSize size;
-	SparkHandle top;
-	SparkList buckets;
+	SparkFreeFunction destructor;
+	SparkHandle* elements;
+	SparkBool external_allocator;
 } *SparkStack;
-
-typedef struct SparkGraphT {
-	SparkSize size;
-	SparkHandle nodes;
-	SparkHandle edges;
-	SparkList buckets;
-} *SparkGraph;
 
 typedef struct SparkEventHandlerT {
 	SparkI8 not_implemented;
@@ -758,7 +778,9 @@ SPARKAPI SparkLogLevel SparkStringToLogLevel(SparkConstString string);
 SPARKAPI SparkConstString SparkRenderAPIToString(SparkRenderAPI api);
 SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string);
 
-SPARKAPI SparkVoid SparkLog(SparkLogLevel level, SparkConstString message);
+SPARKAPI SparkConstString FormatString(SparkConstString format, ...);
+
+SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format, ...);
 
 /* Math stuff */
 
@@ -1063,6 +1085,15 @@ SPARKAPI SparkVec4 SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge1, SparkVe
 /* Returns either a success or failure depending on the error code */
 SPARKAPI SparkResult SparkCheckSuccess(SparkResult result);
 
+/* Hash functions */
+
+SPARKAPI SparkSize DJB2Hash(SparkConstBuffer buf, SparkSize size);
+SPARKAPI SparkSize FNV1AHash(SparkConstBuffer buf, SparkSize size);
+SPARKAPI SparkSize JenkinsHash(SparkConstBuffer buf, SparkSize size);
+SPARKAPI SparkSize Murmur2Hash(SparkConstBuffer buf, SparkSize size);
+SPARKAPI SparkSize SipHash(SparkConstBuffer buf, SparkSize size);
+SPARKAPI SparkSize XXHash(SparkConstBuffer buf, SparkSize size);
+
 SPARKAPI SparkHandle SparkAllocate(SparkSize size);
 SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size);
 SPARKAPI SparkVoid SparkFree(SparkHandle handle);
@@ -1070,27 +1101,27 @@ SPARKAPI SparkAllocator SparkDefaultAllocator();
 SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate, SparkReallocateFunction reallocate, SparkFreeFunction free);
 SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator);
 
-SPARKAPI SparkVector SparkDefaultVector();
-SPARKAPI SparkVector SparkCreateVector(SparkSize element_size, SparkSize capacity, SparkAllocator allocator);
+SPARKAPI SparkVector SparkDefaultVector(); 
+SPARKAPI SparkVector SparkCreateVector(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector);
 SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector, SparkIndex index);
-SPARKAPI SparkResult SparkPushVector(SparkVector vector, SparkConstBuffer element);
-SPARKAPI SparkResult SparkPopVector(SparkVector vector, SparkBuffer element);
-SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkIndex index, SparkConstBuffer element);
+SPARKAPI SparkResult SparkPushBackVector(SparkVector vector, SparkHandle element);
+SPARKAPI SparkResult SparkPopBackVector(SparkVector vector);
+SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkIndex index);
-SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkIndex index, SparkConstBuffer element);
+SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity);
 SPARKAPI SparkResult SparkClearVector(SparkVector vector);
 
-SPARKAPI SparkList SparkDefaultList();
-SPARKAPI SparkList SparkCreateList(SparkAllocator allocator);
+SPARKAPI SparkList SparkDefaultList(); 
+SPARKAPI SparkList SparkCreateList(SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyList(SparkList list);
 SPARKAPI SparkHandle SparkGetElementList(SparkList list, SparkIndex index);
-SPARKAPI SparkResult SparkPushList(SparkList list, SparkConstBuffer element);
-SPARKAPI SparkResult SparkPopList(SparkList list, SparkBuffer element);
-SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index, SparkConstBuffer element);
+SPARKAPI SparkResult SparkPushBackList(SparkList list, SparkHandle element);
+SPARKAPI SparkResult SparkPopBackList(SparkList list, SparkBuffer element);
+SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index);
-SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index, SparkConstBuffer element);
+SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkClearList(SparkList list);
 
 SPARKAPI SparkMap SparkDefaultMap();
@@ -1103,61 +1134,46 @@ SPARKAPI SparkResult SparkSetMap(SparkMap map, SparkConstBuffer key, SparkConstB
 SPARKAPI SparkResult SparkClearMap(SparkMap map);
 
 SPARKAPI SparkHashMap SparkDefaultHashMap();
-SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash, SparkAllocator allocator);
+SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor);
 SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap);
-SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkConstBuffer key);
-SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkConstBuffer key, SparkConstBuffer value);
-SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkConstBuffer key);
-SPARKAPI SparkResult SparkSetHashMap(SparkHashMap hashmap, SparkConstBuffer key, SparkConstBuffer value);
+SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
+SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size, SparkHandle value);
+SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
 SPARKAPI SparkResult SparkClearHashMap(SparkHashMap hashmap);
 
 SPARKAPI SparkSet SparkDefaultSet();
-SPARKAPI SparkSet SparkCreateSet(SparkAllocator allocator);
+SPARKAPI SparkSet SparkCreateSet(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroySet(SparkSet set);
-SPARKAPI SparkHandle SparkGetElementSet(SparkSet set, SparkConstBuffer element);
-SPARKAPI SparkResult SparkInsertSet(SparkSet set, SparkConstBuffer element);
-SPARKAPI SparkResult SparkRemoveSet(SparkSet set, SparkConstBuffer element);
-SPARKAPI SparkResult SparkContainsSet(SparkSet set, SparkConstBuffer element);
+SPARKAPI SparkHandle SparkGetElementSet(SparkSet set, SparkSize index);
+SPARKAPI SparkBool SparkContainsSet(SparkSet set, SparkHandle element, SparkCompareFunction compare);
+SPARKAPI SparkResult SparkInsertSet(SparkSet set, SparkHandle element, SparkCompareFunction compare);
+SPARKAPI SparkResult SparkRemoveSet(SparkSet set, SparkHandle element, SparkCompareFunction compare);
 SPARKAPI SparkResult SparkClearSet(SparkSet set);
 
 SPARKAPI SparkHashSet SparkDefaultHashSet();
-SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity, SparkHashFunction hash, SparkAllocator allocator);
+SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity, SparkSize element_size, SparkHashFunction hash, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyHashSet(SparkHashSet hashset);
-SPARKAPI SparkHandle SparkGetElementHashSet(SparkHashSet hashset, SparkConstBuffer element);
-SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset, SparkConstBuffer element);
-SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset, SparkConstBuffer element);
-SPARKAPI SparkResult SparkContainsHashSet(SparkHashSet hashset, SparkConstBuffer element);
+SPARKAPI SparkBool SparkContainsHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size);
+SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size);
+SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size);
 SPARKAPI SparkResult SparkClearHashSet(SparkHashSet hashset);
 
 SPARKAPI SparkQueue SparkDefaultQueue();
-SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity, SparkAllocator allocator);
+SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyQueue(SparkQueue queue);
-SPARKAPI SparkHandle SparkGetBackQueue(SparkQueue queue);
-SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue);
-SPARKAPI SparkResult SparkEnqueueQueue(SparkQueue queue, SparkConstBuffer element);
+SPARKAPI SparkResult SparkEnqueueQueue(SparkQueue queue, SparkHandle element);
 SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue);
+SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue);
+SPARKAPI SparkHandle SparkGetBackQueue(SparkQueue queue);
 SPARKAPI SparkResult SparkClearQueue(SparkQueue queue);
 
 SPARKAPI SparkStack SparkDefaultStack();
-SPARKAPI SparkStack SparkCreateStack(SparkSize capacity, SparkAllocator allocator);
+SPARKAPI SparkStack SparkCreateStack(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyStack(SparkStack stack);
-SPARKAPI SparkHandle SparkGetTopStack(SparkStack stack);
-SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkConstBuffer element);
+SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkHandle element);
 SPARKAPI SparkResult SparkPopStack(SparkStack stack);
+SPARKAPI SparkHandle SparkGetTopStack(SparkStack stack);
 SPARKAPI SparkResult SparkClearStack(SparkStack stack);
-
-SPARKAPI SparkGraph SparkDefaultGraph();
-SPARKAPI SparkGraph SparkCreateGraph(SparkAllocator allocator);
-SPARKAPI SparkVoid SparkDestroyGraph(SparkGraph graph);
-SPARKAPI SparkHandle SparkGetNodeGraph(SparkGraph graph, SparkConstBuffer key);
-SPARKAPI SparkHandle SparkGetEdgeGraph(SparkGraph graph, SparkConstBuffer key);
-SPARKAPI SparkResult SparkInsertNodeGraph(SparkGraph graph, SparkConstBuffer key, SparkConstBuffer value);
-SPARKAPI SparkResult SparkInsertEdgeGraph(SparkGraph graph, SparkConstBuffer key, SparkConstBuffer value);
-SPARKAPI SparkResult SparkRemoveNodeGraph(SparkGraph graph, SparkConstBuffer key);
-SPARKAPI SparkResult SparkRemoveEdgeGraph(SparkGraph graph, SparkConstBuffer key);
-SPARKAPI SparkResult SparkSetNodeGraph(SparkGraph graph, SparkConstBuffer key, SparkConstBuffer value);
-SPARKAPI SparkResult SparkSetEdgeGraph(SparkGraph graph, SparkConstBuffer key, SparkConstBuffer value);
-SPARKAPI SparkResult SparkClearGraph(SparkGraph graph);
 
 /* Shader-related function declarations */
 
@@ -1328,7 +1344,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication application);
 #define SPARK_CRASH_PROGRAM(reason) \
     SPARK_ASSERT(SPARK_FALSE, "Program was forcibly closed for: " #reason)
 
-#ifdef SPARK_DEFINE_BASIC_ALIASES || defined(SPARK_DEFINE_ALL_ALIASES)
+#if defined(SPARK_DEFINE_BASIC_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
 typedef SparkU8 u8;
 typedef SparkI8 i8;
@@ -1353,15 +1369,14 @@ typedef SparkSize size_t;
 typedef SparkIndex index_t;
 typedef SparkCount count_t;
 typedef SparkOffset offset_t;
-typedef SparkLength length_t;
-typedef SparkTime time_t;
+typedef SparkTime stime_t;
 typedef SparkDuration duration_t;
 typedef SparkFrequency frequency_t;
 typedef SparkRate rate_t;
 
 #endif
 
-#ifdef SPARK_DEFINE_ALIASES || defined(SPARK_DEFINE_ALL_ALIASES)
+#if defined(SPARK_DEFINE_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
 typedef SparkType Type;
 typedef SparkError Error;
@@ -1396,7 +1411,6 @@ typedef SparkSet Set;
 typedef SparkHashSet HashSet;
 typedef SparkQueue Queue;
 typedef SparkStack Stack;
-typedef SparkGraph Graph;
 
 typedef SparkEntity Entity;
 typedef SparkComponentArray ComponentArray;
@@ -1424,7 +1438,7 @@ typedef SparkApplication Application;
 
 #endif
 
-#ifdef SPARK_DEFINE_FUNCTION_ALIASES || defined(SPARK_DEFINE_ALL_ALIASES)
+#if defined(SPARK_DEFINE_FUNCTION_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
 #define TypeToString SparkTypeToString
 #define StringToType SparkStringToType
@@ -1469,8 +1483,8 @@ typedef SparkApplication Application;
 #define CreateVector SparkCreateVector
 #define DestroyVector SparkDestroyVector
 #define GetElementVector SparkGetElementVector
-#define PushVector SparkPushVector
-#define PopVector SparkPopVector
+#define PushBackVector SparkPushBackVector
+#define PopBackVector SparkPopBackVector
 #define InsertVector SparkInsertVector
 #define RemoveVector SparkRemoveVector
 #define SetVector SparkSetVector
@@ -1518,7 +1532,6 @@ typedef SparkApplication Application;
 #define DefaultHashSet SparkDefaultHashSet
 #define CreateHashSet SparkCreateHashSet
 #define DestroyHashSet SparkDestroyHashSet
-#define GetElementHashSet SparkGetElementHashSet
 #define InsertHashSet SparkInsertHashSet
 #define RemoveHashSet SparkRemoveHashSet
 #define ContainsHashSet SparkContainsHashSet
@@ -1540,19 +1553,6 @@ typedef SparkApplication Application;
 #define PushStack SparkPushStack
 #define PopStack SparkPopStack
 #define ClearStack SparkClearStack
-
-#define DefaultGraph SparkDefaultGraph
-#define CreateGraph SparkCreateGraph
-#define DestroyGraph SparkDestroyGraph
-#define GetNodeGraph SparkGetNodeGraph
-#define GetEdgeGraph SparkGetEdgeGraph
-#define InsertNodeGraph SparkInsertNodeGraph
-#define InsertEdgeGraph SparkInsertEdgeGraph
-#define RemoveNodeGraph SparkRemoveNodeGraph
-#define RemoveEdgeGraph SparkRemoveEdgeGraph
-#define SetNodeGraph SparkSetNodeGraph
-#define SetEdgeGraph SparkSetEdgeGraph
-#define ClearGraph SparkClearGraph
 
 #define CreateEcs SparkCreateEcs
 #define DestroyEcs SparkDestroyEcs
