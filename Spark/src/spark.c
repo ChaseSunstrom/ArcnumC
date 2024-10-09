@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#pragma region ENUM_TO_STRING
+#pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
 	switch (type) {
@@ -712,6 +712,66 @@ SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string) {
 	else if (strcmp(string, "SPARK_RENDER_API_METAL") == 0)   return SPARK_RENDER_API_METAL;
 	else                                                      return (SparkRenderAPI)-1;
 }
+
+#pragma endregion
+
+#pragma region UTIL
+
+SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString message) {
+	switch (log_level) {
+	case SPARK_LOG_LEVEL_DEBUG: printf("[DEBUG] %s\n", message); break;
+	case SPARK_LOG_LEVEL_INFO: printf("[INFO] %s\n", message); break;
+	case SPARK_LOG_LEVEL_WARN: printf("[WARN] %s\n", message); break;
+	case SPARK_LOG_LEVEL_ERROR: printf("[ERROR] %s\n", message); break;
+	case SPARK_LOG_LEVEL_FATAL: printf("[FATAL] %s\n", message); break;
+	default: break;
+	}
+}
+
+SPARKAPI SparkResult SparkCheckSuccess(SparkResult result) {
+	if (result != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, SparkResultToString(result));
+	}
+	return result;
+}
+
+#pragma endregion
+
+#pragma region ALLOCATOR
+
+SPARKAPI SparkHandle SparkAllocate(SparkSize size) {
+	return malloc(size);
+}
+
+SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size) {
+	return realloc(handle, size);
+}
+
+SPARKAPI SparkVoid SparkFree(SparkHandle handle) {
+	free(handle);
+}
+
+SPARKAPI SparkAllocator SparkDefaultAllocator() {
+	SparkAllocator allocator = SparkAllocate(sizeof(struct SparkAllocatorT));
+	allocator->allocate = SparkAllocate;
+	allocator->reallocate = SparkReallocate;
+	allocator->free = SparkFree;
+	return allocator;
+}
+
+SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate, SparkReallocateFunction reallocate, SparkFreeFunction free) {
+	SparkAllocator allocator = allocate(sizeof(struct SparkAllocatorT));
+	allocator->allocate = allocate;
+	allocator->reallocate = reallocate;
+	allocator->free = free;
+	return allocator;
+}
+
+SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator) {
+	allocator->free(allocator);
+}
+
+
 
 #pragma endregion
 

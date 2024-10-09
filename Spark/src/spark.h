@@ -34,9 +34,17 @@
 
 #define SPARK_VERSION_STRING SPARK_MAKE_VERSION_STRING(SPARK_VERSION_MAJOR, SPARK_VERSION_MINOR, SPARK_VERSION_PATCH)
 
-#define SPARK_STRINGIFY(x) #x
-#define SPARK_TOSTRING(x) SPARK_STRINGIFY(x)
 
+/* Capabilities */
+#define SPARK_DEPTH_TEST    0x0B71
+#define SPARK_BLEND         0x0BE2
+#define SPARK_CULL_FACE     0x0B44
+#define SPARK_SCISSOR_TEST  0x0C11
+
+/* Clear mask bits */
+#define SPARK_COLOR_BUFFER_BIT   0x00004000
+#define SPARK_DEPTH_BUFFER_BIT   0x00000100
+#define SPARK_STENCIL_BUFFER_BIT 0x00000400
 
 /*#ifdef __cplusplus
 extern "C" {
@@ -412,6 +420,23 @@ typedef enum SparkRenderAPIT {
 	SPARK_RENDER_API_METAL
 } SparkRenderAPI;
 
+
+/* Shader data types */
+typedef enum SparkShaderDataTypeT {
+	SPARK_SHADER_DATA_TYPE_FLOAT,
+	SPARK_SHADER_DATA_TYPE_VEC2,
+	SPARK_SHADER_DATA_TYPE_VEC3,
+	SPARK_SHADER_DATA_TYPE_VEC4,
+	SPARK_SHADER_DATA_TYPE_INT,
+	SPARK_SHADER_DATA_TYPE_IVEC2,
+	SPARK_SHADER_DATA_TYPE_IVEC3,
+	SPARK_SHADER_DATA_TYPE_IVEC4,
+	SPARK_SHADER_DATA_TYPE_MAT2,
+	SPARK_SHADER_DATA_TYPE_MAT3,
+	SPARK_SHADER_DATA_TYPE_MAT4,
+	SPARK_SHADER_DATA_TYPE_SAMPLER2D
+} SparkShaderDataType;
+
 typedef SparkF32 SparkScalar;
 typedef SparkI32 SparkIScalar;
 
@@ -710,6 +735,8 @@ SPARKAPI SparkConstString SparkLogLevelToString(SparkLogLevel level);
 SPARKAPI SparkLogLevel SparkStringToLogLevel(SparkConstString string);
 SPARKAPI SparkConstString SparkRenderAPIToString(SparkRenderAPI api);
 SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string);
+
+SPARKAPI SparkVoid SparkLog(SparkLogLevel level, SparkConstString message);
 
 /* Math stuff */
 
@@ -1018,10 +1045,9 @@ SPARKAPI SparkResult SparkCheckSuccess(SparkResult result);
 SPARKAPI SparkHandle SparkAllocate(SparkSize size);
 SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size);
 SPARKAPI SparkVoid SparkFree(SparkHandle handle);
-
+SPARKAPI SparkAllocator SparkDefaultAllocator();
 SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate, SparkReallocateFunction reallocate, SparkFreeFunction free);
 SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator);
-SPARKAPI SparkAllocator SparkGetDefaultAllocator();
 
 SPARKAPI SparkVector SparkDefaultVector();
 SPARKAPI SparkVector SparkCreateVector(SparkSize element_size, SparkSize capacity, SparkAllocator allocator);
@@ -1168,21 +1194,6 @@ SPARKAPI SparkUniformBuffer SparkCreateUniformBuffer(SparkSize size, SparkConstB
 SPARKAPI SparkVoid          SparkDeleteUniformBuffer(SparkUniformBuffer buffer);
 SPARKAPI SparkResult        SparkBindUniformBuffer(SparkProgram program, SparkConstString name, SparkUniformBuffer buffer);
 
-/* Shader data types */
-typedef enum SparkShaderDataTypeT {
-	SPARK_SHADER_DATA_TYPE_FLOAT,
-	SPARK_SHADER_DATA_TYPE_VEC2,
-	SPARK_SHADER_DATA_TYPE_VEC3,
-	SPARK_SHADER_DATA_TYPE_VEC4,
-	SPARK_SHADER_DATA_TYPE_INT,
-	SPARK_SHADER_DATA_TYPE_IVEC2,
-	SPARK_SHADER_DATA_TYPE_IVEC3,
-	SPARK_SHADER_DATA_TYPE_IVEC4,
-	SPARK_SHADER_DATA_TYPE_MAT2,
-	SPARK_SHADER_DATA_TYPE_MAT3,
-	SPARK_SHADER_DATA_TYPE_MAT4,
-	SPARK_SHADER_DATA_TYPE_SAMPLER2D
-} SparkShaderDataType;
 
 /* Vertex Buffer functions */
 typedef struct SparkVertexBufferT* SparkVertexBuffer;
@@ -1231,24 +1242,11 @@ SPARKAPI SparkResult SparkSetViewport(SparkI32 x, SparkI32 y, SparkI32 width, Sp
 SPARKAPI SparkResult SparkEnable(SparkU32 capability);
 SPARKAPI SparkResult SparkDisable(SparkU32 capability);
 
-/* Capabilities */
-#define SPARK_DEPTH_TEST    0x0B71
-#define SPARK_BLEND         0x0BE2
-#define SPARK_CULL_FACE     0x0B44
-#define SPARK_SCISSOR_TEST  0x0C11
-
-/* Clear mask bits */
-#define SPARK_COLOR_BUFFER_BIT   0x00004000
-#define SPARK_DEPTH_BUFFER_BIT   0x00000100
-#define SPARK_STENCIL_BUFFER_BIT 0x00000400
-
 /* Blend functions */
 SPARKAPI SparkResult SparkBlendFunc(SparkBlendMode sfactor, SparkBlendMode dfactor);
 
-/* Error handling functions */
 SPARKAPI SparkError       SparkGetError();
 SPARKAPI SparkConstString SparkGetErrorString(SparkError error);
-
 SPARKAPI SparkEcs SparkCreateEcs();
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs);
@@ -1261,15 +1259,12 @@ SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system);
 SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs);
 SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta);
 SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs);
-
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync);
 SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data);
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data);
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window);
-
 SPARKAPI SparkRenderer SparkCreateRenderer();
 SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
-
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkRenderer renderer);
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication application);
 
