@@ -1,5 +1,7 @@
 
 #include "spark.h"
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -2447,10 +2449,25 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	SparkWindow window = malloc(sizeof(struct SparkWindowT));
 	window->window_data = window_data;
+
+	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	window->window = glfwCreateWindow(window_data->width, window_data->height, window_data->title, SPARK_NULL, SPARK_NULL);
+
+	SparkU32 extension_count = 0;
+	vkEnumerateInstanceExtensionProperties(SPARK_NULL, &extension_count, SPARK_NULL);
+
+	SPARK_LOG_INFO("Extensions Supported: %d", extension_count);
+
+
+
 	return window;
 }
 
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
+	glfwDestroyWindow(window->window);
+	glfwTerminate();
 	SparkDestroyWindowData(window->window_data);
 	free(window);
 }
@@ -2465,5 +2482,22 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 
 #pragma region APPLICATION
 
+SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkRenderer renderer) {
+	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
+	app->window = window;
+	app->renderer = renderer;
+	return app;
+}
+
+SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
+	SparkDestroyWindow(app->window);
+	SparkFree(app);
+}
+
+SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app) {
+	while (!glfwWindowShouldClose(app->window)) {
+		glfwPollEvents();
+	}
+}
 
 #pragma endregion

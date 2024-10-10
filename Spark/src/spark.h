@@ -451,6 +451,9 @@ typedef enum SparkShaderDataTypeT {
 typedef SparkF32 SparkScalar;
 typedef SparkI32 SparkIScalar;
 
+/* Forward declaration of external library stuff like GLFW and Vulkan */
+typedef struct GLFWwindow GLFWwindow;
+
 typedef struct SparkVector2T {
 	SparkScalar x;
 	SparkScalar y;
@@ -732,6 +735,7 @@ typedef struct SparkWindowDataT {
 
 typedef struct SparkWindowT {
 	SparkWindowData window_data;
+	GLFWwindow* window;
 } *SparkWindow;
 
 typedef struct SparkRendererT {
@@ -1303,8 +1307,8 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window);
 SPARKAPI SparkRenderer SparkCreateRenderer();
 SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkRenderer renderer);
-SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication application);
-
+SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app);
+SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app);
 
 #define SPARK_ASSERT(condition, message) if (!(condition)) { assert(SPARK_FALSE && message); }
 #define SPARK_ASSERT_NULL(pointer) SPARK_ASSERT(pointer != SPARK_NULL, "Pointer is null")
@@ -1577,6 +1581,7 @@ typedef SparkApplication Application;
 
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication
+#define UpdateApplication SparkUpdateApplication
 
 #endif
 
