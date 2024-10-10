@@ -6,11 +6,11 @@
 i32 main()
 {
     Application app = CreateApplication(
-        CreateWindow(CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)),
-        (Renderer){ 0 }
+        CreateWindow(CreateWindowData("Hello", 1000, 1000, SPARK_FALSE))
     );
 
     UpdateApplication(app);
+
     DestroyApplication(app);
 
     return 0;

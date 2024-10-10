@@ -451,8 +451,8 @@ typedef enum SparkShaderDataTypeT {
 typedef SparkF32 SparkScalar;
 typedef SparkI32 SparkIScalar;
 
-/* Forward declaration of external library stuff like GLFW and Vulkan */
-typedef struct GLFWwindow GLFWwindow;
+/* Forward declaration of Ecs */
+struct SparkEcsT;
 
 typedef struct SparkVector2T {
 	SparkScalar x;
@@ -566,9 +566,9 @@ typedef SparkHandle(*SparkAllocateFunction)(SparkSize size);
 typedef SparkHandle(*SparkReallocateFunction)(SparkHandle handle, SparkSize size);
 typedef SparkVoid(*SparkFreeFunction)(SparkHandle handle);
 typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
-typedef SparkVoid(*SparkSystemStartFunction)(SparkVoid);
-typedef SparkVoid(*SparkSystemUpdateFunction)(SparkF32 delta);
-typedef SparkVoid(*SparkSystemStopFunction)(SparkVoid);
+typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
+typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs, SparkF32 delta);
+typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
 typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
 
 typedef struct SparkAllocatorT {
@@ -621,13 +621,11 @@ typedef struct SparkHashMapT {
 	SparkBool external_allocator;
 } *SparkHashMap;
 
-
 typedef struct SparkMapT {
 	SparkSize size;
 	SparkHandle root;
 	SparkAllocator allocator;
 } *SparkMap;
-
 
 typedef struct SparkSetT {
 	SparkAllocator allocator;
@@ -733,18 +731,21 @@ typedef struct SparkWindowDataT {
 	SparkBool vsync;
 } *SparkWindowData;
 
-typedef struct SparkWindowT {
-	SparkWindowData window_data;
-	GLFWwindow* window;
-} *SparkWindow;
-
 typedef struct SparkRendererT {
 	SparkI8 not_implemented;
 } *SparkRenderer;
 
+typedef struct SparkWindowT {
+	SparkWindowData window_data;
+	SparkRenderer renderer;
+	struct GLFWwindow* window;
+	struct VkInstance_T* instance;
+	struct VkDebugUtilsMessengerEXT_T* debug_messenger;
+} *SparkWindow;
+
 typedef struct SparkApplicationT {
 	SparkWindow window;
-	SparkRenderer renderer;
+	SparkEcs ecs;
 	SparkResourceRegistry resource_registry;
 	SparkF32 delta_time;
 } *SparkApplication;
@@ -1306,7 +1307,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data);
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window);
 SPARKAPI SparkRenderer SparkCreateRenderer();
 SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
-SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkRenderer renderer);
+SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window);
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app);
 SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app);
 
@@ -1590,5 +1591,4 @@ typedef SparkApplication Application;
 }
 #endif
 */
-
-#endif
+#endif /* SPARK_H */

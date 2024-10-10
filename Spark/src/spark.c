@@ -1504,7 +1504,7 @@ SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction h
 	if (!hash) {
 		hash = FNV1AHash;
 	}
-	
+
 	SparkHashMap hashmap = allocator->allocate(sizeof(struct SparkHashMapT));
 	hashmap->capacity = capacity;
 	hashmap->hash = hash;
@@ -2430,10 +2430,266 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 
 #pragma endregion
 
+#pragma region ECS
+
+SPARKAPI SparkEcs SparkCreateEcs() {
+	SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
+	ecs->components = SparkDefaultHashMap();
+	ecs->entities = SparkDefaultVector();
+	ecs->systems = SparkDefaultVector();
+	return ecs;
+}
+
+SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
+	SparkStopEcs(ecs);
+	SparkDestroyHashMap(ecs->components);
+	SparkDestroyVector(ecs->entities);
+	SparkDestroyVector(ecs->systems);
+	SparkFree(ecs);
+}
+
+SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
+	SparkPushBackVector(ecs->systems, system);
+}
+
+SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system) {
+	for (SparkSize i = 0; i < ecs->systems->size; i++) {
+		if (SparkGetElementVector(ecs->systems, i) == system) {
+			SparkRemoveVector(ecs->systems, i);
+			return SPARK_SUCCESS;
+		}
+	}
+}
+
+SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs) {
+	for (SparkSize i = 0; i < ecs->systems->size; i++) {
+		SparkSystem system = SparkGetElementVector(ecs->systems, i);
+		if (system->start != SPARK_NULL) {
+			SparkResult res = system->start(ecs);
+			if (res != SPARK_SUCCESS) {
+				return res;
+			}
+		}
+	}
+}
+
+SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta) {
+	for (SparkSize i = 0; i < ecs->systems->size; i++) {
+		SparkSystem system = SparkGetElementVector(ecs->systems, i);
+		if (system->update != SPARK_NULL) {
+			SparkResult res = system->update(ecs, delta);
+			if (res != SPARK_SUCCESS) {
+				return res;
+			}
+		}
+	}
+}
+
+SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs) {
+	for (SparkSize i = 0; i < ecs->systems->size; i++) {
+		SparkSystem system = SparkGetElementVector(ecs->systems, i);
+		if (system->stop != SPARK_NULL) {
+			SparkResult res = system->stop(ecs);
+			if (res != SPARK_SUCCESS) {
+				return res;
+			}
+		}
+	}
+}
+
+#pragma endregion
+
+#pragma region VULKAN
+
+#ifdef NDEBUG
+const SparkBool ENABLE_VALIDATION_LAYERS = SPARK_FALSE;
+#else
+const SparkBool ENABLE_VALIDATION_LAYERS = SPARK_TRUE;
+#endif
+
+const SparkConstString VALIDATION_LAYERS[] = {
+	"VK_LAYER_KHRONOS_validation"
+};
+
+struct Extensions {
+	SparkU32 count;
+	SparkConstString* names;
+};
+
+static SparkBool CheckValidationLayerSupport() {
+	SparkU32 layer_count;
+	vkEnumerateInstanceLayerProperties(&layer_count, SPARK_NULL);
+
+	VkLayerProperties* available_layers = SparkAllocate(layer_count * sizeof(VkLayerProperties));
+	vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
+
+	for (SparkU32 i = 0; i < sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString); i++) {
+		SparkBool layer_found = SPARK_FALSE;
+		for (SparkU32 j = 0; j < layer_count; j++) {
+			if (strcmp(VALIDATION_LAYERS[i], available_layers[j].layerName) == 0) {
+				layer_found = SPARK_TRUE;
+				break;
+			}
+		}
+		if (!layer_found) {
+			SparkFree(available_layers);
+			return SPARK_FALSE;
+		}
+
+	}
+
+	SparkFree(available_layers);
+
+	return SPARK_TRUE;
+}
+
+static struct Extensions GetRequiredExtensions() {
+	SparkU32 glfw_extension_count = 0;
+	SparkConstString* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+
+	SparkU32 extension_count = glfw_extension_count;
+	if (ENABLE_VALIDATION_LAYERS) {
+		extension_count++;
+	}
+
+	SparkConstString* extensions = SparkAllocate(extension_count * sizeof(SparkConstString));
+	for (SparkU32 i = 0; i < glfw_extension_count; i++) {
+		extensions[i] = glfw_extensions[i];
+	}
+
+	if (ENABLE_VALIDATION_LAYERS) {
+		extensions[glfw_extension_count] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+	}
+
+	return (struct Extensions) { extension_count, extensions };
+}
+
+
+static VKAPI_ATTR SparkBool VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
+	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
+	}
+	else {
+		SparkLog(SPARK_LOG_LEVEL_INFO, callback_data->pMessage);
+	}
+	return VK_FALSE;
+}
+
+static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
+	PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	if (func != SPARK_NULL) {
+		return func(instance, create_info, allocator, debug_messenger);
+	}
+	else {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+}
+
+static SparkVoid DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
+	PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func != SPARK_NULL) {
+		func(instance, debug_messenger, allocator);
+	}
+}
+
+static VkDebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo() {
+	VkDebugUtilsMessengerCreateInfoEXT create_info = { 0 };
+	create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	create_info.pfnUserCallback = DebugCallback;
+	return create_info;
+}
+
+static SparkResult SetupDebugMessenger(SparkWindow window) {
+	if (!ENABLE_VALIDATION_LAYERS) {
+		return SPARK_SUCCESS;
+	}
+
+	VkDebugUtilsMessengerCreateInfoEXT create_info = PopulateDebugMessengerCreateInfo();
+	if (CreateDebugUtilsMessengerEXT(window->instance, &create_info, SPARK_NULL, &window->debug_messenger)) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult CreateVulkanInstance(VkInstance* instance, SparkConstString title) {
+	if (ENABLE_VALIDATION_LAYERS && !CheckValidationLayerSupport()) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Validation layers requested, but not available!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	SparkU32 glfw_extension_count = 0;
+	VkApplicationInfo app_info = { 0 };
+	VkInstanceCreateInfo create_info = { 0 };
+	struct Extensions extensions = GetRequiredExtensions();
+
+	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	app_info.pApplicationName = title;
+	app_info.pEngineName = "Spark";
+	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.apiVersion = VK_API_VERSION_1_0;
+	
+	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	create_info.pApplicationInfo = &app_info;
+	create_info.enabledExtensionCount = extensions.count;
+	create_info.ppEnabledExtensionNames = extensions.names;
+
+	if (ENABLE_VALIDATION_LAYERS) {
+		create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
+		create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
+
+		VkDebugUtilsMessengerCreateInfoEXT debug_create_info = PopulateDebugMessengerCreateInfo();
+		create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
+	}
+	else {
+		create_info.enabledLayerCount = 0;
+		create_info.pNext = SPARK_NULL;
+	}
+
+	VkResult result = vkCreateInstance(&create_info, SPARK_NULL, instance);
+	if (result != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	SparkFree(extensions.names);
+
+	return SPARK_SUCCESS;
+}
+
+static SparkVoid DestroyVulkan(SparkWindow window) {
+	if (ENABLE_VALIDATION_LAYERS) {
+		DestroyDebugUtilsMessengerEXT(window->instance, window->debug_messenger, SPARK_NULL);
+	}
+
+	vkDestroyInstance(window->instance, SPARK_NULL);
+}
+
+SparkResult InitializeVulkan(SparkWindow window) {
+	window->instance = SPARK_NULL;
+	SparkResult result = CreateVulkanInstance(&window->instance, window->window_data->title);
+
+	if (result != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	result = SetupDebugMessenger(window);
+	if (result != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+
+#pragma endregion
+
 #pragma region WINDOW
 
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync) {
-	SparkWindowData window_data = malloc(sizeof(struct SparkWindowDataT));
+	SparkWindowData window_data = SparkAllocate(sizeof(struct SparkWindowDataT));
 	window_data->title = strdup(title);
 	window_data->width = width;
 	window_data->height = height;
@@ -2442,25 +2698,21 @@ SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 
 }
 
 SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
-	free(window_data->title);
-	free(window_data);
+	SparkFree(window_data->title);
+	SparkFree(window_data);
 }
 
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
-	SparkWindow window = malloc(sizeof(struct SparkWindowT));
+	SparkWindow window = SparkAllocate(sizeof(struct SparkWindowT));
 	window->window_data = window_data;
+	window->renderer = SparkCreateRenderer();
 
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window->window = glfwCreateWindow(window_data->width, window_data->height, window_data->title, SPARK_NULL, SPARK_NULL);
 
-	SparkU32 extension_count = 0;
-	vkEnumerateInstanceExtensionProperties(SPARK_NULL, &extension_count, SPARK_NULL);
-
-	SPARK_LOG_INFO("Extensions Supported: %d", extension_count);
-
-
+	InitializeVulkan(window);
 
 	return window;
 }
@@ -2468,29 +2720,38 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwDestroyWindow(window->window);
 	glfwTerminate();
+	DestroyVulkan(window);
+	SparkDestroyRenderer(window->renderer);
 	SparkDestroyWindowData(window->window_data);
-	free(window);
+	SparkFree(window);
 }
 
 #pragma endregion
 
 #pragma region RENDER
 
+SPARKAPI SparkRenderer SparkCreateRenderer() {
+	return SparkAllocate(sizeof(struct SparkRendererT));
+}
 
+SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer) {
+	SparkFree(renderer);
+}
 
 #pragma endregion
 
 #pragma region APPLICATION
 
-SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkRenderer renderer) {
+SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
 	app->window = window;
-	app->renderer = renderer;
+	app->ecs = SparkCreateEcs();
 	return app;
 }
 
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyWindow(app->window);
+	SparkDestroyEcs(app->ecs);
 	SparkFree(app);
 }
 
