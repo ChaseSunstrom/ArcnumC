@@ -2516,6 +2516,11 @@ struct Extensions {
 	SparkConstString* names;
 };
 
+struct QueueFamilyIndices {
+	SparkBool valid;
+	SparkU32 graphics_family;
+};
+
 static SparkBool CheckValidationLayerSupport() {
 	SparkU32 layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, SPARK_NULL);
@@ -2564,6 +2569,30 @@ static struct Extensions GetRequiredExtensions() {
 	return (struct Extensions) { extension_count, extensions };
 }
 
+static struct QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
+	struct QueueFamilyIndices indices = { 0 };
+
+	SparkU32 queue_family_count = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, SPARK_NULL);
+
+	VkQueueFamilyProperties* queue_families = SparkAllocate(queue_family_count * sizeof(VkQueueFamilyProperties));
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
+
+	for (SparkU32 i = 0; i < queue_family_count; i++) {
+		if (indices.valid) {
+			break;
+		}
+		if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indices.graphics_family = i;
+			indices.valid = SPARK_TRUE;
+			break;
+		}
+	}
+
+	SparkFree(queue_families);
+
+	return indices;
+}
 
 static VKAPI_ATTR SparkBool VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
@@ -2667,15 +2696,106 @@ static SparkVoid DestroyVulkan(SparkWindow window) {
 	vkDestroyInstance(window->instance, SPARK_NULL);
 }
 
+static SparkBool IsDeviceSuitable(VkPhysicalDevice device) {
+	struct QueueFamilyIndices indices = FindQueueFamilies(device);
+	return indices.valid;
+}
+
+static SparkI32 RateDeviceSuitability(VkPhysicalDevice device) {
+	SparkI32 score = 0;
+
+	VkPhysicalDeviceProperties device_properties;
+	VkPhysicalDeviceFeatures device_features;
+
+	vkGetPhysicalDeviceProperties(device, &device_properties);
+	vkGetPhysicalDeviceFeatures(device, &device_features);
+
+	if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+		score += 1000;
+	}
+
+	score += device_properties.limits.maxImageDimension2D;
+
+	if (!device_features.geometryShader) {
+		return 0;
+	}
+
+	return score;
+}
+
+static SparkResult PickPhysicalDevice(SparkWindow window) {
+	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+	SparkU32 device_count = 0;
+
+	vkEnumeratePhysicalDevices(window->instance, &device_count, SPARK_NULL);
+
+	if (!device_count) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find GPUs with Vulkan support!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkPhysicalDevice* devices = SparkAllocate(device_count * sizeof(VkPhysicalDevice));
+	vkEnumeratePhysicalDevices(window->instance, &device_count, devices);
+
+	for (SparkU32 i = 0; i < device_count; i++) {
+		if (IsDeviceSuitable(devices[i])) {
+			physical_device = devices[i];
+			break;
+		}
+	}
+
+	if (physical_device == VK_NULL_HANDLE) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find a suitable GPU!");
+		SparkFree(devices);
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkPhysicalDevice* candidates = SparkAllocate(device_count * sizeof(VkPhysicalDevice));
+	SparkU32* scores = SparkAllocate(device_count * sizeof(SparkU32));
+
+	for (SparkU32 i = 0; i < device_count; i++) {
+		candidates[i] = devices[i];
+		scores[i] = RateDeviceSuitability(devices[i]);
+	}
+
+	SparkU32 max_score = 0;
+	for (SparkU32 i = 0; i < device_count; i++) {
+		if (scores[i] > max_score) {
+			max_score = scores[i];
+			physical_device = candidates[i];
+		}
+	}
+
+	if (physical_device == VK_NULL_HANDLE || max_score == 0) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find a suitable GPU!");
+		SparkFree(devices);
+		SparkFree(candidates);
+		SparkFree(scores);
+		return SPARK_ERROR_INVALID;
+	}
+
+	window->physical_device = physical_device;
+
+	SparkFree(devices);
+	SparkFree(candidates);
+	SparkFree(scores);
+}
+
 SparkResult InitializeVulkan(SparkWindow window) {
 	window->instance = SPARK_NULL;
+	window->physical_device = SPARK_NULL;
+	
 	SparkResult result = CreateVulkanInstance(&window->instance, window->window_data->title);
-
 	if (result != SPARK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
 
 	result = SetupDebugMessenger(window);
+	if (result != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	result = PickPhysicalDevice(window);
 	if (result != SPARK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}

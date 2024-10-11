@@ -741,6 +741,7 @@ typedef struct SparkWindowT {
 	struct GLFWwindow* window;
 	struct VkInstance_T* instance;
 	struct VkDebugUtilsMessengerEXT_T* debug_messenger;
+	struct VkPhysicalDevice_T* physical_device;
 } *SparkWindow;
 
 typedef struct SparkApplicationT {
