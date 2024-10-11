@@ -1,7 +1,7 @@
 
 #include "spark.h"
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -820,6 +820,16 @@ SPARKAPI SparkResult SparkCheckSuccess(SparkResult result) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, SparkResultToString(result));
 	}
 	return result;
+}
+
+#pragma endregion
+
+#pragma region MATH
+
+SPARKAPI SparkScalar SparkClamp(SparkScalar value, SparkScalar min, SparkScalar max) {
+	if (value < min) return min;
+	if (value > max) return max;
+	return value;
 }
 
 #pragma endregion
@@ -2511,17 +2521,35 @@ const SparkConstString VALIDATION_LAYERS[] = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-struct Extensions {
+const SparkConstString DEVICE_EXTENSIONS[] = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
+struct VulkanExtensions {
 	SparkU32 count;
 	SparkConstString* names;
 };
 
-struct QueueFamilyIndices {
-	SparkBool valid;
+struct VulkanQueueFamilyIndices {
+	SparkBool valid_graphics;
+	SparkBool valid_present;
 	SparkU32 graphics_family;
+	SparkU32 present_family;
 };
 
-static SparkBool CheckValidationLayerSupport() {
+struct VulkanSwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	VkSurfaceFormatKHR* formats;
+	VkPresentModeKHR* present_modes;
+	SparkU32 formats_size;
+	SparkU32 present_modes_size;
+};
+
+static SparkBool __SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
+	return indices->valid_graphics && indices->valid_present;
+}
+
+static SparkBool __SparkCheckValidationLayerSupport() {
 	SparkU32 layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, SPARK_NULL);
 
@@ -2548,7 +2576,7 @@ static SparkBool CheckValidationLayerSupport() {
 	return SPARK_TRUE;
 }
 
-static struct Extensions GetRequiredExtensions() {
+static struct VulkanExtensions __SparkGetRequiredExtensions() {
 	SparkU32 glfw_extension_count = 0;
 	SparkConstString* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
@@ -2566,11 +2594,11 @@ static struct Extensions GetRequiredExtensions() {
 		extensions[glfw_extension_count] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 	}
 
-	return (struct Extensions) { extension_count, extensions };
+	return (struct VulkanExtensions) { extension_count, extensions };
 }
 
-static struct QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
-	struct QueueFamilyIndices indices = { 0 };
+static struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
+	struct VulkanQueueFamilyIndices indices = { 0 };
 
 	SparkU32 queue_family_count = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, SPARK_NULL);
@@ -2579,12 +2607,19 @@ static struct QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
 
 	for (SparkU32 i = 0; i < queue_family_count; i++) {
-		if (indices.valid) {
-			break;
-		}
 		if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphics_family = i;
-			indices.valid = SPARK_TRUE;
+			indices.valid_graphics = SPARK_TRUE;
+		}
+
+		VkBool32 present_support = SPARK_FALSE;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface, &present_support);
+		if (present_support) {
+			indices.present_family = i;
+			indices.valid_present = SPARK_TRUE;
+		}
+
+		if (__SparkIndicesComplete(&indices)) {
 			break;
 		}
 	}
@@ -2594,7 +2629,7 @@ static struct QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
 	return indices;
 }
 
-static VKAPI_ATTR SparkBool VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
+static VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
 	}
@@ -2604,7 +2639,7 @@ static VKAPI_ATTR SparkBool VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverity
 	return VK_FALSE;
 }
 
-static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
+static VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
 	PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		return func(instance, create_info, allocator, debug_messenger);
@@ -2614,37 +2649,37 @@ static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugU
 	}
 }
 
-static SparkVoid DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
+static SparkVoid __SparkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
 	PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		func(instance, debug_messenger, allocator);
 	}
 }
 
-static VkDebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo() {
+static VkDebugUtilsMessengerCreateInfoEXT __SparkPopulateDebugMessengerCreateInfo() {
 	VkDebugUtilsMessengerCreateInfoEXT create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	create_info.pfnUserCallback = DebugCallback;
+	create_info.pfnUserCallback = __SparkDebugCallback;
 	return create_info;
 }
 
-static SparkResult SetupDebugMessenger(SparkWindow window) {
+static SparkResult __SparkSetupDebugMessenger(SparkWindow window) {
 	if (!ENABLE_VALIDATION_LAYERS) {
 		return SPARK_SUCCESS;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT create_info = PopulateDebugMessengerCreateInfo();
-	if (CreateDebugUtilsMessengerEXT(window->instance, &create_info, SPARK_NULL, &window->debug_messenger)) {
+	VkDebugUtilsMessengerCreateInfoEXT create_info = __SparkPopulateDebugMessengerCreateInfo();
+	if (__SparkCreateDebugUtilsMessengerEXT(window->instance, &create_info, SPARK_NULL, &window->debug_messenger)) {
 		return SPARK_ERROR_INVALID;
 	}
 
 	return SPARK_SUCCESS;
 }
 
-static SparkResult CreateVulkanInstance(VkInstance* instance, SparkConstString title) {
-	if (ENABLE_VALIDATION_LAYERS && !CheckValidationLayerSupport()) {
+static SparkResult __SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
+	if (ENABLE_VALIDATION_LAYERS && !__SparkCheckValidationLayerSupport()) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Validation layers requested, but not available!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -2652,14 +2687,14 @@ static SparkResult CreateVulkanInstance(VkInstance* instance, SparkConstString t
 	SparkU32 glfw_extension_count = 0;
 	VkApplicationInfo app_info = { 0 };
 	VkInstanceCreateInfo create_info = { 0 };
-	struct Extensions extensions = GetRequiredExtensions();
+	struct VulkanExtensions extensions = __SparkGetRequiredExtensions();
 
 	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	app_info.pApplicationName = title;
 	app_info.pEngineName = "Spark";
 	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	app_info.apiVersion = VK_API_VERSION_1_0;
-	
+
 	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	create_info.pApplicationInfo = &app_info;
 	create_info.enabledExtensionCount = extensions.count;
@@ -2669,7 +2704,7 @@ static SparkResult CreateVulkanInstance(VkInstance* instance, SparkConstString t
 		create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
 		create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
 
-		VkDebugUtilsMessengerCreateInfoEXT debug_create_info = PopulateDebugMessengerCreateInfo();
+		VkDebugUtilsMessengerCreateInfoEXT debug_create_info = __SparkPopulateDebugMessengerCreateInfo();
 		create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
 	}
 	else {
@@ -2688,20 +2723,111 @@ static SparkResult CreateVulkanInstance(VkInstance* instance, SparkConstString t
 	return SPARK_SUCCESS;
 }
 
-static SparkVoid DestroyVulkan(SparkWindow window) {
-	if (ENABLE_VALIDATION_LAYERS) {
-		DestroyDebugUtilsMessengerEXT(window->instance, window->debug_messenger, SPARK_NULL);
+static SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow window, VkPhysicalDevice device) {
+	SparkU32 extension_count;
+	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count, SPARK_NULL);
+
+	VkExtensionProperties* available_extensions = SparkAllocate(sizeof(VkExtensionProperties) * extension_count);
+	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count, available_extensions);
+
+	SparkBool all_extensions = SPARK_TRUE;
+
+	for (SparkU32 i = 0; i < sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString); i++) {
+		SparkBool extension_found = SPARK_FALSE;
+		for (SparkU32 j = 0; j < extension_count; j++) {
+			if (strcmp(DEVICE_EXTENSIONS[i], available_extensions[j].extensionName) == 0) {
+				extension_found = SPARK_TRUE;
+				break;
+			}
+		}
+		if (!extension_found) {
+			all_extensions = SPARK_FALSE;
+			break;
+		}
 	}
 
-	vkDestroyInstance(window->instance, SPARK_NULL);
+	SparkFree(available_extensions);
+
+	return all_extensions;
 }
 
-static SparkBool IsDeviceSuitable(VkPhysicalDevice device) {
-	struct QueueFamilyIndices indices = FindQueueFamilies(device);
-	return indices.valid;
+static struct VulkanSwapChainSupportDetails __SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
+	struct VulkanSwapChainSupportDetails details = { 0 };
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, window->surface, &details.capabilities);
+
+	SparkU32 format_count;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count, SPARK_NULL);
+	if (format_count != 0) {
+		details.formats = SparkAllocate(format_count * sizeof(VkSurfaceFormatKHR));
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count, details.formats);
+	}
+
+	SparkU32 present_mode_count;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, window->surface, &present_mode_count, SPARK_NULL);
+	if (present_mode_count != 0) {
+		details.present_modes = SparkAllocate(present_mode_count * sizeof(VkPresentModeKHR));
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, window->surface, &present_mode_count, details.present_modes);
+	}
+
+	details.formats_size = format_count;
+	details.present_modes_size = present_mode_count;
+
+	return details;
 }
 
-static SparkI32 RateDeviceSuitability(VkPhysicalDevice device) {
+static VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats, const SparkSize available_formats_size) {
+	for (SparkSize i = 0; i < available_formats_size; i++) {
+		if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return available_formats[i];
+		}
+	}
+
+	return available_formats[0];
+}
+
+static VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes, const SparkSize available_present_modes_size) {
+	for (SparkSize i = 0; i < available_present_modes_size; i++) {
+		if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return available_present_modes[i];
+		}
+	}
+
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+static VkExtent2D __SparkChooseSwapExtent(const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
+	if (capabilities->currentExtent.width != UINT32_MAX) {
+		return capabilities->currentExtent;
+	}
+	else {
+		SparkI32 width, height;
+		glfwGetFramebufferSize(window->window, &width, &height);
+
+		VkExtent2D actual_extent = { width, height };
+		actual_extent.width = SparkClamp((SparkScalar)actual_extent.width, (SparkScalar)capabilities->minImageExtent.width, (SparkScalar)capabilities->maxImageExtent.width);
+		actual_extent.height = SparkClamp((SparkScalar)actual_extent.height, (SparkScalar)capabilities->minImageExtent.height, (SparkScalar)capabilities->maxImageExtent.height);
+		return actual_extent;
+	}
+}
+
+static SparkBool __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
+	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, device);
+	SparkBool extensions_supported = __SparkCheckDeviceExtensionSupport(window, device);
+
+	SparkBool swap_chain_adequete = SPARK_FALSE;
+	if (extensions_supported) {
+		struct VulkanSwapChainSupportDetails swap_chain_support = __SparkQuerySwapChainSupport(window, device);
+		swap_chain_adequete = swap_chain_support.formats && swap_chain_support.present_modes;
+
+		SparkFree(swap_chain_support.formats);
+		SparkFree(swap_chain_support.present_modes);
+	}
+
+	return __SparkIndicesComplete(&indices) && extensions_supported && swap_chain_adequete;
+}
+
+static SparkI32 __SparkRateDeviceSuitability(VkPhysicalDevice device) {
 	SparkI32 score = 0;
 
 	VkPhysicalDeviceProperties device_properties;
@@ -2715,6 +2841,13 @@ static SparkI32 RateDeviceSuitability(VkPhysicalDevice device) {
 	}
 
 	score += device_properties.limits.maxImageDimension2D;
+	score += device_properties.limits.maxImageArrayLayers;
+	score += device_properties.limits.maxFramebufferWidth;
+	score += device_properties.limits.maxFramebufferHeight;
+	score += device_properties.limits.maxFramebufferLayers;
+	score += device_properties.limits.maxViewportDimensions[0];
+	score += device_properties.limits.maxViewportDimensions[1];
+	score += device_properties.limits.maxColorAttachments;
 
 	if (!device_features.geometryShader) {
 		return 0;
@@ -2723,7 +2856,7 @@ static SparkI32 RateDeviceSuitability(VkPhysicalDevice device) {
 	return score;
 }
 
-static SparkResult PickPhysicalDevice(SparkWindow window) {
+static SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 	SparkU32 device_count = 0;
 
@@ -2738,7 +2871,7 @@ static SparkResult PickPhysicalDevice(SparkWindow window) {
 	vkEnumeratePhysicalDevices(window->instance, &device_count, devices);
 
 	for (SparkU32 i = 0; i < device_count; i++) {
-		if (IsDeviceSuitable(devices[i])) {
+		if (__SparkIsDeviceSuitable(window, devices[i])) {
 			physical_device = devices[i];
 			break;
 		}
@@ -2755,7 +2888,7 @@ static SparkResult PickPhysicalDevice(SparkWindow window) {
 
 	for (SparkU32 i = 0; i < device_count; i++) {
 		candidates[i] = devices[i];
-		scores[i] = RateDeviceSuitability(devices[i]);
+		scores[i] = __SparkRateDeviceSuitability(devices[i]);
 	}
 
 	SparkU32 max_score = 0;
@@ -2779,30 +2912,250 @@ static SparkResult PickPhysicalDevice(SparkWindow window) {
 	SparkFree(devices);
 	SparkFree(candidates);
 	SparkFree(scores);
+
+	return SPARK_SUCCESS;
 }
 
-SparkResult InitializeVulkan(SparkWindow window) {
-	window->instance = SPARK_NULL;
-	window->physical_device = SPARK_NULL;
-	
-	SparkResult result = CreateVulkanInstance(&window->instance, window->window_data->title);
-	if (result != SPARK_SUCCESS) {
-		return SPARK_ERROR_INVALID;
-	}
-
-	result = SetupDebugMessenger(window);
-	if (result != SPARK_SUCCESS) {
-		return SPARK_ERROR_INVALID;
-	}
-
-	result = PickPhysicalDevice(window);
-	if (result != SPARK_SUCCESS) {
+static SparkResult __SparkCreateSurface(SparkWindow window) {
+	if (glfwCreateWindowSurface(window->instance, window->window, SPARK_NULL, &window->surface) != VK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
 
 	return SPARK_SUCCESS;
 }
 
+static SparkResult __SparkCreateLogicalDevice(SparkWindow window) {
+	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, window->physical_device);
+
+	const SparkU32 indices_size = 2;
+	VkDeviceQueueCreateInfo* queue_create_infos = SparkAllocate(sizeof(VkDeviceQueueCreateInfo) * indices_size);
+	SparkU32* unique_queue_families = SparkAllocate(sizeof(SparkU32) * indices_size);
+
+	unique_queue_families[0] = indices.graphics_family;
+	unique_queue_families[1] = indices.present_family;
+
+	SparkF32 queue_priority = 1.0f;
+
+	for (SparkU32 i = 0; i < indices_size; i++) {
+		VkDeviceQueueCreateInfo queue_create_info = { 0 };
+		queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queue_create_info.queueFamilyIndex = i;
+		queue_create_info.queueCount = 1;
+		queue_create_info.pQueuePriorities = &queue_priority;
+		queue_create_infos[i] = queue_create_info;
+	}
+
+
+	VkDeviceQueueCreateInfo queue_create_info = { 0 };
+	VkPhysicalDeviceFeatures device_features = { 0 };
+	VkDeviceCreateInfo create_info = { 0 };
+
+	queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queue_create_info.queueFamilyIndex = indices.graphics_family;
+	queue_create_info.queueCount = 1;
+	queue_create_info.pQueuePriorities = &queue_priority;
+
+	create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	create_info.pQueueCreateInfos = queue_create_infos;
+	create_info.queueCreateInfoCount = indices_size;
+	create_info.pEnabledFeatures = &device_features;
+	create_info.enabledExtensionCount = sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString);
+	create_info.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
+
+	if (ENABLE_VALIDATION_LAYERS) {
+		create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
+		create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
+	}
+	else {
+		create_info.enabledLayerCount = 0;
+	}
+
+	if (vkCreateDevice(window->physical_device, &create_info, SPARK_NULL, &window->device) != VK_SUCCESS) {
+		SparkFree(queue_create_infos);
+		SparkFree(unique_queue_families);
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create logical device!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	vkGetDeviceQueue(window->device, indices.graphics_family, 0, &window->graphics_queue);
+	vkGetDeviceQueue(window->device, indices.present_family, 0, &window->present_queue);
+
+	SparkFree(queue_create_infos);
+	SparkFree(unique_queue_families);
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateSwapChain(SparkWindow window) {
+	struct VulkanSwapChainSupportDetails swap_chain_support = __SparkQuerySwapChainSupport(window, window->physical_device);
+
+	VkSurfaceFormatKHR surface_format = __SparkChooseSwapSurfaceFormat(swap_chain_support.formats, swap_chain_support.formats_size);
+	VkPresentModeKHR present_mode = __SparkChooseSwapPresentMode(swap_chain_support.present_modes, swap_chain_support.present_modes_size);
+	VkExtent2D extent = __SparkChooseSwapExtent(window, &swap_chain_support.capabilities);
+
+	SparkU32 image_count = swap_chain_support.capabilities.minImageCount + 1;
+
+	if (swap_chain_support.capabilities.maxImageCount > 0 && image_count > swap_chain_support.capabilities.maxImageCount) {
+		image_count = swap_chain_support.capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR create_info = { 0 };
+	create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	create_info.surface = window->surface;
+	create_info.minImageCount = image_count;
+	create_info.imageFormat = surface_format.format;
+	create_info.imageColorSpace = surface_format.colorSpace;
+	create_info.imageExtent = extent;
+	create_info.imageArrayLayers = 1;
+	create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, window->physical_device);
+	SparkU32 queue_family_indices[] = { indices.graphics_family, indices.present_family };
+
+	if (indices.graphics_family != indices.present_family) {
+		create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		create_info.queueFamilyIndexCount = 2;
+		create_info.pQueueFamilyIndices = queue_family_indices;
+	}
+	else {
+		create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		create_info.queueFamilyIndexCount = 0;
+		create_info.pQueueFamilyIndices = SPARK_NULL;
+	}
+
+	create_info.preTransform = swap_chain_support.capabilities.currentTransform;
+	create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	create_info.presentMode = present_mode;
+	create_info.clipped = VK_TRUE;
+	create_info.oldSwapchain = VK_NULL_HANDLE;
+
+	if (vkCreateSwapchainKHR(window->device, &create_info, SPARK_NULL, &window->swap_chain) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create swap chain!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count, SPARK_NULL);
+	window->swap_chain_images = SparkAllocate(image_count * sizeof(VkImage));
+	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count, window->swap_chain_images);
+
+	window->swap_chain_images_size = image_count;
+	window->swap_chain_image_format = surface_format.format;
+
+	window->swap_chain_extent = SparkAllocate(sizeof(VkExtent2D));
+	if (!window->swap_chain_extent) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for swap_chain_extent!");
+		return SPARK_ERROR_NULL;
+	}
+
+	*(window->swap_chain_extent) = extent;
+
+	SparkFree(swap_chain_support.formats);
+	SparkFree(swap_chain_support.present_modes);
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateImageViews(SparkWindow window) {
+	window->swap_chain_image_views = SparkAllocate(window->swap_chain_images_size * sizeof(VkImageView));
+	window->swap_chain_image_views_size = window->swap_chain_images_size;
+
+	for (SparkSize i = 0; i < window->swap_chain_images_size; i++) {
+		VkImageViewCreateInfo create_info = { 0 };
+		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		create_info.image = window->swap_chain_images[i];
+		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		create_info.format = window->swap_chain_image_format;
+		create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		create_info.subresourceRange.baseMipLevel = 0;
+		create_info.subresourceRange.levelCount = 1;
+		create_info.subresourceRange.baseArrayLayer = 0;
+		create_info.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(window->device, &create_info, SPARK_NULL, &window->swap_chain_image_views[i]) != VK_SUCCESS) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image views!");
+			return SPARK_ERROR_INVALID;
+		}
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkInitializeVulkan(SparkWindow window) {
+	window->instance = SPARK_NULL;
+	window->physical_device = SPARK_NULL;
+	window->device = SPARK_NULL;
+	window->graphics_queue = SPARK_NULL;
+	window->present_queue = SPARK_NULL;
+	window->surface = SPARK_NULL;
+	window->swap_chain = SPARK_NULL;
+	window->swap_chain_image_format = 0;
+	window->swap_chain_images = SPARK_NULL;
+	window->swap_chain_extent = SPARK_NULL;
+	window->swap_chain_image_views = SPARK_NULL;
+
+	if (__SparkCreateVulkanInstance(&window->instance, window->window_data->title) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkSetupDebugMessenger(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to setup debug messenger!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateSurface(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to setup window surface!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkPickPhysicalDevice(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to pick physical device!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateLogicalDevice(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create logical device!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateSwapChain(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create swap chain!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateImageViews(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image views!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkVoid __SparkDestroyVulkan(SparkWindow window) {
+	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
+		vkDestroyImageView(window->device, window->swap_chain_image_views[i], SPARK_NULL);
+	}
+
+	vkDestroySwapchainKHR(window->device, window->swap_chain, SPARK_NULL);
+
+	SparkFree(window->swap_chain_images);
+	SparkFree(window->swap_chain_image_views);
+	SparkFree(window->swap_chain_extent);
+
+	vkDestroyDevice(window->device, SPARK_NULL);
+
+	if (ENABLE_VALIDATION_LAYERS) {
+		__SparkDestroyDebugUtilsMessengerEXT(window->instance, window->debug_messenger, SPARK_NULL);
+	}
+
+	vkDestroySurfaceKHR(window->instance, window->surface, SPARK_NULL);
+
+	vkDestroyInstance(window->instance, SPARK_NULL);
+}
 
 #pragma endregion
 
@@ -2832,7 +3185,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window->window = glfwCreateWindow(window_data->width, window_data->height, window_data->title, SPARK_NULL, SPARK_NULL);
 
-	InitializeVulkan(window);
+	__SparkInitializeVulkan(window);
 
 	return window;
 }
@@ -2840,7 +3193,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwDestroyWindow(window->window);
 	glfwTerminate();
-	DestroyVulkan(window);
+	__SparkDestroyVulkan(window);
 	SparkDestroyRenderer(window->renderer);
 	SparkDestroyWindowData(window->window_data);
 	SparkFree(window);

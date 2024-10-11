@@ -742,6 +742,17 @@ typedef struct SparkWindowT {
 	struct VkInstance_T* instance;
 	struct VkDebugUtilsMessengerEXT_T* debug_messenger;
 	struct VkPhysicalDevice_T* physical_device;
+	struct VkDevice_T* device;
+	struct VkQueue_T* graphics_queue;
+	struct VkQueue_T* present_queue;
+	struct VkSufraceKHR_T* surface;
+	struct VkSwapchainKHR_T* swap_chain;
+	struct VkImage_T** swap_chain_images;
+	struct VkImageView_T** swap_chain_image_views;
+	struct VkExtent2D* swap_chain_extent;
+	enum VkFormat swap_chain_image_format;
+	SparkU32 swap_chain_images_size;
+	SparkU32 swap_chain_image_views_size;
 } *SparkWindow;
 
 typedef struct SparkApplicationT {
