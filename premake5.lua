@@ -12,13 +12,15 @@ project "Spark"
     kind "StaticLib"
     language "C"
     cdialect "C17"
+    cppdialect "C++17"
     
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("obj/" .. outputdir .. "/%{prj.name}")
 
     files {
         "Spark/src/**.h",
-        "Spark/src/**.c"
+        "Spark/src/**.c",
+        "Spark/src/**.cpp"
     }
 
     includedirs {
@@ -41,14 +43,28 @@ project "Spark"
     }
 
     filter "configurations:Debug"
-        defines "DEBUG"
+        defines { "DEBUG", "_ITERATOR_DEBUG_LEVEL=2" }
         runtime "Debug"
         symbols "on"
+        links {
+            "glslangd.lib",            -- Debug versions
+            "SPIRVd.lib",
+            "SPIRV-Toolsd.lib",
+            "SPIRV-Tools-optd.lib",
+            "OSDependentd.lib"
+        }
 
     filter "configurations:Release"
-        defines "NDEBUG"
+        defines { "NDEBUG", "_ITERATOR_DEBUG_LEVEL=0" }
         runtime "Release"
         optimize "on"
+        links {
+            "glslang.lib",             -- Release versions
+            "SPIRV.lib",
+            "SPIRV-Tools.lib",
+            "SPIRV-Tools-opt.lib",
+            "OSDependent.lib"
+        }
 
 
 project "Arcnum"

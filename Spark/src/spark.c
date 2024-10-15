@@ -1,5 +1,7 @@
 
 #include "spark.h"
+#include "spark_shader.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <string.h>
@@ -2525,6 +2527,11 @@ const SparkConstString DEVICE_EXTENSIONS[] = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+const VkDynamicState DYNAMIC_STATES[] = {
+	VK_DYNAMIC_STATE_VIEWPORT,
+	VK_DYNAMIC_STATE_SCISSOR
+};
+
 struct VulkanExtensions {
 	SparkU32 count;
 	SparkConstString* names;
@@ -3084,19 +3091,313 @@ static SparkResult __SparkCreateImageViews(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkInitializeVulkan(SparkWindow window) {
-	window->instance = SPARK_NULL;
-	window->physical_device = SPARK_NULL;
-	window->device = SPARK_NULL;
-	window->graphics_queue = SPARK_NULL;
-	window->present_queue = SPARK_NULL;
-	window->surface = SPARK_NULL;
-	window->swap_chain = SPARK_NULL;
-	window->swap_chain_image_format = 0;
-	window->swap_chain_images = SPARK_NULL;
-	window->swap_chain_extent = SPARK_NULL;
-	window->swap_chain_image_views = SPARK_NULL;
+static VkShaderModule __SparkCreateShaderModule(SparkWindow window, SparkConstBuffer code, SparkSize code_size) {
+	VkShaderModuleCreateInfo create_info = { 0 };
+	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	create_info.codeSize = code_size;
+	create_info.pCode = (SparkU32*)code;
 
+	VkShaderModule shader_module;
+	if (vkCreateShaderModule(window->device, &create_info, SPARK_NULL, &shader_module) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create shader module!");
+		return VK_NULL_HANDLE;
+	}
+	return shader_module;
+}
+
+static SparkResult __SparkCreateRenderPass(SparkWindow window) {
+	VkAttachmentDescription color_attachment = { 0 };
+	color_attachment.format = window->swap_chain_image_format;
+	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference color_attachment_ref = { 0 };
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = { 0 };
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &color_attachment_ref;
+
+	VkSubpassDependency dependency = { 0 };
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	VkRenderPassCreateInfo render_pass_info = { 0 };
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	render_pass_info.attachmentCount = 1;
+	render_pass_info.pAttachments = &color_attachment;
+	render_pass_info.subpassCount = 1;
+	render_pass_info.pSubpasses = &subpass;
+	render_pass_info.dependencyCount = 1;
+	render_pass_info.pDependencies = &dependency;
+
+	if (vkCreateRenderPass(window->device, &render_pass_info, SPARK_NULL, &window->render_pass) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create render pass!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateGraphicsPipeline(SparkWindow window) {
+	SparkBuffer vert_buf;
+	SparkBuffer frag_buf;
+	SparkSize vert_size;
+	SparkSize frag_size;
+
+	SparkCompileShaderToSpirv("src/shader.vert", SPARK_SHADER_STAGE_VERTEX, &vert_buf, &vert_size);
+	SparkCompileShaderToSpirv("src/shader.frag", SPARK_SHADER_STAGE_FRAGMENT, &frag_buf, &frag_size);
+	
+	VkShaderModule vert_shader_module = __SparkCreateShaderModule(window, vert_buf, vert_size);
+	VkShaderModule frag_shader_module = __SparkCreateShaderModule(window, frag_buf, frag_size);
+
+	VkPipelineShaderStageCreateInfo vert_shader_stage_info = { 0 };
+	vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vert_shader_stage_info.module = vert_shader_module;
+	vert_shader_stage_info.pName = "main";
+
+	VkPipelineShaderStageCreateInfo frag_shader_stage_info = { 0 };
+	frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	frag_shader_stage_info.module = frag_shader_module;
+	frag_shader_stage_info.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info, frag_shader_stage_info };
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = { 0 };
+	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	
+	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
+	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	input_assembly.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport viewport = { 0 };
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (SparkF32)window->swap_chain_extent->width;
+	viewport.height = (SparkF32)window->swap_chain_extent->height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor = { 0 };
+	scissor.offset = (VkOffset2D){ 0, 0 };
+	scissor.extent = *window->swap_chain_extent;
+
+	VkPipelineDynamicStateCreateInfo dynamic_state = { 0 };
+	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamic_state.dynamicStateCount = sizeof(DYNAMIC_STATES) / sizeof(DYNAMIC_STATES[0]);
+	dynamic_state.pDynamicStates = DYNAMIC_STATES;
+
+	VkPipelineViewportStateCreateInfo viewport_state = { 0 };
+	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_state.viewportCount = 1;
+	viewport_state.scissorCount = 1;
+
+	VkPipelineRasterizationStateCreateInfo rasterizer = { 0 };
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	VkPipelineMultisampleStateCreateInfo multisampling = { 0 };
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineColorBlendAttachmentState color_blend_attachment = { 0 };
+	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	color_blend_attachment.blendEnable = VK_FALSE;
+	color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+	color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	VkPipelineColorBlendStateCreateInfo color_blending = { 0 };
+	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	color_blending.logicOpEnable = VK_FALSE;
+	color_blending.logicOp = VK_LOGIC_OP_COPY;
+	color_blending.attachmentCount = 1;
+	color_blending.pAttachments = &color_blend_attachment;
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info = { 0 };
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+	if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL, &window->pipeline_layout) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create pipeline layout!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkGraphicsPipelineCreateInfo pipeline_info = { 0 };
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = sizeof(shader_stages) / sizeof(shader_stages[0]);
+	pipeline_info.pStages = shader_stages;
+	pipeline_info.pVertexInputState = &vertex_input_info;
+	pipeline_info.pInputAssemblyState = &input_assembly;
+	pipeline_info.pViewportState = &viewport_state;
+	pipeline_info.pRasterizationState = &rasterizer;
+	pipeline_info.pMultisampleState = &multisampling;
+	pipeline_info.pColorBlendState = &color_blending;
+	pipeline_info.pDynamicState = &dynamic_state;
+	pipeline_info.layout = window->pipeline_layout;
+	pipeline_info.renderPass = window->render_pass;
+	pipeline_info.subpass = 0;
+
+	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, &window->graphics_pipeline) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	SparkFree(vert_buf);
+	SparkFree(frag_buf);
+
+	vkDestroyShaderModule(window->device, vert_shader_module, SPARK_NULL);
+	vkDestroyShaderModule(window->device, frag_shader_module, SPARK_NULL);
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateFramebuffers(SparkWindow window) {
+	window->swap_chain_framebuffers = SparkAllocate(window->swap_chain_image_views_size * sizeof(VkFramebuffer));
+
+	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
+		VkImageView attachments[] = { window->swap_chain_image_views[i] };
+
+		VkFramebufferCreateInfo framebuffer_info = { 0 };
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = window->render_pass;
+		framebuffer_info.attachmentCount = 1;
+		framebuffer_info.pAttachments = attachments;
+		framebuffer_info.width = window->swap_chain_extent->width;
+		framebuffer_info.height = window->swap_chain_extent->height;
+		framebuffer_info.layers = 1;
+
+		if (vkCreateFramebuffer(window->device, &framebuffer_info, SPARK_NULL, &window->swap_chain_framebuffers[i]) != VK_SUCCESS) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffer!");
+			return SPARK_ERROR_INVALID;
+		}
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateCommandPool(SparkWindow window) {
+	struct VulkanQueueFamilyIndices queue_family_indices = __SparkFindQueueFamilies(window, window->physical_device);
+	
+	VkCommandPoolCreateInfo pool_info = { 0 };
+	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	pool_info.queueFamilyIndex = queue_family_indices.graphics_family;
+
+	if (vkCreateCommandPool(window->device, &pool_info, SPARK_NULL, &window->command_pool) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command pool!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
+	VkCommandBufferBeginInfo begin_info = { 0 };
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	
+	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to begin recording command buffer!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkRenderPassBeginInfo render_pass_info = { 0 };
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	render_pass_info.renderPass = window->render_pass;
+	render_pass_info.framebuffer = window->swap_chain_framebuffers[image_index];
+	render_pass_info.renderArea.offset = (VkOffset2D){ 0, 0 };
+	render_pass_info.renderArea.extent = *window->swap_chain_extent;
+
+	VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	render_pass_info.clearValueCount = 1;
+	render_pass_info.pClearValues = &clear_color;
+
+	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, window->graphics_pipeline);
+
+	VkViewport viewport = { 0 };
+	viewport.width = (SparkScalar)window->swap_chain_extent->width;
+	viewport.height = (SparkScalar)window->swap_chain_extent->height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(window->command_buffer, 0, 1, &viewport);
+
+	VkRect2D scissor = { 0 };
+	scissor.offset = (VkOffset2D){ 0, 0 };
+	scissor.extent = *window->swap_chain_extent;
+	vkCmdSetScissor(window->command_buffer, 0, 1, &scissor);
+
+	vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+	vkCmdEndRenderPass(command_buffer);
+
+	if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to record command buffer!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateCommandBuffer(SparkWindow window) {
+	VkCommandBufferAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.commandPool = window->command_pool;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(window->device, &alloc_info, &window->command_buffer) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate command buffers!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+static SparkResult __SparkCreateSyncObjects(SparkWindow window) {
+	VkSemaphoreCreateInfo semaphore_info = { 0 };
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = { 0 };
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	if (vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL, &window->image_available_semaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL, &window->render_finished_semaphore) != VK_SUCCESS ||
+		vkCreateFence(window->device, &fence_info, SPARK_NULL, &window->in_flight_fence) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create synchronization objects!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+
+static SparkResult __SparkInitializeVulkan(SparkWindow window) {
 	if (__SparkCreateVulkanInstance(&window->instance, window->window_data->title) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
 		return SPARK_ERROR_INVALID;
@@ -3132,10 +3433,55 @@ static SparkResult __SparkInitializeVulkan(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
+	if (__SparkCreateRenderPass(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create render pass!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateGraphicsPipeline(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateFramebuffers(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffers!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateCommandPool(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command pool!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateCommandBuffer(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command buffer!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateSyncObjects(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create sync objects!");
+		return SPARK_ERROR_INVALID;
+	}
+
 	return SPARK_SUCCESS;
 }
 
 static SparkVoid __SparkDestroyVulkan(SparkWindow window) {
+	vkDestroySemaphore(window->device, window->image_available_semaphore, SPARK_NULL);
+	vkDestroySemaphore(window->device, window->render_finished_semaphore, SPARK_NULL);
+	vkDestroyFence(window->device, window->in_flight_fence, SPARK_NULL);
+	vkDestroyCommandPool(window->device, window->command_pool, SPARK_NULL);
+
+	// Technically this is bad because the swap chain image views size could be different,
+	// TODO: Fix
+	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
+		vkDestroyFramebuffer(window->device, window->swap_chain_framebuffers[i], SPARK_NULL);
+	}
+
+	vkDestroyPipeline(window->device, window->graphics_pipeline, SPARK_NULL);
+	vkDestroyPipelineLayout(window->device, window->pipeline_layout, SPARK_NULL);
+	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
+
 	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
 		vkDestroyImageView(window->device, window->swap_chain_image_views[i], SPARK_NULL);
 	}
@@ -3157,13 +3503,60 @@ static SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyInstance(window->instance, SPARK_NULL);
 }
 
+static SparkResult __SparkDrawFrame(SparkWindow window) {
+	vkWaitForFences(window->device, 1, &window->in_flight_fence, VK_TRUE, UINT64_MAX);
+	vkResetFences(window->device, 1, &window->in_flight_fence);
+
+	SparkU32 image_index;
+	vkAcquireNextImageKHR(window->device, window->swap_chain, UINT64_MAX, window->image_available_semaphore, VK_NULL_HANDLE, &image_index);
+
+	vkResetCommandBuffer(window->command_buffer, 0);
+
+	__SparkRecordCommandBuffer(window, window->command_buffer, image_index);
+
+	VkSemaphore wait_semaphores[] = { window->image_available_semaphore };
+	VkSemaphore signal_semaphores[] = { window->render_finished_semaphore };
+	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submit_info = { 0 };
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = wait_semaphores;
+	submit_info.pWaitDstStageMask = wait_stages;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &window->command_buffer;
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = signal_semaphores;
+
+	if (vkQueueSubmit(window->graphics_queue, 1, &submit_info, window->in_flight_fence) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to submit draw command buffer!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkSwapchainKHR swap_chains[] = { window->swap_chain };
+
+	VkPresentInfoKHR present_info = { 0 };
+	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = signal_semaphores;
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = swap_chains;
+	present_info.pImageIndices = &image_index;
+
+	vkQueuePresentKHR(window->present_queue, &present_info);
+
+	return SPARK_SUCCESS;
+}
+
+
 #pragma endregion
 
 #pragma region WINDOW
 
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync) {
 	SparkWindowData window_data = SparkAllocate(sizeof(struct SparkWindowDataT));
-	window_data->title = strdup(title);
+	window_data->title = SparkAllocate(strlen(title) + 1);
+	strcpy(window_data->title, title);
 	window_data->width = width;
 	window_data->height = height;
 	window_data->vsync = vsync;
@@ -3175,17 +3568,46 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 	SparkFree(window_data);
 }
 
+void glfwErrorCallback(int error, const char* description) {
+	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
+}
+
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	SparkWindow window = SparkAllocate(sizeof(struct SparkWindowT));
+	memset(window, 0, sizeof(struct SparkWindowT));
 	window->window_data = window_data;
 	window->renderer = SparkCreateRenderer();
 
-	glfwInit();
+	if (!glfwInit()) {
+		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize GLFW!");
+		SparkFree(window);
+		return NULL;
+	}
+
+	glfwSetErrorCallback(glfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window->window = glfwCreateWindow(window_data->width, window_data->height, window_data->title, SPARK_NULL, SPARK_NULL);
 
-	__SparkInitializeVulkan(window);
+	if (!window->window) {
+		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to create GLFW window!");
+		SparkDestroyRenderer(window->renderer);
+		SparkDestroyWindowData(window->window_data);
+		SparkFree(window);
+		glfwTerminate();
+		return NULL;
+	}
+
+	if (__SparkInitializeVulkan(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
+		glfwDestroyWindow(window->window);
+		SparkDestroyRenderer(window->renderer);
+		SparkDestroyWindowData(window->window_data);
+		SparkFree(window);
+		glfwTerminate();
+		return NULL;
+	}
 
 	return window;
 }
@@ -3197,6 +3619,11 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	SparkDestroyRenderer(window->renderer);
 	SparkDestroyWindowData(window->window_data);
 	SparkFree(window);
+}
+
+static SparkVoid __SparkUpdateWindow(SparkWindow window) {
+	glfwPollEvents();
+	__SparkDrawFrame(window);
 }
 
 #pragma endregion
@@ -3228,9 +3655,13 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkFree(app);
 }
 
+SPARKAPI SparkBool SparkApplicationKeepOpen(SparkApplication app) {
+	return !glfwWindowShouldClose(app->window);
+}
+
 SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app) {
-	while (!glfwWindowShouldClose(app->window)) {
-		glfwPollEvents();
+	while (SparkApplicationKeepOpen(app)) {
+		__SparkUpdateWindow(app->window);
 	}
 }
 

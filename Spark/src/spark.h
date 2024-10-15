@@ -750,6 +750,15 @@ typedef struct SparkWindowT {
 	struct VkImage_T** swap_chain_images;
 	struct VkImageView_T** swap_chain_image_views;
 	struct VkExtent2D* swap_chain_extent;
+	struct VkFramebuffer_T** swap_chain_framebuffers;
+	struct VkPipelineLayout_T* pipeline_layout;
+	struct VkRenderPass_T* render_pass;
+	struct VkPipeline_T* graphics_pipeline;
+	struct VkCommandPool_T* command_pool;
+	struct VkCommandBuffer_T* command_buffer;
+	struct VkSemaphore_T* image_available_semaphore;
+	struct VkSemaphore_T* render_finished_semaphore;
+	struct VkFence_T* in_flight_fence;
 	enum VkFormat swap_chain_image_format;
 	SparkU32 swap_chain_images_size;
 	SparkU32 swap_chain_image_views_size;
