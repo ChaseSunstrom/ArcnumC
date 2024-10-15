@@ -237,7 +237,7 @@ extern "C" {
         // Link the program
         if (!program.link(messages)) {
             // Linking failed
-            const char* log = program.getInfoLog();
+            SparkConstString log = program.getInfoLog();
             fprintf(stderr, "Shader linking error:\n%s\n", log);
             return -1;
         }

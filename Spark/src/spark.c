@@ -3567,7 +3567,7 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 	SparkFree(window_data);
 }
 
-void glfwErrorCallback(int error, const char* description) {
+void glfwErrorCallback(SparkI32 error, SparkConstString description) {
 	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
 }
 
@@ -3654,12 +3654,12 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkFree(app);
 }
 
-SPARKAPI SparkBool SparkApplicationKeepOpen(SparkApplication app) {
+SPARKAPI SPARKSTATIC SparkBool __SparkApplicationKeepOpen(SparkApplication app) {
 	return !glfwWindowShouldClose(app->window);
 }
 
 SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app) {
-	while (SparkApplicationKeepOpen(app)) {
+	while (__SparkApplicationKeepOpen(app)) {
 		__SparkUpdateWindow(app->window);
 	}
 }
