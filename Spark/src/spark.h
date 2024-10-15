@@ -16,6 +16,8 @@
 #define SPARKAPI
 #endif
 
+#define SPARKSTATIC static
+
 #define SPARK_VERSION_MAJOR 1
 #define SPARK_VERSION_MINOR 0
 #define SPARK_VERSION_PATCH 0

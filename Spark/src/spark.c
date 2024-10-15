@@ -1970,7 +1970,7 @@ SPARKAPI SparkVoid SparkDestroyHashSet(SparkHashSet hashset) {
 	}
 }
 
-static SparkResult SparkHashSetResize(SparkHashSet hashset, SparkSize new_capacity) {
+SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset, SparkSize new_capacity) {
 	SparkHandle* old_elements = hashset->elements;
 	SparkSize* old_hashes = hashset->hashes;
 	SparkSize old_capacity = hashset->capacity;
@@ -2552,11 +2552,11 @@ struct VulkanSwapChainSupportDetails {
 	SparkU32 present_modes_size;
 };
 
-static SparkBool __SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
+SPARKAPI SPARKSTATIC SparkBool __SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
 	return indices->valid_graphics && indices->valid_present;
 }
 
-static SparkBool __SparkCheckValidationLayerSupport() {
+SPARKAPI SPARKSTATIC SparkBool __SparkCheckValidationLayerSupport() {
 	SparkU32 layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, SPARK_NULL);
 
@@ -2583,7 +2583,7 @@ static SparkBool __SparkCheckValidationLayerSupport() {
 	return SPARK_TRUE;
 }
 
-static struct VulkanExtensions __SparkGetRequiredExtensions() {
+SPARKAPI SPARKSTATIC struct VulkanExtensions __SparkGetRequiredExtensions() {
 	SparkU32 glfw_extension_count = 0;
 	SparkConstString* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
@@ -2604,7 +2604,7 @@ static struct VulkanExtensions __SparkGetRequiredExtensions() {
 	return (struct VulkanExtensions) { extension_count, extensions };
 }
 
-static struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
 	struct VulkanQueueFamilyIndices indices = { 0 };
 
 	SparkU32 queue_family_count = 0;
@@ -2636,7 +2636,7 @@ static struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(SparkWindow wind
 	return indices;
 }
 
-static VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
+SPARKAPI SPARKSTATIC VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
 	}
@@ -2646,7 +2646,7 @@ static VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebugUtilsMessageS
 	return VK_FALSE;
 }
 
-static VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
+SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
 	PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		return func(instance, create_info, allocator, debug_messenger);
@@ -2656,14 +2656,14 @@ static VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance instance, const V
 	}
 }
 
-static SparkVoid __SparkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
 	PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		func(instance, debug_messenger, allocator);
 	}
 }
 
-static VkDebugUtilsMessengerCreateInfoEXT __SparkPopulateDebugMessengerCreateInfo() {
+SPARKAPI SPARKSTATIC VkDebugUtilsMessengerCreateInfoEXT __SparkPopulateDebugMessengerCreateInfo() {
 	VkDebugUtilsMessengerCreateInfoEXT create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -2672,7 +2672,7 @@ static VkDebugUtilsMessengerCreateInfoEXT __SparkPopulateDebugMessengerCreateInf
 	return create_info;
 }
 
-static SparkResult __SparkSetupDebugMessenger(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkSetupDebugMessenger(SparkWindow window) {
 	if (!ENABLE_VALIDATION_LAYERS) {
 		return SPARK_SUCCESS;
 	}
@@ -2685,7 +2685,7 @@ static SparkResult __SparkSetupDebugMessenger(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
 	if (ENABLE_VALIDATION_LAYERS && !__SparkCheckValidationLayerSupport()) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Validation layers requested, but not available!");
 		return SPARK_ERROR_INVALID;
@@ -2730,7 +2730,7 @@ static SparkResult __SparkCreateVulkanInstance(VkInstance* instance, SparkConstS
 	return SPARK_SUCCESS;
 }
 
-static SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow window, VkPhysicalDevice device) {
 	SparkU32 extension_count;
 	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count, SPARK_NULL);
 
@@ -2758,7 +2758,7 @@ static SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow window, VkPhysic
 	return all_extensions;
 }
 
-static struct VulkanSwapChainSupportDetails __SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC struct VulkanSwapChainSupportDetails __SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
 	struct VulkanSwapChainSupportDetails details = { 0 };
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, window->surface, &details.capabilities);
@@ -2783,7 +2783,7 @@ static struct VulkanSwapChainSupportDetails __SparkQuerySwapChainSupport(SparkWi
 	return details;
 }
 
-static VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats, const SparkSize available_formats_size) {
+SPARKAPI SPARKSTATIC VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats, const SparkSize available_formats_size) {
 	for (SparkSize i = 0; i < available_formats_size; i++) {
 		if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 			return available_formats[i];
@@ -2793,7 +2793,7 @@ static VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKH
 	return available_formats[0];
 }
 
-static VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes, const SparkSize available_present_modes_size) {
+SPARKAPI SPARKSTATIC VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes, const SparkSize available_present_modes_size) {
 	for (SparkSize i = 0; i < available_present_modes_size; i++) {
 		if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return available_present_modes[i];
@@ -2803,7 +2803,7 @@ static VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPresentModeKHR* ava
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-static VkExtent2D __SparkChooseSwapExtent(const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
+SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
 	if (capabilities->currentExtent.width != UINT32_MAX) {
 		return capabilities->currentExtent;
 	}
@@ -2818,7 +2818,7 @@ static VkExtent2D __SparkChooseSwapExtent(const SparkWindow window, VkSurfaceCap
 	}
 }
 
-static SparkBool __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC SparkBool __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
 	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, device);
 	SparkBool extensions_supported = __SparkCheckDeviceExtensionSupport(window, device);
 
@@ -2834,7 +2834,7 @@ static SparkBool __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice de
 	return __SparkIndicesComplete(&indices) && extensions_supported && swap_chain_adequete;
 }
 
-static SparkI32 __SparkRateDeviceSuitability(VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC SparkI32 __SparkRateDeviceSuitability(VkPhysicalDevice device) {
 	SparkI32 score = 0;
 
 	VkPhysicalDeviceProperties device_properties;
@@ -2863,7 +2863,7 @@ static SparkI32 __SparkRateDeviceSuitability(VkPhysicalDevice device) {
 	return score;
 }
 
-static SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 	SparkU32 device_count = 0;
 
@@ -2923,7 +2923,7 @@ static SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateSurface(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateSurface(SparkWindow window) {
 	if (glfwCreateWindowSurface(window->instance, window->window, SPARK_NULL, &window->surface) != VK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
@@ -2931,7 +2931,7 @@ static SparkResult __SparkCreateSurface(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateLogicalDevice(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateLogicalDevice(SparkWindow window) {
 	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, window->physical_device);
 
 	const SparkU32 indices_size = 2;
@@ -2993,7 +2993,7 @@ static SparkResult __SparkCreateLogicalDevice(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateSwapChain(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	struct VulkanSwapChainSupportDetails swap_chain_support = __SparkQuerySwapChainSupport(window, window->physical_device);
 
 	VkSurfaceFormatKHR surface_format = __SparkChooseSwapSurfaceFormat(swap_chain_support.formats, swap_chain_support.formats_size);
@@ -3062,7 +3062,7 @@ static SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateImageViews(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateImageViews(SparkWindow window) {
 	window->swap_chain_image_views = SparkAllocate(window->swap_chain_images_size * sizeof(VkImageView));
 	window->swap_chain_image_views_size = window->swap_chain_images_size;
 
@@ -3091,7 +3091,7 @@ static SparkResult __SparkCreateImageViews(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static VkShaderModule __SparkCreateShaderModule(SparkWindow window, SparkConstBuffer code, SparkSize code_size) {
+SPARKAPI SPARKSTATIC VkShaderModule __SparkCreateShaderModule(SparkWindow window, SparkConstBuffer code, SparkSize code_size) {
 	VkShaderModuleCreateInfo create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	create_info.codeSize = code_size;
@@ -3105,7 +3105,7 @@ static VkShaderModule __SparkCreateShaderModule(SparkWindow window, SparkConstBu
 	return shader_module;
 }
 
-static SparkResult __SparkCreateRenderPass(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	VkAttachmentDescription color_attachment = { 0 };
 	color_attachment.format = window->swap_chain_image_format;
 	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -3150,7 +3150,7 @@ static SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateGraphicsPipeline(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow window) {
 	SparkBuffer vert_buf;
 	SparkBuffer frag_buf;
 	SparkSize vert_size;
@@ -3275,7 +3275,7 @@ static SparkResult __SparkCreateGraphicsPipeline(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateFramebuffers(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 	window->swap_chain_framebuffers = SparkAllocate(window->swap_chain_image_views_size * sizeof(VkFramebuffer));
 
 	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
@@ -3299,7 +3299,7 @@ static SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateCommandPool(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 	struct VulkanQueueFamilyIndices queue_family_indices = __SparkFindQueueFamilies(window, window->physical_device);
 	
 	VkCommandPoolCreateInfo pool_info = { 0 };
@@ -3315,7 +3315,7 @@ static SparkResult __SparkCreateCommandPool(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
+SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	
@@ -3363,7 +3363,7 @@ static SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffe
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateCommandBuffer(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandBuffer(SparkWindow window) {
 	VkCommandBufferAllocateInfo alloc_info = { 0 };
 	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	alloc_info.commandPool = window->command_pool;
@@ -3378,7 +3378,7 @@ static SparkResult __SparkCreateCommandBuffer(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkResult __SparkCreateSyncObjects(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 	VkSemaphoreCreateInfo semaphore_info = { 0 };
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -3396,8 +3396,7 @@ static SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-
-static SparkResult __SparkInitializeVulkan(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 	if (__SparkCreateVulkanInstance(&window->instance, window->window_data->title) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
 		return SPARK_ERROR_INVALID;
@@ -3466,7 +3465,7 @@ static SparkResult __SparkInitializeVulkan(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-static SparkVoid __SparkDestroyVulkan(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroySemaphore(window->device, window->image_available_semaphore, SPARK_NULL);
 	vkDestroySemaphore(window->device, window->render_finished_semaphore, SPARK_NULL);
 	vkDestroyFence(window->device, window->in_flight_fence, SPARK_NULL);
@@ -3503,7 +3502,7 @@ static SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyInstance(window->instance, SPARK_NULL);
 }
 
-static SparkResult __SparkDrawFrame(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 	vkWaitForFences(window->device, 1, &window->in_flight_fence, VK_TRUE, UINT64_MAX);
 	vkResetFences(window->device, 1, &window->in_flight_fence);
 
@@ -3547,7 +3546,6 @@ static SparkResult __SparkDrawFrame(SparkWindow window) {
 
 	return SPARK_SUCCESS;
 }
-
 
 #pragma endregion
 
@@ -3621,7 +3619,7 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	SparkFree(window);
 }
 
-static SparkVoid __SparkUpdateWindow(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateWindow(SparkWindow window) {
 	glfwPollEvents();
 	__SparkDrawFrame(window);
 }
