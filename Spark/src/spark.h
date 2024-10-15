@@ -740,6 +740,7 @@ typedef struct SparkRendererT {
 typedef struct SparkWindowT {
 	SparkWindowData window_data;
 	SparkRenderer renderer;
+#ifdef SPARK_IMPLEMENTATION
 	struct GLFWwindow* window;
 	struct VkInstance_T* instance;
 	struct VkDebugUtilsMessengerEXT_T* debug_messenger;
@@ -764,6 +765,7 @@ typedef struct SparkWindowT {
 	enum VkFormat swap_chain_image_format;
 	SparkU32 swap_chain_images_size;
 	SparkU32 swap_chain_image_views_size;
+#endif
 } *SparkWindow;
 
 typedef struct SparkApplicationT {

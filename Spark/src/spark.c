@@ -1,4 +1,5 @@
 
+#define SPARK_IMPLEMENTATION
 #include "spark.h"
 #include "spark_shader.h"
 
