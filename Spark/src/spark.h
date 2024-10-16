@@ -39,22 +39,22 @@
 #if !defined(SPARK_NO_DEBUG) && !defined(NDEBUG) && !defined(RELEASE)
 #define SPARK_LOG_DEBUG(message, ...) SparkLog(SPARK_LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
 #else
-	#define SPARK_LOG_DEBUG(message, ...)
+#define SPARK_LOG_DEBUG(message, ...)
 #endif
 #ifndef SPARK_NO_INFO
-	#define SPARK_LOG_INFO(message, ...) SparkLog(SPARK_LOG_LEVEL_INFO, message, ##__VA_ARGS__)
+#define SPARK_LOG_INFO(message, ...) SparkLog(SPARK_LOG_LEVEL_INFO, message, ##__VA_ARGS__)
 #else
-	#define SPARK_LOG_INFO(message, ...)
+#define SPARK_LOG_INFO(message, ...)
 #endif
 #ifndef SPARK_NO_WARN
-	#define SPARK_LOG_WARN(message, ...) SparkLog(SPARK_LOG_LEVEL_WARN, message, ##__VA_ARGS__)
+#define SPARK_LOG_WARN(message, ...) SparkLog(SPARK_LOG_LEVEL_WARN, message, ##__VA_ARGS__)
 #else
-	#define SPARK_LOG_WARN(message, ...)
+#define SPARK_LOG_WARN(message, ...)
 #endif
 #ifndef SPARK_NO_ERROR
-	#define SPARK_LOG_ERROR(message, ...) SparkLog(SPARK_LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
+#define SPARK_LOG_ERROR(message, ...) SparkLog(SPARK_LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
 #else
-	#define SPARK_LOG_ERROR(message, ...)
+#define SPARK_LOG_ERROR(message, ...)
 #endif
 
 /* Capabilities */
@@ -99,6 +99,22 @@ typedef SparkU32 SparkTime;
 typedef SparkU32 SparkDuration;
 typedef SparkU32 SparkFrequency;
 typedef SparkU32 SparkRate;
+typedef SparkU64 SparkEventType;
+
+#define SPARK_EVENT_NONE                       ((SparkEventType)0x0ULL)
+#define SPARK_EVENT_WINDOW_CLOSE               ((SparkEventType)0x1ULL)
+#define SPARK_EVENT_WINDOW_RESIZE              ((SparkEventType)0x1ULL << 1)
+#define SPARK_EVENT_WINDOW_FOCUS               ((SparkEventType)0x1ULL << 2)
+#define SPARK_EVENT_WINDOW_LOST_FOCUS          ((SparkEventType)0x1ULL << 3)
+#define SPARK_EVENT_WINDOW_MOVED               ((SparkEventType)0x1ULL << 4)
+#define SPARK_EVENT_KEY_PRESSED                ((SparkEventType)0x1ULL << 5)
+#define SPARK_EVENT_KEY_RELEASED               ((SparkEventType)0x1ULL << 6)
+#define SPARK_EVENT_KEY_TYPED                  ((SparkEventType)0x1ULL << 7)
+#define SPARK_EVENT_MOUSE_BUTTON_PRESSED       ((SparkEventType)0x1ULL << 8)
+#define SPARK_EVENT_MOUSE_BUTTON_RELEASED      ((SparkEventType)0x1ULL << 9)
+#define SPARK_EVENT_MOUSE_MOVED                ((SparkEventType)0x1ULL << 10)
+#define SPARK_EVENT_MOUSE_SCROLLED             ((SparkEventType)0x1ULL << 11)
+#define SPARK_EVENT_MAX_BIT                    ((SparkEventType)0x1ULL << 12)
 
 typedef enum SparkType {
 	SPARK_FALSE = 0,
@@ -348,22 +364,6 @@ typedef enum SparkCursorT {
 	SPARK_CURSOR_VRESIZE = 5
 } SparkCursor;
 
-/* Event types */
-typedef enum SparkEventTypeT {
-	SPARK_EVENT_NONE = 0,
-	SPARK_EVENT_WINDOW_CLOSE,
-	SPARK_EVENT_WINDOW_RESIZE,
-	SPARK_EVENT_WINDOW_FOCUS,
-	SPARK_EVENT_WINDOW_LOST_FOCUS,
-	SPARK_EVENT_WINDOW_MOVED,
-	SPARK_EVENT_KEY_PRESSED,
-	SPARK_EVENT_KEY_RELEASED,
-	SPARK_EVENT_KEY_TYPED,
-	SPARK_EVENT_MOUSE_BUTTON_PRESSED,
-	SPARK_EVENT_MOUSE_BUTTON_RELEASED,
-	SPARK_EVENT_MOUSE_MOVED,
-	SPARK_EVENT_MOUSE_SCROLLED
-} SparkEventType;
 
 /* Shader types */
 typedef enum SparkShaderTypeT {
@@ -449,6 +449,38 @@ typedef enum SparkShaderDataTypeT {
 	SPARK_SHADER_DATA_TYPE_MAT4,
 	SPARK_SHADER_DATA_TYPE_SAMPLER2D
 } SparkShaderDataType;
+
+typedef struct SparkEventDataKeyPressedT {
+	SparkKey key;
+	SparkI32 repeat;
+} *SparkEventDataKeyPressed;
+
+typedef struct SparkEventDataKeyReleasedT {
+	SparkKey key;
+} *SparkEventDataKeyReleased;
+
+typedef struct SparkEventDataMouseMovedT {
+	SparkF64 xpos;
+	SparkF64 ypos;
+} *SparkEventDataMouseMoved;
+
+typedef struct SparkEventDataMouseButtonPressedT {
+	SparkMouseButton button;
+} *SparkEventDataMouseButtonPressed;
+
+typedef struct SparkEventDataMouseButtonReleasedT {
+	SparkMouseButton button;
+} *SparkEventDataMouseButtonReleased;
+
+typedef struct SparkEventDataMouseScrolledT {
+	SparkF64 x;
+	SparkF64 y;
+} *SparkEventDataMouseScrolled;
+
+typedef struct SparkEventDataWindowResizedT {
+	SparkI32 width;
+	SparkI32 height;
+} *SparkEventDataWindowResized;
 
 typedef SparkF32 SparkScalar;
 typedef SparkI32 SparkIScalar;
@@ -571,6 +603,7 @@ typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
 typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
 typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs, SparkF32 delta);
 typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
+typedef SparkResult(*SparkEventFunction)(struct SparkEventT event);
 typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
 
 typedef struct SparkAllocatorT {
@@ -670,8 +703,21 @@ typedef struct SparkStackT {
 	SparkBool external_allocator;
 } *SparkStack;
 
+typedef struct SparkEventT {
+	SparkEventType type;
+	SparkHandle data;
+	SparkConstString timestamp;
+	SparkFreeFunction destructor;
+} SparkEvent;
+
+typedef struct SparkEventHandlerFunctionT {
+	SparkEventType type;
+	SparkEventFunction function;
+} *SparkEventHandlerFunction;
+
 typedef struct SparkEventHandlerT {
-	SparkI8 not_implemented;
+	/* Vector <SparkEventHandlerFunction> */
+	SparkVector functions;
 } *SparkEventHandler;
 
 typedef SparkI32 SparkEntity;
@@ -731,6 +777,7 @@ typedef struct SparkWindowDataT {
 	SparkI32 width;
 	SparkI32 height;
 	SparkBool vsync;
+	SparkEventHandler event_handler;
 } *SparkWindowData;
 
 typedef struct SparkRendererT {
@@ -772,6 +819,7 @@ typedef struct SparkApplicationT {
 	SparkWindow window;
 	SparkEcs ecs;
 	SparkResourceRegistry resource_registry;
+	SparkEventHandler event_handler;
 	SparkF32 delta_time;
 } *SparkApplication;
 
@@ -808,7 +856,8 @@ SPARKAPI SparkLogLevel SparkStringToLogLevel(SparkConstString string);
 SPARKAPI SparkConstString SparkRenderAPIToString(SparkRenderAPI api);
 SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string);
 
-SPARKAPI SparkConstString FormatString(SparkConstString format, ...);
+SPARKAPI SparkConstString SparkFormatString(SparkConstString format, ...);
+SPARKAPI SparkConstString SparkGetTime();
 
 SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format, ...);
 
@@ -1131,7 +1180,7 @@ SPARKAPI SparkAllocator SparkDefaultAllocator();
 SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate, SparkReallocateFunction reallocate, SparkFreeFunction free);
 SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator);
 
-SPARKAPI SparkVector SparkDefaultVector(); 
+SPARKAPI SparkVector SparkDefaultVector();
 SPARKAPI SparkVector SparkCreateVector(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector);
 SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector, SparkIndex index);
@@ -1139,11 +1188,12 @@ SPARKAPI SparkResult SparkPushBackVector(SparkVector vector, SparkHandle element
 SPARKAPI SparkResult SparkPopBackVector(SparkVector vector);
 SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkIndex index);
+SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkIndex start, SparkIndex end);
 SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkIndex index, SparkHandle element);
 SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity);
 SPARKAPI SparkResult SparkClearVector(SparkVector vector);
 
-SPARKAPI SparkList SparkDefaultList(); 
+SPARKAPI SparkList SparkDefaultList();
 SPARKAPI SparkList SparkCreateList(SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SparkDestroyList(SparkList list);
 SPARKAPI SparkHandle SparkGetElementList(SparkList list, SparkIndex index);
@@ -1314,6 +1364,7 @@ SPARKAPI SparkResult SparkBlendFunc(SparkBlendMode sfactor, SparkBlendMode dfact
 
 SPARKAPI SparkError       SparkGetError();
 SPARKAPI SparkConstString SparkGetErrorString(SparkError error);
+
 SPARKAPI SparkEcs SparkCreateEcs();
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs);
@@ -1326,15 +1377,30 @@ SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system);
 SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs);
 SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta);
 SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs);
+
+SPARKAPI SparkEventHandler SparkDefaultEventHandler();
+SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count);
+SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler);
+SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function);
+SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function);
+SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event);
+SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor);
+SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor, SparkConstString time_stamp);
+SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event);
+
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync);
 SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data);
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data);
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window);
+
 SPARKAPI SparkRenderer SparkCreateRenderer();
 SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
+
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window);
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app);
 SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app);
+SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkEventFunction function);
+SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app, SparkEvent event);
 
 #define SPARK_ASSERT(condition, message) if (!(condition)) { assert(SPARK_FALSE && message); }
 #define SPARK_ASSERT_NULL(pointer) SPARK_ASSERT(pointer != SPARK_NULL, "Pointer is null")
@@ -1424,6 +1490,14 @@ typedef SparkTextureFilter TextureFilter;
 typedef SparkLogLevel LogLevel;
 typedef SparkRenderAPI RenderAPI;
 
+typedef SparkEventDataKeyPressed EventDataKeyPressed;
+typedef SparkEventDataKeyReleased EventDataKeyReleased;
+typedef SparkEventDataMouseMoved EventDataMouseMoved;
+typedef SparkEventDataMouseButtonPressed EventDataMouseButtonPressed;
+typedef SparkEventDataMouseButtonReleased EventDataMouseButtonReleased;
+typedef SparkEventDataMouseScrolled EventDataMouseScrolled;
+typedef SparkEventDataWindowResized EventDataWindowResized;
+
 typedef SparkAllocateFunction AllocateFunction;
 typedef SparkReallocateFunction ReallocateFunction;
 typedef SparkFreeFunction FreeFunction;
@@ -1454,6 +1528,8 @@ typedef SparkResourceRegistry ResourceRegistry;
 typedef SparkWindowData WindowData;
 typedef SparkWindow Window;
 typedef SparkRenderer Renderer;
+typedef SparkEvent Event;
+typedef SparkEventHandler EventHandler;
 typedef SparkApplication Application;
 
 #define Vector(type) SparkVector
@@ -1469,6 +1545,9 @@ typedef SparkApplication Application;
 #endif
 
 #if defined(SPARK_DEFINE_FUNCTION_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+
+#define Log SparkLog
+
 
 #define TypeToString SparkTypeToString
 #define StringToType SparkStringToType
@@ -1517,6 +1596,7 @@ typedef SparkApplication Application;
 #define PopBackVector SparkPopBackVector
 #define InsertVector SparkInsertVector
 #define RemoveVector SparkRemoveVector
+#define EraseVector SparkEraseVector
 #define SetVector SparkSetVector
 #define ResizeVector SparkResizeVector
 #define ClearVector SparkClearVector
@@ -1525,8 +1605,8 @@ typedef SparkApplication Application;
 #define CreateList SparkCreateList
 #define DestroyList SparkDestroyList
 #define GetElementList SparkGetElementList
-#define PushList SparkPushList
-#define PopList SparkPopList
+#define PushList SparkPushBackList
+#define PopList SparkPopBackList
 #define InsertList SparkInsertList
 #define RemoveList SparkRemoveList
 #define SetList SparkSetList
@@ -1597,6 +1677,14 @@ typedef SparkApplication Application;
 #define UpdateEcs SparkUpdateEcs
 #define StopEcs SparkStopEcs
 
+#define CreateEventHandler SparkCreateEventHandler
+#define DestroyEventHandler SparkDestroyEventHandler
+#define AddEventListener SparkAddEventListener
+#define RemoveEventListener SparkRemoveEventListener
+#define DispatchEvent SparkDispatchEvent
+#define CreateEvent SparkCreateEvent
+#define DestroyEvent SparkDestroyEvent
+
 #define CreateWindowData SparkCreateWindowData
 #define DestroyWindowData SparkDestroyWindowData
 #define CreateWindow SparkCreateWindow
@@ -1608,6 +1696,8 @@ typedef SparkApplication Application;
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication
 #define UpdateApplication SparkUpdateApplication
+#define AddEventFunctionApplication SparkAddEventFunctionApplication
+#define DispatchEventApplication SparkDispatchEventApplication
 
 #endif
 

@@ -5,19 +5,37 @@
 #include <stdio.h>
 #include <string.h>
 
+#define SOME_CUSTOM_EVENT SPARK_EVENT_MAX_BIT
+
+void_t KeyPressedFunction(Event event) {
+	if (event.type == SPARK_EVENT_KEY_PRESSED) {
+		EventDataKeyPressed key_press = event.data;
+		SPARK_LOG_DEBUG("Key Pressed: %s", KeyToString(key_press->key));
+	}
+	else if (event.type == SPARK_EVENT_KEY_RELEASED | SOME_CUSTOM_EVENT) {
+		EventDataKeyReleased key_press = event.data;
+		SPARK_LOG_DEBUG("Key Released: %s", KeyToString(key_press->key));
+	}
+}
+
+void_t MousePressedFunction(Event event) {
+}
+
 i32 main()
 {
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	Application app = CreateApplication(
+		CreateWindow(
+			CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)
+		)
+	);
 
-    Application app = CreateApplication(
-        CreateWindow(
-            CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)
-        )
-    );
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED |
+		                             SPARK_EVENT_KEY_RELEASED |
+									 SOME_CUSTOM_EVENT, KeyPressedFunction);
 
-    UpdateApplication(app);
+	UpdateApplication(app);
 
-    DestroyApplication(app);
+	DestroyApplication(app);
 
-    return 0;
+	return 0;
 }

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <time.h>
 
 #pragma region ENUM
 
@@ -738,7 +739,7 @@ SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string) {
 
 #pragma region UTIL
 
-SPARKAPI SparkConstString FormatString(SparkConstString format, ...) {
+SPARKAPI SparkConstString SparkFormatString(SparkConstString format, ...) {
 	va_list args;
 	va_start(args, format);
 
@@ -823,6 +824,22 @@ SPARKAPI SparkResult SparkCheckSuccess(SparkResult result) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, SparkResultToString(result));
 	}
 	return result;
+}
+
+SPARKAPI SparkConstString SparkGetTime() {
+	time_t rawtime;
+	struct tm* timeinfo;
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	SparkConstString output[50];
+
+	snprintf(output, 50, "[%d %d %d %d:%d:%d]", timeinfo->tm_mday,
+		timeinfo->tm_mon + 1, timeinfo->tm_year + 1900,
+		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+
+	return output;
 }
 
 #pragma endregion
@@ -1003,6 +1020,28 @@ SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkSize index) {
 		vector->elements[i] = vector->elements[i + 1];
 	}
 	vector->size--;
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin, SparkSize end) {
+	for (SparkSize i = begin; i < end; i++) {
+		if (i >= vector->size) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+			return SPARK_ERROR_INVALID_ARGUMENT;
+		}
+
+		// Call destructor on the element if destructor is not NULL
+		if (vector->destructor != NULL) {
+			vector->destructor(vector->elements[i]);
+		}
+	}
+
+	// Move elements to fill the gap
+	for (SparkSize i = begin; i < vector->size - (end - begin); i++) {
+		vector->elements[i] = vector->elements[i + (end - begin)];
+	}
+
+	vector->size -= (end - begin);
 	return SPARK_SUCCESS;
 }
 
@@ -3550,6 +3589,79 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 
 #pragma endregion
 
+#pragma region EVENT
+
+SPARKAPI SparkEventHandler SparkDefaultEventHandler() {
+	SparkEventHandler event_handler = SparkAllocate(sizeof(struct SparkEventHandlerT));
+	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	return event_handler;
+}
+
+SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count) {
+	SparkEventHandler event_handler = SparkAllocate(sizeof(struct SparkEventHandlerT));
+	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	
+	for (SparkSize i = 0; i < function_count; i++) {
+		SparkPushBackVector(event_handler->functions, functions[i]);
+	}
+
+	return event_handler;
+}
+
+SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler) {
+	SparkDestroyVector(event_handler->functions);
+	SparkFree(event_handler);
+}
+
+SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function) {
+	SparkEventHandlerFunction event_handler_function = SparkAllocate(sizeof(struct SparkEventHandlerFunctionT));
+	if (!event_handler_function) return SPARK_ERROR_INVALID_STATE;
+	event_handler_function->type = event_type;
+	event_handler_function->function = function;
+	SparkPushBackVector(event_handler->functions, (SparkHandle)event_handler_function);
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function) {
+	SparkEventHandlerFunction event_handler_function = SPARK_NULL;
+	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
+		event_handler_function = (SparkEventHandlerFunction)SparkGetElementVector(event_handler->functions, i);
+		if (event_handler_function->type == event_type && event_handler_function->function == function) {
+			SparkRemoveVector(event_handler->functions, i);
+			SparkFree(event_handler_function);
+			return SPARK_SUCCESS;
+		}
+	}
+	return SPARK_ERROR_INVALID;
+}
+
+SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event) {
+	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
+		SparkEventHandlerFunction function = SparkGetElementVector(event_handler->functions, i);
+		if (function->type & event.type) {
+			function->function(event);
+		}
+	}
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor) {
+	return (SparkEvent){ event_type, event_data, SparkGetTime(), destructor };
+}
+
+SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor, SparkConstString time_stamp) {
+	return (SparkEvent) { event_type, event_data, time_stamp, destructor };
+}
+
+SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
+	if (event.destructor)
+		event.destructor(event.data);
+	return SPARK_SUCCESS;
+}
+
+#pragma endregion
+
 #pragma region WINDOW
 
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync) {
@@ -3559,6 +3671,7 @@ SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 
 	window_data->width = width;
 	window_data->height = height;
 	window_data->vsync = vsync;
+	window_data->event_handler = SparkDefaultEventHandler();
 	return window_data;
 }
 
@@ -3567,8 +3680,97 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 	SparkFree(window_data);
 }
 
-void glfwErrorCallback(SparkI32 error, SparkConstString description) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwErrorCallback(SparkI32 error, SparkConstString description) {
 	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window, SparkI32 key, SparkI32 scancode, SparkI32 action, SparkI32 mods) {
+	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+
+	switch (action) {
+	case GLFW_PRESS: {
+		SparkEventDataKeyPressed event_data = SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
+		event_data->key = key;
+		event_data->repeat = SPARK_FALSE;
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkDispatchEvent(data->event_handler, event);
+		SparkFree(event_data);
+		break;
+	}
+	case GLFW_RELEASE: {
+		SparkEventDataKeyReleased event_data = SparkAllocate(sizeof(struct SparkEventDataKeyReleasedT));
+		event_data->key = key;
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_RELEASED, (SparkHandle)event_data, SPARK_NULL);
+		SparkDispatchEvent(data->event_handler, event);
+		SparkFree(event_data);
+		break;
+	}
+	case GLFW_REPEAT: {
+		SparkEventDataKeyPressed event_data = SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
+		event_data->key = key;
+		event_data->repeat = SPARK_TRUE;
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkDispatchEvent(data->event_handler, event);
+		SparkFree(event_data);
+		break;
+	}
+	}
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+
+	SparkEventDataMouseMoved event_data = SparkAllocate(sizeof(struct SparkEventDataMouseMovedT));
+	event_data->xpos = xpos;
+	event_data->ypos = ypos;
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_MOVED, (SparkHandle)event_data, SPARK_NULL);
+	SparkDispatchEvent(data->event_handler, event);
+	SparkFree(event_data);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+
+	switch (action) {
+	case GLFW_PRESS: {
+		SparkEventDataMouseButtonPressed event_data = SparkAllocate(sizeof(struct SparkEventDataMouseButtonPressedT));
+		event_data->button = button;
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkDispatchEvent(data->event_handler, event);
+		SparkFree(event_data);
+		break;
+	}
+	case GLFW_RELEASE: {
+		SparkEventDataMouseButtonReleased event_data = SparkAllocate(sizeof(struct SparkEventDataMouseButtonReleasedT));
+		event_data->button = button;
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_RELEASED, (SparkHandle)event_data, SPARK_NULL);
+		SparkDispatchEvent(data->event_handler, event);
+		SparkFree(event_data);
+		break;
+	}
+	}
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+
+	SparkEventDataMouseScrolled event_data = SparkAllocate(sizeof(struct SparkEventDataMouseScrolledT));
+	event_data->x = xoffset;
+	event_data->y = yoffset;
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_SCROLLED, (SparkHandle)event_data, SPARK_NULL);
+	SparkDispatchEvent(data->event_handler, event);
+	SparkFree(event_data);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+
+	SparkEventDataWindowResized event_data = SparkAllocate(sizeof(struct SparkEventDataWindowResizedT));
+	event_data->width = width;
+	event_data->height = height;
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_WINDOW_RESIZE, (SparkHandle)event_data, SPARK_NULL);
+	SparkDispatchEvent(data->event_handler, event);
+	SparkFree(event_data);
 }
 
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
@@ -3583,7 +3785,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		return NULL;
 	}
 
-	glfwSetErrorCallback(glfwErrorCallback);
+	glfwSetErrorCallback(__GlfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -3598,6 +3800,14 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		return NULL;
 	}
 
+	glfwSetWindowUserPointer(window->window, window->window_data);
+
+	glfwSetKeyCallback(window->window, __GlfwSetKeyCallback);
+	glfwSetCursorPosCallback(window->window, __GlfwSetCursorPosCallback);
+	glfwSetMouseButtonCallback(window->window, __GlfwSetMouseButtonCallback);
+	glfwSetScrollCallback(window->window, __GlfwSetScrollCallback);
+	glfwSetFramebufferSizeCallback(window->window, __GlfwSetFramebufferSizeCallback);
+
 	if (__SparkInitializeVulkan(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
 		glfwDestroyWindow(window->window);
@@ -3610,6 +3820,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 
 	return window;
 }
+
 
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwDestroyWindow(window->window);
@@ -3645,23 +3856,33 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
 	app->window = window;
 	app->ecs = SparkCreateEcs();
+	app->event_handler = window->window_data->event_handler;
 	return app;
 }
 
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyWindow(app->window);
 	SparkDestroyEcs(app->ecs);
+	SparkDestroyEventHandler(app->event_handler);
 	SparkFree(app);
 }
 
 SPARKAPI SPARKSTATIC SparkBool __SparkApplicationKeepOpen(SparkApplication app) {
-	return !glfwWindowShouldClose(app->window);
+	return !glfwWindowShouldClose(app->window) || SPARK_TRUE;
 }
 
 SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app) {
 	while (__SparkApplicationKeepOpen(app)) {
 		__SparkUpdateWindow(app->window);
 	}
+}
+
+SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkEventFunction function) {
+	return SparkAddEventListener(app->event_handler, event_type, function);
+}
+
+SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app, SparkEvent event) {
+	return SparkDispatchEvent(app->event_handler, event);
 }
 
 #pragma endregion
