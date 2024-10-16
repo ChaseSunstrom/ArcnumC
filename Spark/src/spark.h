@@ -739,6 +739,7 @@ typedef struct SparkSystemT {
 	SparkSystemUpdateFunction update;
 	SparkSystemStopFunction stop;
 	SparkEventHandler event_handler;
+	//SparkHandle system_data;
 } *SparkSystem;
 
 typedef struct SparkEcsT {
@@ -861,7 +862,7 @@ SPARKAPI SparkConstString SparkGetTime();
 
 SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format, ...);
 
-/* Math stuff */
+#pragma region MATH
 
 SPARKAPI SparkVec2 SparkVec2Add(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SparkVec2Subtract(SparkVec2 a, SparkVec2 b);
@@ -1122,7 +1123,6 @@ SPARKAPI SparkScalar SparkFract(SparkScalar value);
 SPARKAPI SparkScalar SparkMod(SparkScalar x, SparkScalar y);
 SPARKAPI SparkScalar SparkMin(SparkScalar a, SparkScalar b);
 SPARKAPI SparkScalar SparkMax(SparkScalar a, SparkScalar b);
-SPARKAPI SparkScalar SparkClamp(SparkScalar x, SparkScalar min_val, SparkScalar max_val);
 SPARKAPI SparkScalar SparkMix(SparkScalar x, SparkScalar y, SparkScalar a);
 SPARKAPI SparkScalar SparkStep(SparkScalar edge, SparkScalar x);
 SPARKAPI SparkScalar SparkSmoothStep(SparkScalar edge0, SparkScalar edge1, SparkScalar x);
@@ -1160,6 +1160,335 @@ SPARKAPI SparkVec4 SparkVec4Clamp(SparkVec4 v, SparkVec4 min_val, SparkVec4 max_
 SPARKAPI SparkVec4 SparkVec4Mix(SparkVec4 a, SparkVec4 b, SparkScalar t);
 SPARKAPI SparkVec4 SparkVec4Step(SparkVec4 edge, SparkVec4 x);
 SPARKAPI SparkVec4 SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge1, SparkVec4 x);
+
+/* Vector addition */
+#define SparkVecAdd(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Add, \
+        SparkVec3: SparkVec3Add, \
+        SparkVec4: SparkVec4Add \
+    )(a, b)
+
+/* Vector subtraction */
+#define SparkVecSubtract(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Subtract, \
+        SparkVec3: SparkVec3Subtract, \
+        SparkVec4: SparkVec4Subtract \
+    )(a, b)
+
+/* Vector multiplication */
+#define SparkVecMultiply(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Multiply, \
+        SparkVec3: SparkVec3Multiply, \
+        SparkVec4: SparkVec4Multiply \
+    )(a, b)
+
+/* Vector division */
+#define SparkVecDivide(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Divide, \
+        SparkVec3: SparkVec3Divide, \
+        SparkVec4: SparkVec4Divide \
+    )(a, b)
+
+/* Vector scaling */
+#define SparkVecScale(a, s) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Scale, \
+        SparkVec3: SparkVec3Scale, \
+        SparkVec4: SparkVec4Scale \
+    )(a, s)
+
+/* Vector dot product */
+#define SparkVecDot(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Dot, \
+        SparkVec3: SparkVec3Dot, \
+        SparkVec4: SparkVec4Dot \
+    )(a, b)
+
+/* Vector length */
+#define SparkVecLength(a) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Length, \
+        SparkVec3: SparkVec3Length, \
+        SparkVec4: SparkVec4Length \
+    )(a)
+
+/* Vector normalization */
+#define SparkVecNormalize(a) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Normalize, \
+        SparkVec3: SparkVec3Normalize, \
+        SparkVec4: SparkVec4Normalize \
+    )(a)
+
+/* Vector distance */
+#define SparkVecDistance(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Distance, \
+        SparkVec3: SparkVec3Distance, \
+        SparkVec4: SparkVec4Distance \
+    )(a, b)
+
+/* Vector negation */
+#define SparkVecNegate(a) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Negate, \
+        SparkVec3: SparkVec3Negate, \
+        SparkVec4: SparkVec4Negate \
+    )(a)
+
+/* Vector angle (only for Vec2 and Vec3) */
+#define SparkVecAngle(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Angle, \
+        SparkVec3: SparkVec3Angle \
+    )(a, b)
+
+/* Vector reflection */
+#define SparkVecReflect(v, n) \
+    _Generic((v), \
+        SparkVec2: SparkVec2Reflect, \
+        SparkVec3: SparkVec3Reflect \
+    )(v, n)
+
+/* Vector linear interpolation */
+#define SparkVecLerp(a, b, t) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Lerp, \
+        SparkVec3: SparkVec3Lerp, \
+        SparkVec4: SparkVec4Lerp \
+    )(a, b, t)
+
+/* Vector cross product (only for Vec3) */
+#define SparkVecCross(a, b) \
+    _Generic((a), \
+        SparkVec3: SparkVec3Cross \
+    )(a, b)
+
+/* Matrix addition */
+#define SparkMatAdd(a, b) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Add, \
+        SparkMat3: SparkMat3Add, \
+        SparkMat4: SparkMat4Add \
+    )(a, b)
+
+/* Matrix subtraction */
+#define SparkMatSubtract(a, b) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Subtract, \
+        SparkMat3: SparkMat3Subtract, \
+        SparkMat4: SparkMat4Subtract \
+    )(a, b)
+
+/* Matrix multiplication */
+#define SparkMatMultiply(a, b) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Multiply, \
+        SparkMat3: SparkMat3Multiply, \
+        SparkMat4: SparkMat4Multiply \
+    )(a, b)
+
+/* Matrix scaling */
+#define SparkMatScale(a, s) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Scale, \
+        SparkMat3: SparkMat3Scale, \
+        SparkMat4: SparkMat4Scale \
+    )(a, s)
+
+/* Matrix transpose */
+#define SparkMatTranspose(a) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Transpose, \
+        SparkMat3: SparkMat3Transpose, \
+        SparkMat4: SparkMat4Transpose \
+    )(a)
+
+/* Matrix determinant */
+#define SparkMatDeterminant(a) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Determinant, \
+        SparkMat3: SparkMat3Determinant, \
+        SparkMat4: SparkMat4Determinant \
+    )(a)
+
+/* Matrix inverse */
+#define SparkMatInverse(a) \
+    _Generic((a), \
+        SparkMat2: SparkMat2Inverse, \
+        SparkMat3: SparkMat3Inverse, \
+        SparkMat4: SparkMat4Inverse \
+    )(a)
+
+/* Matrix identity (note: requires specifying the type) */
+#define SparkMatIdentity(type) \
+    _Generic(*(type *)0, \
+        SparkMat2: SparkMat2Identity, \
+        SparkMat3: SparkMat3Identity, \
+        SparkMat4: SparkMat4Identity \
+    )()
+
+/* Scalar and vector min function */
+#define SparkMin(a, b) \
+    _Generic((a), \
+        SparkScalar: SparkMin, \
+        SparkVec2: SparkVec2Min, \
+        SparkVec3: SparkVec3Min, \
+        SparkVec4: SparkVec4Min \
+    )(a, b)
+
+/* Scalar and vector max function */
+#define SparkMax(a, b) \
+    _Generic((a), \
+        SparkScalar: SparkMax, \
+        SparkVec2: SparkVec2Max, \
+        SparkVec3: SparkVec3Max, \
+        SparkVec4: SparkVec4Max \
+    )(a, b)
+
+/* Scalar and vector clamp function */
+#define SparkClamp(x, min_val, max_val) \
+    _Generic((x), \
+        SparkScalar: SparkClampS, \
+        SparkVec2: SparkVec2Clamp, \
+        SparkVec3: SparkVec3Clamp, \
+        SparkVec4: SparkVec4Clamp \
+    )(x, min_val, max_val)
+
+/* Scalar and vector mix (linear interpolation) function */
+#define SparkMix(a, b, t) \
+    _Generic((a), \
+        SparkScalar: SparkMix, \
+        SparkVec2: SparkVec2Mix, \
+        SparkVec3: SparkVec3Mix, \
+        SparkVec4: SparkVec4Mix \
+    )(a, b, t)
+
+/* Scalar and vector step function */
+#define SparkStep(edge, x) \
+    _Generic((x), \
+        SparkScalar: SparkStep, \
+        SparkVec2: SparkVec2Step, \
+        SparkVec3: SparkVec3Step, \
+        SparkVec4: SparkVec4Step \
+    )(edge, x)
+
+/* Scalar and vector smoothstep function */
+#define SparkSmoothStep(edge0, edge1, x) \
+    _Generic((x), \
+        SparkScalar: SparkSmoothStep, \
+        SparkVec2: SparkVec2SmoothStep, \
+        SparkVec3: SparkVec3SmoothStep, \
+        SparkVec4: SparkVec4SmoothStep \
+    )(edge0, edge1, x)
+
+/* Matrix-vector multiplication */
+#define SparkMatMultiplyVec(m, v) \
+    _Generic((m), \
+        SparkMat2: SparkMat2MultiplyVec2, \
+        SparkMat3: SparkMat3MultiplyVec3, \
+        SparkMat4: _Generic((v), \
+            SparkVec3: SparkMat4MultiplyVec3, \
+            SparkVec4: SparkMat4MultiplyVec4 \
+        ) \
+    )(m, v)
+
+/* General vector functions */
+#define SparkLength(v) \
+    _Generic((v), \
+        SparkVec2: SparkVec2Length, \
+        SparkVec3: SparkVec3Length, \
+        SparkVec4: SparkVec4Length \
+    )(v)
+
+#define SparkNormalize(v) \
+    _Generic((v), \
+        SparkVec2: SparkVec2Normalize, \
+        SparkVec3: SparkVec3Normalize, \
+        SparkVec4: SparkVec4Normalize \
+    )(v)
+
+#define SparkDot(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Dot, \
+        SparkVec3: SparkVec3Dot, \
+        SparkVec4: SparkVec4Dot \
+    )(a, b)
+
+#define SparkDistance(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Distance, \
+        SparkVec3: SparkVec3Distance, \
+        SparkVec4: SparkVec4Distance \
+    )(a, b)
+
+/* Cross product for SparkVec3 */
+#define SparkCross(a, b) \
+    _Generic((a), \
+        SparkVec3: SparkVec3Cross \
+    )(a, b)
+
+/* Reflect function for vectors */
+#define SparkReflect(v, n) \
+    _Generic((v), \
+        SparkVec2: SparkVec2Reflect, \
+        SparkVec3: SparkVec3Reflect \
+    )(v, n)
+
+/* Component-wise vector min function */
+#define SparkVecMin(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Min, \
+        SparkVec3: SparkVec3Min, \
+        SparkVec4: SparkVec4Min \
+    )(a, b)
+
+/* Component-wise vector max function */
+#define SparkVecMax(a, b) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Max, \
+        SparkVec3: SparkVec3Max, \
+        SparkVec4: SparkVec4Max \
+    )(a, b)
+
+/* Component-wise vector clamp function */
+#define SparkVecClamp(v, min_val, max_val) \
+    _Generic((v), \
+        SparkVec2: SparkVec2Clamp, \
+        SparkVec3: SparkVec3Clamp, \
+        SparkVec4: SparkVec4Clamp \
+    )(v, min_val, max_val)
+
+/* Component-wise vector mix function */
+#define SparkVecMix(a, b, t) \
+    _Generic((a), \
+        SparkVec2: SparkVec2Mix, \
+        SparkVec3: SparkVec3Mix, \
+        SparkVec4: SparkVec4Mix \
+    )(a, b, t)
+
+/* Component-wise vector step function */
+#define SparkVecStep(edge, x) \
+    _Generic((x), \
+        SparkVec2: SparkVec2Step, \
+        SparkVec3: SparkVec3Step, \
+        SparkVec4: SparkVec4Step \
+    )(edge, x)
+
+/* Component-wise vector smoothstep function */
+#define SparkVecSmoothStep(edge0, edge1, x) \
+    _Generic((x), \
+        SparkVec2: SparkVec2SmoothStep, \
+        SparkVec3: SparkVec3SmoothStep, \
+        SparkVec4: SparkVec4SmoothStep \
+    )(edge0, edge1, x)
+
+#pragma endregion
 
 /* Returns either a success or failure depending on the error code */
 SPARKAPI SparkResult SparkCheckSuccess(SparkResult result);

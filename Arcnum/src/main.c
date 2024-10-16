@@ -5,20 +5,26 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SOME_CUSTOM_EVENT SPARK_EVENT_MAX_BIT
-
 void_t KeyPressedFunction(Event event) {
 	if (event.type == SPARK_EVENT_KEY_PRESSED) {
 		EventDataKeyPressed key_press = event.data;
 		SPARK_LOG_DEBUG("Key Pressed: %s", KeyToString(key_press->key));
 	}
-	else if (event.type == SPARK_EVENT_KEY_RELEASED | SOME_CUSTOM_EVENT) {
+	else if (event.type == SPARK_EVENT_KEY_RELEASED) {
 		EventDataKeyReleased key_press = event.data;
 		SPARK_LOG_DEBUG("Key Released: %s", KeyToString(key_press->key));
 	}
 }
 
 void_t MousePressedFunction(Event event) {
+	if (event.type == SPARK_EVENT_MOUSE_BUTTON_PRESSED) {
+		EventDataMouseButtonPressed mouse_press = event.data;
+		SPARK_LOG_DEBUG("Mouse Button Pressed: %s", MouseButtonToString(mouse_press->button));
+	}
+	else if (event.type == SPARK_EVENT_MOUSE_BUTTON_RELEASED) {
+		EventDataMouseButtonReleased mouse_press = event.data;
+		SPARK_LOG_DEBUG("Mouse Button Released: %s", MouseButtonToString(mouse_press->button));
+	}
 }
 
 i32 main()
@@ -30,8 +36,10 @@ i32 main()
 	);
 
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED |
-		                             SPARK_EVENT_KEY_RELEASED |
-									 SOME_CUSTOM_EVENT, KeyPressedFunction);
+		                             SPARK_EVENT_KEY_RELEASED, KeyPressedFunction);
+
+	AddEventFunctionApplication(app, SPARK_EVENT_MOUSE_BUTTON_PRESSED |
+		                             SPARK_EVENT_MOUSE_BUTTON_RELEASED, MousePressedFunction);
 
 	UpdateApplication(app);
 

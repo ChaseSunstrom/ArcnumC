@@ -846,7 +846,7 @@ SPARKAPI SparkConstString SparkGetTime() {
 
 #pragma region MATH
 
-SPARKAPI SparkScalar SparkClamp(SparkScalar value, SparkScalar min, SparkScalar max) {
+SPARKAPI SparkScalar SparkClampS(SparkScalar value, SparkScalar min, SparkScalar max) {
 	if (value < min) return min;
 	if (value > max) return max;
 	return value;
