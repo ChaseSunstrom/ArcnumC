@@ -101,6 +101,18 @@ typedef SparkU32 SparkFrequency;
 typedef SparkU32 SparkRate;
 typedef SparkU64 SparkEventType;
 
+#ifdef _WIN32
+#include <windows.h>
+typedef HANDLE SparkThread;
+typedef CRITICAL_SECTION SparkMutex;
+typedef CONDITION_VARIABLE SparkCondition;
+#else
+#include <pthread.h>
+typedef pthread_t SparkThread;
+typedef pthread_mutex_t SparkMutex;
+typedef pthread_cond_t SparkCondition;
+#endif
+
 #define SPARK_EVENT_NONE                       ((SparkEventType)0x0ULL)
 #define SPARK_EVENT_WINDOW_CLOSE               ((SparkEventType)0x1ULL)
 #define SPARK_EVENT_WINDOW_RESIZE              ((SparkEventType)0x1ULL << 1)
@@ -604,6 +616,7 @@ typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
 typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs, SparkF32 delta);
 typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
 typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
+typedef SparkHandle(*SparkThreadFunction)(SparkHandle arg);
 
 typedef SparkVoid(*SparkApplicationStartFunction)(struct SparkApplicationT* app);
 typedef SparkVoid(*SparkApplicationUpdateFunction)(struct SparkApplicationT* app);
@@ -708,6 +721,26 @@ typedef struct SparkStackT {
 	SparkHandle* elements;
 	SparkBool external_allocator;
 } *SparkStack;
+
+typedef struct SparkTaskT {
+	SparkThreadFunction function;
+	SparkHandle arg;
+	SparkHandle result;
+	struct SparkTaskT* next;
+	SparkMutex mutex;
+	SparkCondition cond;
+	SparkI32 is_done;
+} *SparkTaskHandle;
+
+typedef struct SparkThreadPoolT {
+	SparkThread* threads;
+	SparkSize thread_count;
+	SparkTaskHandle task_queue_head;
+	SparkTaskHandle task_queue_tail;
+	SparkMutex mutex;
+	SparkCondition condition;
+	SparkI32 stop;
+} *SparkThreadPool;
 
 typedef struct SparkEventT {
 	SparkEventType type;
@@ -1744,6 +1777,13 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window);
 SPARKAPI SparkRenderer SparkCreateRenderer();
 SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
 
+SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count);
+SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool);
+SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool, SparkThreadFunction function, SparkHandle arg);
+SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task);
+SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task);
+SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task);
+
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window);
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app);
 SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app);
@@ -1942,7 +1982,7 @@ typedef SparkApplication Application;
 #define Free SparkFree
 #define CreateAllocator SparkCreateAllocator
 #define DestroyAllocator SparkDestroyAllocator
-#define GetDefaultAllocator SparkGetDefaultAllocator
+#define DefaultAllocator SparkDefaultAllocator
 
 #define DefaultVector SparkDefaultVector
 #define CreateVector SparkCreateVector
@@ -2054,6 +2094,13 @@ typedef SparkApplication Application;
 #define UpdateApplication SparkUpdateApplication
 #define AddEventFunctionApplication SparkAddEventFunctionApplication
 #define DispatchEventApplication SparkDispatchEventApplication
+#define StartApplication SparkStartApplication
+#define AddStartFunctionApplication SparkAddStartFunctionApplication
+#define AddUpdateFunctionApplication SparkAddUpdateFunctionApplication
+#define AddStopFunctionApplication SparkAddStopFunctionApplication
+#define AddEventFunctionApplication SparkAddEventFunctionApplication
+#define AddQueryFunctionApplication SparkAddQueryFunctionApplication
+#define AddQueryEventFunctionApplication SparkAddQueryEventFunctionApplication
 
 #endif
 

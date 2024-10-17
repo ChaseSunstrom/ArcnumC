@@ -1269,7 +1269,7 @@ SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index) {
 	}
 
 	// Call destructor on the element if destructor is not NULL
-	if (list->destructor != NULL) {
+	if (list->destructor) {
 		list->destructor(node_to_remove->data);
 	}
 
@@ -2478,6 +2478,199 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 	}
 	stack->size = 0;
 	return SPARK_SUCCESS;
+}
+
+#pragma endregion
+
+#pragma region THREAD
+
+#ifdef _WIN32
+#define SparkMutexInit(mutex) InitializeCriticalSection(&(mutex))
+#define SparkMutexLock(mutex) EnterCriticalSection(&(mutex))
+#define SparkMutexUnlock(mutex) LeaveCriticalSection(&(mutex))
+#define SparkMutexDestroy(mutex) DeleteCriticalSection(&(mutex))
+#define SparkConditionInit(cond) InitializeConditionVariable(&(cond))
+#define SparkConditionWait(cond, mutex) SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
+#define SparkConditionSignal(cond) WakeConditionVariable(&(cond))
+#define SparkConditionBroadcast(cond) WakeAllConditionVariable(&(cond))
+#else
+#define SparkMutexInit(mutex) pthread_mutex_init(&(mutex), NULL)
+#define SparkMutexLock(mutex) pthread_mutex_lock(&(mutex))
+#define SparkMutexUnlock(mutex) pthread_mutex_unlock(&(mutex))
+#define SparkMutexDestroy(mutex) pthread_mutex_destroy(&(mutex))
+#define SparkConditionInit(cond) pthread_cond_init(&(cond), NULL)
+#define SparkConditionWait(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
+#define SparkConditionSignal(cond) pthread_cond_signal(&(cond))
+#define SparkConditionBroadcast(cond) pthread_cond_broadcast(&(cond))
+#endif
+
+static SparkVoid* SparkThreadPoolWorker(SparkHandle arg) {
+	SparkThreadPool pool = (SparkThreadPool)arg;
+	SparkTaskHandle task;
+
+	while (1) {
+		SparkMutexLock(pool->mutex);
+
+		while (pool->task_queue_head == NULL && !pool->stop) {
+			SparkConditionWait(pool->condition, pool->mutex);
+		}
+
+		if (pool->stop && pool->task_queue_head == NULL) {
+			SparkMutexUnlock(pool->mutex);
+			break;
+		}
+
+		task = pool->task_queue_head;
+		if (task != NULL) {
+			pool->task_queue_head = task->next;
+			if (pool->task_queue_head == NULL) {
+				pool->task_queue_tail = NULL;
+			}
+		}
+
+		SparkMutexUnlock(pool->mutex);
+
+		if (task != NULL) {
+			task->result = task->function(task->arg);
+
+			/* Signal that the task is done */
+			SparkMutexLock(task->mutex);
+			task->is_done = 1;
+			SparkConditionSignal(task->cond);
+			SparkMutexUnlock(task->mutex);
+		}
+	}
+
+	return NULL;
+}
+
+SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
+	SparkThreadPool pool = (SparkThreadPool)SparkAllocate(sizeof(struct SparkThreadPoolT));
+	if (pool == NULL) return NULL;
+
+	pool->thread_count = thread_count;
+	pool->threads = (SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
+	pool->task_queue_head = NULL;
+	pool->task_queue_tail = NULL;
+	pool->stop = 0;
+
+	SparkMutexInit(pool->mutex);
+	SparkConditionInit(pool->condition);
+
+	for (SparkSize i = 0; i < thread_count; ++i) {
+#ifdef _WIN32
+		pool->threads[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SparkThreadPoolWorker, pool, 0, NULL);
+#else
+		pthread_create(&pool->threads[i], NULL, SparkThreadPoolWorker, pool);
+#endif
+	}
+
+	return pool;
+}
+
+SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
+	if (pool == NULL) return;
+
+	/* Stop all threads */
+	SparkMutexLock(pool->mutex);
+	pool->stop = 1;
+	SparkConditionBroadcast(pool->condition);
+	SparkMutexUnlock(pool->mutex);
+
+	/* Join all threads */
+	for (SparkSize i = 0; i < pool->thread_count; ++i) {
+#ifdef _WIN32
+		WaitForSingleObject(pool->threads[i], INFINITE);
+		CloseHandle(pool->threads[i]);
+#else
+		pthread_join(pool->threads[i], NULL);
+#endif
+	}
+
+	SparkFree(pool->threads);
+
+	SparkMutexDestroy(pool->mutex);
+#ifndef _WIN32
+	pthread_cond_destroy(&(pool->condition));
+#endif
+
+	/* Clean up remaining tasks */
+	SparkTaskHandle task = pool->task_queue_head;
+	while (task != NULL) {
+		SparkTaskHandle tmp = task;
+		task = task->next;
+		SparkMutexDestroy(tmp->mutex);
+#ifndef _WIN32
+		pthread_cond_destroy(&(tmp->cond));
+#endif
+		SparkFree(tmp);
+	}
+
+	SparkFree(pool);
+}
+
+SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool, SparkThreadFunction function, SparkHandle arg) {
+	if (pool == NULL || function == NULL) return SPARK_FAILURE;
+
+	SparkTaskHandle task = SparkAllocate(sizeof(struct SparkTaskT));
+	if (task == NULL) return SPARK_FAILURE;
+
+	task->function = function;
+	task->arg = arg;
+	task->result = NULL;
+	task->next = NULL;
+	task->is_done = 0;
+
+	SparkMutexInit(task->mutex);
+	SparkConditionInit(task->cond);
+
+	SparkMutexLock(pool->mutex);
+
+	if (pool->task_queue_tail == NULL) {
+		pool->task_queue_head = pool->task_queue_tail = task;
+	}
+	else {
+		pool->task_queue_tail->next = task;
+		pool->task_queue_tail = task;
+	}
+
+	SparkConditionSignal(pool->condition);
+	SparkMutexUnlock(pool->mutex);
+
+	return task;
+}
+
+SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
+	if (task == NULL) return SPARK_FAILURE;
+
+	SparkMutexLock(task->mutex);
+	while (!task->is_done) {
+		SparkConditionWait(task->cond, task->mutex);
+	}
+	SparkMutexUnlock(task->mutex);
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
+	if (task == NULL) return SPARK_FALSE;
+
+	SparkBool is_done;
+	SparkMutexLock(task->mutex);
+	is_done = task->is_done;
+	SparkMutexUnlock(task->mutex);
+
+	return is_done;
+}
+
+SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task) {
+	if (task == NULL) return;
+
+	SparkMutexDestroy(task->mutex);
+#ifndef _WIN32
+	pthread_cond_destroy(&(task->cond));
+#endif
+	SparkFree(task);
 }
 
 #pragma endregion
@@ -3901,8 +4094,28 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
+	for (SparkSize i = 0; i < app->update_functions->size; i++) {
+		SparkApplicationUpdateFunction function = SparkGetElementVector(app->update_functions, i);
+		function(app);
+	}
+}
+
+SPARKAPI SparkResult SparkAddStartFunctionApplication(SparkApplication app, SparkApplicationStartFunction function) {
+	return SparkPushBackVector(app->start_functions, function);
+}
+
+SPARKAPI SparkResult SparkAddUpdateFunctionApplication(SparkApplication app, SparkApplicationUpdateFunction function) {
+	return SparkPushBackVector(app->update_functions, function);
+}
+
+SPARKAPI SparkResult SparkAddStopFunctionApplication(SparkApplication app, SparkApplicationStopFunction function) {
+	return SparkPushBackVector(app->stop_functions, function);
+}
+
 SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app) {
 	while (__SparkApplicationKeepOpen(app)) {
+		__SparkRunUpdateFunctions(app);
 		__SparkUpdateWindow(app->window);
 	}
 
