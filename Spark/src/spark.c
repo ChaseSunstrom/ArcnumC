@@ -1523,389 +1523,161 @@ SparkSize XXHash(SparkConstBuffer data, SparkSize length) {
 	return hash;
 }
 
+SparkSize SparkStringHash(SparkConstBuffer key, SparkSize key_size) {
+	SparkConstString str = (SparkConstString)key;
+	SparkSize hash = 14695981039346656037ULL;
+	for (SparkSize i = 0; i < key_size; ++i) {
+		hash ^= (SparkSize)str[i];
+		hash *= 1099511628211ULL;
+	}
+	return hash;
+}
+
+SparkSize SparkIntegerHash(SparkConstBuffer key, SparkSize key_size) {
+	// Simple integer hash function
+	return key;
+}
+
+SparkI32 SparkStringCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size) {
+	if (a_size != b_size) return (SparkI32)(a_size - b_size);
+	return memcmp(a, b, a_size);
+}
+
+SparkI32 SparkIntegerCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size) {
+	SparkI32 int_a = a;
+	SparkI32 int_b = b;
+	return int_a - int_b;
+}
+
+
 #pragma endregion
 
 #pragma region HASHMAP
 
 SPARKAPI SparkHashMap SparkDefaultHashMap() {
-	SparkHashMap hashmap = SparkAllocate(sizeof(struct SparkHashMapT));
-	hashmap->allocator = SparkDefaultAllocator();
-	hashmap->capacity = 16; // Default capacity
-	hashmap->hash = FNV1AHash;
-	hashmap->size = 0;
-	hashmap->key_destructor = NULL;   // Default to NULL
-	hashmap->value_destructor = NULL; // Default to NULL
-	hashmap->external_allocator = SPARK_FALSE;
-
-	// Allocate buckets array
-	hashmap->buckets = hashmap->allocator->allocate(hashmap->capacity * sizeof(SparkList));
-	for (SparkSize i = 0; i < hashmap->capacity; i++) {
-		hashmap->buckets[i] = SparkCreateList(hashmap->allocator, NULL); // Create lists with no destructor
-	}
-	return hashmap;
+	return SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, SPARK_NULL);
 }
 
-SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor) {
+SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash_function, SparkCompareFunction compare_function, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
-
 	if (!allocator) {
 		allocator = SparkDefaultAllocator();
 		external_allocator = SPARK_FALSE;
 	}
-
-	if (!hash) {
-		hash = FNV1AHash;
-	}
-
-	SparkHashMap hashmap = allocator->allocate(sizeof(struct SparkHashMapT));
-	hashmap->capacity = capacity;
-	hashmap->hash = hash;
+	if (!hash_function || !compare_function) return SPARK_NULL;
+	SparkHashMap hashmap = (SparkHashMap)allocator->allocate(sizeof(struct SparkHashMapT));
+	if (!hashmap) return SPARK_NULL;
 	hashmap->allocator = allocator;
+	hashmap->capacity = capacity;
 	hashmap->size = 0;
+	hashmap->external_allocator = external_allocator;
+	hashmap->buckets = (SparkHashMapNode*)allocator->allocate(capacity * sizeof(SparkHashMapNode));
+	if (!hashmap->buckets) {
+		allocator->free(hashmap);
+		return SPARK_NULL;
+	}
+	memset(hashmap->buckets, 0, capacity * sizeof(SparkHashMapNode));
+	hashmap->hash_function = hash_function;
+	hashmap->compare_function = compare_function;
 	hashmap->key_destructor = key_destructor;
 	hashmap->value_destructor = value_destructor;
-	hashmap->external_allocator = external_allocator;
-
-	// Allocate buckets array
-	hashmap->buckets = allocator->allocate(hashmap->capacity * sizeof(SparkList));
-	for (SparkSize i = 0; i < hashmap->capacity; i++) {
-		hashmap->buckets[i] = SparkCreateList(allocator, NULL); // Create lists with no destructor
-	}
 	return hashmap;
 }
 
 SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
-	SparkAllocator allocator = hashmap->allocator;
-
-	for (SparkSize i = 0; i < hashmap->capacity; i++) {
-		SparkList bucket = hashmap->buckets[i];
-
-		SparkListNode node = bucket->head;
-		while (node != SPARK_NULL) {
-			SparkHashMapNode hashmap_node = (SparkHashMapNode)node->data;
-
-			// Call destructors on key and value, ensuring no double free
-			if (hashmap->key_destructor != NULL) {
-				hashmap->key_destructor(hashmap_node->key);
+	if (!hashmap) return;
+	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
+		SparkHashMapNode node = hashmap->buckets[i];
+		while (node) {
+			SparkHashMapNode next = node->next;
+			if (hashmap->key_destructor) {
+				hashmap->key_destructor(node->key);
 			}
-			if (hashmap->value_destructor != NULL) {
-				if (hashmap_node->value != hashmap_node->key) {
-					hashmap->value_destructor(hashmap_node->value);
-				}
+			if (hashmap->value_destructor) {
+				hashmap->value_destructor(node->value);
 			}
-
-			allocator->free(hashmap_node);
-			node = node->next;
+			hashmap->allocator->free(node);
+			node = next;
 		}
-
-		// Destroy the bucket list
-		SparkDestroyList(bucket);
 	}
-
-	allocator->free(hashmap->buckets);
-
+	hashmap->allocator->free(hashmap->buckets);
+	SparkAllocator allocator = hashmap->allocator;
 	SparkBool external_allocator = hashmap->external_allocator;
-
-	allocator->free(hashmap);
+	hashmap->allocator->free(hashmap);
 
 	if (!external_allocator) {
-		SparkDestroyAllocator(allocator);
+		allocator->free(allocator);
 	}
-}
-
-SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkConstBuffer key, SparkSize key_size) {
-	SparkSize hash_value = hashmap->hash(key, key_size);
-	SparkSize index = hash_value % hashmap->capacity;
-
-	SparkList bucket = hashmap->buckets[index];
-	SparkListNode node = bucket->head;
-
-	while (node != SPARK_NULL) {
-		SparkHashMapNode hashmap_node = (SparkHashMapNode)node->data;
-		if (hashmap_node->hash == hash_value && hashmap_node->key_size == key_size && memcmp(hashmap_node->key, key, key_size) == 0) {
-			return hashmap_node->value;
-		}
-		node = node->next;
-	}
-
-	return SPARK_NULL;
 }
 
 SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size, SparkHandle value) {
-	SparkSize hash_value = hashmap->hash(key, key_size);
-	SparkSize index = hash_value % hashmap->capacity;
-
-	SparkList bucket = hashmap->buckets[index];
-	SparkListNode node = bucket->head;
-
-	while (node != SPARK_NULL) {
-		SparkHashMapNode hashmap_node = (SparkHashMapNode)node->data;
-		if (hashmap_node->hash == hash_value && hashmap_node->key_size == key_size && memcmp(hashmap_node->key, key, key_size) == 0) {
+	if (!hashmap || !key) return SPARK_ERROR_INVALID_ARGUMENT;
+	SparkSize hash = hashmap->hash_function(key, key_size);
+	SparkSize index = hash % hashmap->capacity;
+	SparkHashMapNode node = hashmap->buckets[index];
+	while (node) {
+		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
 			// Key already exists, update value
-			if (hashmap->value_destructor != NULL) {
-				hashmap->value_destructor(hashmap_node->value);
+			if (hashmap->value_destructor) {
+				hashmap->value_destructor(node->value);
 			}
-			hashmap_node->value = value;
+			node->value = value;
 			return SPARK_SUCCESS;
 		}
 		node = node->next;
 	}
-
 	// Key not found, insert new node
-	SparkHashMapNode new_node = hashmap->allocator->allocate(sizeof(struct SparkHashMapNodeT));
-	new_node->key = key;
-	new_node->value = value;
-	new_node->key_size = key_size;
-	new_node->hash = hash_value;
-
-	SparkPushBackList(bucket, new_node);
+	node = (SparkHashMapNode)hashmap->allocator->allocate(sizeof(struct SparkHashMapNodeT));
+	if (!node) return SPARK_ERROR_OUT_OF_MEMORY;
+	node->key = key;
+	node->value = value;
+	node->key_size = key_size;
+	node->hash = hash;
+	node->next = hashmap->buckets[index];
+	hashmap->buckets[index] = node;
 	hashmap->size++;
-
-	// Optionally, check load factor and resize if necessary
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkConstBuffer key, SparkSize key_size) {
-	SparkSize hash_value = hashmap->hash(key, key_size);
-	SparkSize index = hash_value % hashmap->capacity;
+SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size) {
+	if (!hashmap || !key) return SPARK_NULL;
+	SparkSize hash = hashmap->hash_function(key, key_size);
+	SparkSize index = hash % hashmap->capacity;
+	SparkHashMapNode node = hashmap->buckets[index];
+	while (node) {
+		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
+			return node->value;
+		}
+		node = node->next;
+	}
+	return SPARK_NULL;
+}
 
-	SparkList bucket = hashmap->buckets[index];
-	SparkListNode prev = SPARK_NULL;
-	SparkListNode node = bucket->head;
-
-	while (node != SPARK_NULL) {
-		SparkHashMapNode hashmap_node = (SparkHashMapNode)node->data;
-		if (hashmap_node->hash == hash_value &&
-			hashmap_node->key_size == key_size &&
-			memcmp(hashmap_node->key, key, key_size) == 0) {
-
-			// Call destructors on key and value, ensuring no double free
-			if (hashmap->key_destructor != NULL) {
-				hashmap->key_destructor(hashmap_node->key);
+SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size) {
+	if (!hashmap || !key) return SPARK_ERROR_INVALID_ARGUMENT;
+	SparkSize hash = hashmap->hash_function(key, key_size);
+	SparkSize index = hash % hashmap->capacity;
+	SparkHashMapNode* prev = &hashmap->buckets[index];
+	SparkHashMapNode node = hashmap->buckets[index];
+	while (node) {
+		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
+			*prev = node->next;
+			if (hashmap->key_destructor) {
+				hashmap->key_destructor(node->key);
 			}
-			if (hashmap->value_destructor != NULL) {
-				if (hashmap_node->value != hashmap_node->key) {
-					hashmap->value_destructor(hashmap_node->value);
-				}
+			if (hashmap->value_destructor) {
+				hashmap->value_destructor(node->value);
 			}
-
-			hashmap->allocator->free(hashmap_node);
-
-			// Remove node from the list
-			if (prev == SPARK_NULL) {
-				bucket->head = node->next;
-			}
-			else {
-				prev->next = node->next;
-			}
-			if (node == bucket->tail) {
-				bucket->tail = prev;
-			}
-			bucket->allocator->free(node);
-			bucket->size--;
+			hashmap->allocator->free(node);
 			hashmap->size--;
 			return SPARK_SUCCESS;
 		}
-		prev = node;
+		prev = &node->next;
 		node = node->next;
 	}
 	return SPARK_ERROR_NOT_FOUND;
 }
 
-SPARKAPI SparkResult SparkClearHashMap(SparkHashMap hashmap) {
-	for (SparkSize i = 0; i < hashmap->capacity; i++) {
-		SparkList bucket = hashmap->buckets[i];
-		SparkListNode node = bucket->head;
-		while (node != SPARK_NULL) {
-			SparkHashMapNode hashmap_node = (SparkHashMapNode)node->data;
-
-			// Call destructors on key and value, ensuring no double free
-			if (hashmap->key_destructor != NULL) {
-				hashmap->key_destructor(hashmap_node->key);
-			}
-			if (hashmap->value_destructor != NULL) {
-				if (hashmap_node->value != hashmap_node->key) {
-					hashmap->value_destructor(hashmap_node->value);
-				}
-			}
-
-			hashmap->allocator->free(hashmap_node);
-			node = node->next;
-		}
-		SparkClearList(bucket);
-	}
-	hashmap->size = 0;
-	return SPARK_SUCCESS;
-}
-
-#pragma endregion
-
-#pragma region SET
-
-SPARKAPI SparkSet SparkDefaultSet() {
-	return SparkCreateSet(1, NULL, NULL);
-}
-
-SPARKAPI SparkSet SparkCreateSet(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
-	SparkBool external_allocator = SPARK_TRUE;
-
-	if (!allocator) {
-		allocator = SparkDefaultAllocator();
-		external_allocator = SPARK_FALSE;
-	}
-
-	SparkSet set = allocator->allocate(sizeof(struct SparkSetT));
-	if (set == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for set!");
-		if (!external_allocator) {
-			SparkDestroyAllocator(allocator);
-		}
-		return SPARK_NULL;
-	}
-
-	set->allocator = allocator;
-	set->capacity = capacity;
-	set->size = 0;
-	set->destructor = destructor;
-	set->external_allocator = external_allocator;
-
-	set->elements = allocator->allocate(set->capacity * sizeof(SparkHandle));
-	if (set->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for set elements!");
-		allocator->free(set);
-		if (!external_allocator) {
-			SparkDestroyAllocator(allocator);
-		}
-		return SPARK_NULL;
-	}
-	return set;
-}
-
-SPARKAPI SparkVoid SparkDestroySet(SparkSet set) {
-	if (set == SPARK_NULL) {
-		return;
-	}
-	SparkAllocator allocator = set->allocator;
-
-	// Call destructor on each element if destructor is not NULL
-	if (set->destructor != NULL) {
-		for (SparkSize i = 0; i < set->size; i++) {
-			if (set->elements[i] != SPARK_NULL) {
-				set->destructor(set->elements[i]);
-				set->elements[i] = SPARK_NULL; // Optional, to avoid dangling pointers
-			}
-		}
-	}
-
-	if (set->elements != SPARK_NULL) {
-		allocator->free(set->elements);
-		set->elements = SPARK_NULL;
-	}
-
-	SparkBool external_allocator = set->external_allocator;
-
-	allocator->free(set);
-	set = SPARK_NULL;
-
-	if (!external_allocator) {
-		SparkDestroyAllocator(allocator);
-	}
-}
-
-SPARKAPI SparkHandle SparkGetElementSet(SparkSet set, SparkSize index) {
-	if (set == SPARK_NULL || set->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Set is NULL!");
-		return SPARK_NULL;
-	}
-	if (index >= set->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
-		return SPARK_NULL;
-	}
-	return set->elements[index];
-}
-
-SPARKAPI SparkBool SparkContainsSet(SparkSet set, SparkHandle element, SparkCompareFunction compare) {
-	if (set == SPARK_NULL || set->elements == SPARK_NULL || compare == SPARK_NULL) {
-		return SPARK_FALSE;
-	}
-	for (SparkSize i = 0; i < set->size; i++) {
-		if (compare(set->elements[i], element) == 0) {
-			return SPARK_TRUE;
-		}
-	}
-	return SPARK_FALSE;
-}
-
-SPARKAPI SparkResult SparkInsertSet(SparkSet set, SparkHandle element, SparkCompareFunction compare) {
-	if (set == SPARK_NULL || element == SPARK_NULL || compare == SPARK_NULL) {
-		return SPARK_ERROR_INVALID_ARGUMENT;
-	}
-	if (SparkContainsSet(set, element, compare)) {
-		return SPARK_SUCCESS; // Element already in set
-	}
-
-	if (set->size >= set->capacity) {
-		SparkSize new_capacity = set->capacity * 2;
-		SparkHandle* new_elements = set->allocator->reallocate(set->elements, new_capacity * sizeof(SparkHandle));
-		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate set!");
-			return SPARK_ERROR_OUT_OF_MEMORY;
-		}
-		set->elements = new_elements;
-		set->capacity = new_capacity;
-	}
-
-	set->elements[set->size++] = element;
-	return SPARK_SUCCESS;
-}
-
-SPARKAPI SparkResult SparkRemoveSet(SparkSet set, SparkHandle element, SparkCompareFunction compare) {
-	if (set == SPARK_NULL || element == SPARK_NULL || compare == SPARK_NULL) {
-		return SPARK_ERROR_INVALID_ARGUMENT;
-	}
-	SparkSize index = set->size;
-	for (SparkSize i = 0; i < set->size; i++) {
-		if (compare(set->elements[i], element) == 0) {
-			index = i;
-			break;
-		}
-	}
-
-	if (index == set->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Element not found in set!");
-		return SPARK_ERROR_NOT_FOUND;
-	}
-
-	// Call destructor on the element if destructor is not NULL
-	if (set->destructor != NULL && set->elements[index] != SPARK_NULL) {
-		set->destructor(set->elements[index]);
-		set->elements[index] = SPARK_NULL; // Optional
-	}
-
-	// Move elements to fill the gap
-	for (SparkSize i = index; i < set->size - 1; i++) {
-		set->elements[i] = set->elements[i + 1];
-	}
-	set->size--;
-	return SPARK_SUCCESS;
-}
-
-SPARKAPI SparkResult SparkClearSet(SparkSet set) {
-	if (set == SPARK_NULL) {
-		return SPARK_ERROR_INVALID_ARGUMENT;
-	}
-	// Call destructor on each element if destructor is not NULL
-	if (set->destructor != NULL) {
-		for (SparkSize i = 0; i < set->size; i++) {
-			if (set->elements[i] != SPARK_NULL) {
-				set->destructor(set->elements[i]);
-				set->elements[i] = SPARK_NULL;
-			}
-		}
-	}
-	set->size = 0;
-	return SPARK_SUCCESS;
-}
 
 #pragma endregion
 
@@ -2189,6 +1961,11 @@ SPARKAPI SparkQueue SparkDefaultQueue() {
 SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
+	if (capacity == 0) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Capacity must be greater than zero!");
+		return SPARK_NULL;
+	}
+
 	if (!allocator) {
 		allocator = SparkDefaultAllocator();
 		external_allocator = SPARK_FALSE;
@@ -2248,7 +2025,6 @@ SPARKAPI SparkVoid SparkDestroyQueue(SparkQueue queue) {
 	SparkBool external_allocator = queue->external_allocator;
 
 	allocator->free(queue);
-	queue = SPARK_NULL;
 
 	if (!external_allocator) {
 		SparkDestroyAllocator(allocator);
@@ -2349,11 +2125,16 @@ SPARKAPI SparkResult SparkClearQueue(SparkQueue queue) {
 #pragma region STACK
 
 SPARKAPI SparkStack SparkDefaultStack() {
-	return SparkCreateStack(1, NULL, NULL);
+	return SparkCreateStack(16, NULL, NULL);
 }
 
 SPARKAPI SparkStack SparkCreateStack(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
+
+	if (capacity == 0) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Capacity must be greater than zero!");
+		return SPARK_NULL;
+	}
 
 	if (!allocator) {
 		allocator = SparkDefaultAllocator();
@@ -2411,7 +2192,6 @@ SPARKAPI SparkVoid SparkDestroyStack(SparkStack stack) {
 	SparkBool external_allocator = stack->external_allocator;
 
 	allocator->free(stack);
-	stack = SPARK_NULL;
 
 	if (!external_allocator) {
 		SparkDestroyAllocator(allocator);
@@ -2424,11 +2204,17 @@ SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkHandle element) {
 	}
 	if (stack->size >= stack->capacity) {
 		SparkSize new_capacity = stack->capacity * 2;
-		SparkHandle* new_elements = stack->allocator->reallocate(stack->elements, new_capacity * sizeof(SparkHandle));
+		SparkHandle* new_elements = stack->allocator->allocate(new_capacity * sizeof(SparkHandle));
 		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate stack!");
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for stack resizing!");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
+		// Copy elements to new array
+		for (SparkSize i = 0; i < stack->size; i++) {
+			new_elements[i] = stack->elements[i];
+		}
+		// Free the old array
+		stack->allocator->free(stack->elements);
 		stack->elements = new_elements;
 		stack->capacity = new_capacity;
 	}
@@ -2563,7 +2349,7 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 #else
 		pthread_create(&pool->threads[i], NULL, SparkThreadPoolWorker, pool);
 #endif
-	}
+}
 
 	return pool;
 }
@@ -2678,69 +2464,222 @@ SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task) {
 #pragma region ECS
 
 SPARKAPI SparkEcs SparkCreateEcs() {
-	SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
-	ecs->components = SparkDefaultHashMap();
-	ecs->entities = SparkDefaultVector();
-	ecs->systems = SparkDefaultVector();
+	SparkEcs ecs = (SparkEcs)SparkAllocate(sizeof(struct SparkEcsT));
+	if (!ecs) {
+		// Handle allocation failure
+		return SPARK_NULL;
+	}
+	ecs->allocator = SparkDefaultAllocator();
+	ecs->entities = SparkCreateVector(16, ecs->allocator, SparkFree);
+	ecs->systems = SparkCreateVector(8, ecs->allocator, SPARK_NULL);
+	ecs->recycled_ids = SparkCreateStack(16, ecs->allocator, SPARK_NULL);
+	ecs->components = SparkCreateHashMap(
+		16,
+		SparkStringHash,
+		SparkStringCompare,
+		ecs->allocator,
+		SPARK_NULL,       // No key destructor needed for string literals
+		(SparkFreeFunction)SparkDestroyHashMap // Value destructor for component arrays
+	);
 	return ecs;
 }
 
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
+	if (!ecs) return;
 	SparkStopEcs(ecs);
 	SparkDestroyHashMap(ecs->components);
 	SparkDestroyVector(ecs->entities);
 	SparkDestroyVector(ecs->systems);
+	SparkDestroyStack(ecs->recycled_ids);
 	SparkFree(ecs);
 }
 
+SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
+	if (!ecs) return SPARK_INVALID;
+	SparkEntity entity_id;
+	if (ecs->recycled_ids->size > 0) {
+		entity_id = (SparkEntity)(intptr_t)SparkGetTopStack(ecs->recycled_ids);
+		SparkPopStack(ecs->recycled_ids);
+	}
+	else {
+		entity_id = ecs->entities->size + 1;
+	}
+	SparkEntity* entity = (SparkEntity*)ecs->allocator->allocate(sizeof(SparkEntity));
+	if (!entity) return SPARK_INVALID;
+	*entity = entity_id;
+	SparkPushBackVector(ecs->entities, entity);
+	return entity_id;
+}
+
+SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
+	if (!ecs || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+	SparkRemoveAllEntityComponents(ecs, entity_id);
+	for (SparkSize i = 0; i < ecs->entities->size; ++i) {
+		SparkEntity* entity = (SparkEntity*)SparkGetElementVector(ecs->entities, i);
+		if (*entity == entity_id) {
+			SparkRemoveVector(ecs->entities, i);
+			break;
+		}
+	}
+	SparkPushStack(ecs->recycled_ids, (SparkHandle)(intptr_t)entity_id);
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type, SparkConstString name, SparkHandle data, SparkFreeFunction destructor) {
+	if (!type) return SPARK_NULL;
+	SparkComponent component = (SparkComponent)SparkAllocate(sizeof(struct SparkComponentT));
+	if (!component) return SPARK_NULL;
+	component->type = type;
+	component->name = name;
+	component->data = data;
+	component->destructor = destructor;
+	return component;
+}
+
+SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, SparkComponent component) {
+	if (!ecs || !component || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+	component->entity = entity_id;
+	// Get or create component array
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component->type,
+		strlen(component->type)
+	);
+	if (!component_array) {
+		component_array = (SparkComponentArray)ecs->allocator->allocate(sizeof(struct SparkComponentArrayT));
+		if (!component_array) return SPARK_ERROR_OUT_OF_MEMORY;
+		component_array->entity_to_component = SparkCreateHashMap(
+			16,
+			SparkIntegerHash,
+			SparkIntegerCompare,
+			ecs->allocator,
+			SPARK_NULL,
+			component->destructor
+		);
+		SparkInsertHashMap(
+			ecs->components,
+			(SparkHandle)component->type,
+			strlen(component->type),
+			component_array
+		);
+	}
+	SparkInsertHashMap(
+		component_array->entity_to_component,
+		(SparkHandle)(intptr_t)entity_id,
+		sizeof(SparkEntity),
+		component
+	);
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
+	if (!ecs || !component_type || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component_type,
+		strlen(component_type)
+	);
+	if (!component_array) return SPARK_ERROR_NOT_FOUND;
+	SparkResult res = SparkRemoveHashMap(
+		component_array->entity_to_component,
+		(SparkHandle)(intptr_t)entity_id,
+		sizeof(SparkEntity)
+	);
+	return res;
+}
+
+SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
+	if (!ecs || !component_type || entity_id == SPARK_INVALID) return SPARK_NULL;
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component_type,
+		strlen(component_type)
+	);
+	if (!component_array) return SPARK_NULL;
+	SparkComponent component = (SparkComponent)SparkGetElementHashMap(
+		component_array->entity_to_component,
+		(SparkHandle)(intptr_t)entity_id,
+		sizeof(SparkEntity)
+	);
+	return component;
+}
+
 SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
+	if (!ecs || !system) return SPARK_ERROR_INVALID_ARGUMENT;
 	SparkPushBackVector(ecs->systems, system);
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system) {
-	for (SparkSize i = 0; i < ecs->systems->size; i++) {
+	if (!ecs || !system) return SPARK_ERROR_INVALID_ARGUMENT;
+	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
 		if (SparkGetElementVector(ecs->systems, i) == system) {
 			SparkRemoveVector(ecs->systems, i);
 			return SPARK_SUCCESS;
 		}
 	}
+	return SPARK_ERROR_NOT_FOUND;
 }
 
 SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs) {
-	for (SparkSize i = 0; i < ecs->systems->size; i++) {
-		SparkSystem system = SparkGetElementVector(ecs->systems, i);
-		if (system->start != SPARK_NULL) {
+	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
+		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
+		if (system->start) {
 			SparkResult res = system->start(ecs);
 			if (res != SPARK_SUCCESS) {
 				return res;
 			}
 		}
 	}
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta) {
-	for (SparkSize i = 0; i < ecs->systems->size; i++) {
-		SparkSystem system = SparkGetElementVector(ecs->systems, i);
-		if (system->update != SPARK_NULL) {
+	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
+		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
+		if (system->update) {
 			SparkResult res = system->update(ecs, delta);
 			if (res != SPARK_SUCCESS) {
 				return res;
 			}
 		}
 	}
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs) {
-	for (SparkSize i = 0; i < ecs->systems->size; i++) {
-		SparkSystem system = SparkGetElementVector(ecs->systems, i);
-		if (system->stop != SPARK_NULL) {
+	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
+		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
+		if (system->stop) {
 			SparkResult res = system->stop(ecs);
 			if (res != SPARK_SUCCESS) {
 				return res;
 			}
 		}
 	}
+	return SPARK_SUCCESS;
 }
+
+SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id) {
+	if (!ecs || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+	for (SparkSize i = 0; i < ecs->components->capacity; ++i) {
+		SparkHashMapNode node = ecs->components->buckets[i];
+		while (node) {
+			SparkComponentArray component_array = (SparkComponentArray)node->value;
+			SparkRemoveHashMap(
+				component_array->entity_to_component,
+				(SparkHandle)(intptr_t)entity_id,
+				sizeof(SparkEntity)
+			);
+			node = node->next;
+		}
+	}
+	return SPARK_SUCCESS;
+}
+
 
 #pragma endregion
 
@@ -3391,7 +3330,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 
 	SparkCompileShaderToSpirv("src/shader.vert", SPARK_SHADER_STAGE_VERTEX, &vert_buf, &vert_size);
 	SparkCompileShaderToSpirv("src/shader.frag", SPARK_SHADER_STAGE_FRAGMENT, &frag_buf, &frag_size);
-	
+
 	VkShaderModule vert_shader_module = __SparkCreateShaderModule(window, vert_buf, vert_size);
 	VkShaderModule frag_shader_module = __SparkCreateShaderModule(window, frag_buf, frag_size);
 
@@ -3411,7 +3350,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = { 0 };
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	
+
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -3534,7 +3473,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 	struct VulkanQueueFamilyIndices queue_family_indices = __SparkFindQueueFamilies(window, window->physical_device);
-	
+
 	VkCommandPoolCreateInfo pool_info = { 0 };
 	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -3551,7 +3490,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	
+
 	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to begin recording command buffer!");
 		return SPARK_ERROR_INVALID;
@@ -3793,7 +3732,7 @@ SPARKAPI SparkEventHandler SparkDefaultEventHandler() {
 SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count) {
 	SparkEventHandler event_handler = SparkAllocate(sizeof(struct SparkEventHandlerT));
 	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
-	
+
 	for (SparkSize i = 0; i < function_count; i++) {
 		SparkPushBackVector(event_handler->functions, functions[i]);
 	}
@@ -3839,7 +3778,7 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEv
 }
 
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor) {
-	return (SparkEvent){ event_type, event_data, SparkGetTime(), destructor };
+	return (SparkEvent) { event_type, event_data, SparkGetTime(), destructor };
 }
 
 SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor, SparkConstString time_stamp) {
@@ -4049,6 +3988,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	app->window = window;
 	app->ecs = SparkCreateEcs();
 	app->event_handler = window->window_data->event_handler;
+	app->ecs->event_handler = app->event_handler;
 	app->start_functions = SparkDefaultVector();
 	app->stop_functions = SparkDefaultVector();
 	app->update_functions = SparkDefaultVector();

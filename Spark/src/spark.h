@@ -615,7 +615,7 @@ typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
 typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
 typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs, SparkF32 delta);
 typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
-typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
+typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkSize a_size, SparkHandle b, SparkSize b_size);
 typedef SparkHandle(*SparkThreadFunction)(SparkHandle arg);
 
 typedef SparkVoid(*SparkApplicationStartFunction)(struct SparkApplicationT* app);
@@ -661,17 +661,18 @@ typedef struct SparkHashMapNodeT {
 	SparkHandle value;
 	SparkSize key_size;
 	SparkSize hash;
+	struct SparkHashMapNodeT* next;
 } *SparkHashMapNode;
 
 typedef struct SparkHashMapT {
-	SparkSize size;
+	SparkAllocator allocator;
 	SparkSize capacity;
-	SparkList* buckets;
-	/* Destructor to be called on each key and value */
+	SparkSize size;
+	SparkHashMapNode* buckets;
+	SparkHashFunction hash_function;
+	SparkCompareFunction compare_function;
 	SparkFreeFunction key_destructor;
 	SparkFreeFunction value_destructor;
-	SparkHashFunction hash;
-	SparkAllocator allocator;
 	SparkBool external_allocator;
 } *SparkHashMap;
 
@@ -761,28 +762,30 @@ typedef struct SparkEventHandlerT {
 } *SparkEventHandler;
 
 typedef SparkI32 SparkEntity;
-/* HashMap <SparkString, SparkComponent> */
-typedef SparkHashMap SparkComponentArray;
 
 typedef struct SparkComponentT {
-	/* Parent entity of this component
-	 * Component data needs to be composed inside other structures
-	 * and also the first element in that struct
-	 */
-	SparkEntity entity;
 	SparkConstString type;
 	SparkConstString name;
+	SparkHandle data;
+	SparkFreeFunction destructor;
+	/* Parent entity of this component */
+	SparkEntity entity;
 } *SparkComponent;
+
+typedef struct SparkComponentArrayT {
+	SparkHashMap entity_to_component; // HashMap of entity IDs to components
+} *SparkComponentArray;
 
 typedef struct SparkSystemT {
 	SparkSystemStartFunction start;
 	SparkSystemUpdateFunction update;
 	SparkSystemStopFunction stop;
 	SparkEventHandler event_handler;
-	//SparkHandle system_data;
+	SparkHandle system_data;
 } *SparkSystem;
 
 typedef struct SparkEcsT {
+	SparkAllocator allocator;
 	/* Vector <SparkEntity> */
 	SparkVector entities;
 	/* Vector <SparkSystem> */
@@ -1553,6 +1556,11 @@ SPARKAPI SparkSize JenkinsHash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize Murmur2Hash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize SipHash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize XXHash(SparkConstBuffer buf, SparkSize size);
+SparkSize SparkStringHash(SparkConstBuffer key, SparkSize key_size);
+SparkSize SparkIntegerHash(SparkConstBuffer key, SparkSize key_size);
+SparkI32 SparkStringCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size);
+SparkI32 SparkIntegerCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size);
+
 
 SPARKAPI SparkHandle SparkAllocate(SparkSize size);
 SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size);
@@ -1595,12 +1603,11 @@ SPARKAPI SparkResult SparkSetMap(SparkMap map, SparkConstBuffer key, SparkConstB
 SPARKAPI SparkResult SparkClearMap(SparkMap map);
 
 SPARKAPI SparkHashMap SparkDefaultHashMap();
-SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor);
+SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash_function, SparkCompareFunction compare_function, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor);
 SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap);
-SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
 SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size, SparkHandle value);
+SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
 SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
-SPARKAPI SparkResult SparkClearHashMap(SparkHashMap hashmap);
 
 SPARKAPI SparkSet SparkDefaultSet();
 SPARKAPI SparkSet SparkCreateSet(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor);
@@ -1749,15 +1756,17 @@ SPARKAPI SparkConstString SparkGetErrorString(SparkError error);
 SPARKAPI SparkEcs SparkCreateEcs();
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs);
-SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity);
-SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity, SparkComponent component);
-SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity, SparkConstString component_type, SparkConstString component_name);
-SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity, SparkConstString component_type, SparkConstString component_name);
+SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id);
+SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type, SparkConstString name, SparkHandle data, SparkFreeFunction destructor);
+SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, SparkComponent component);
+SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name);
+SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name);
 SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system);
 SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system);
 SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs);
 SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta);
 SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs);
+SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id);
 
 SPARKAPI SparkEventHandler SparkDefaultEventHandler();
 SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count);
@@ -2065,6 +2074,7 @@ typedef SparkApplication Application;
 #define CreateEntity SparkCreateEntity
 #define DestroyEntity SparkDestroyEntity
 #define AddComponent SparkAddComponent
+#define CreateComponent SparkCreateComponent
 #define RemoveComponent SparkRemoveComponent
 #define GetComponent SparkGetComponent
 #define AddSystem SparkAddSystem

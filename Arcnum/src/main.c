@@ -1,68 +1,66 @@
-#include "spark.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#define SPARK_DEFINE_ALL_ALIASES
+#include <spark.h>
 #include <stdio.h>
+#include <string.h>
 
-#define NUM_TASKS 1000
-
-/* Task function that computes the square of an integer */
-SparkHandle SquareFunction(SparkHandle arg) {
-    int value = *(int*)arg;
-    int* result = (int*)malloc(sizeof(int));
-    if (result == NULL) {
-        return NULL; // Handle memory allocation failure
-    }
-    *result = value * value;
-#ifdef _WIN32
-    printf("Thread %lu: Computed square of %d = %d\n",
-        GetCurrentThreadId(), value, *result);
-#else
-    printf("Thread %lu: Computed square of %d = %d\n",
-        (unsigned long)pthread_self(), value, *result);
-#endif
-    return result;
+void_t KeyPressedFunction(Application app, Event event) {
+	if (event.type == SPARK_EVENT_KEY_PRESSED) {
+		EventDataKeyPressed key_press = event.data;
+		SPARK_LOG_DEBUG("Key Pressed: %s", KeyToString(key_press->key));
+	}
+	else if (event.type == SPARK_EVENT_KEY_RELEASED) {
+		EventDataKeyReleased key_press = event.data;
+		SPARK_LOG_DEBUG("Key Released: %s", KeyToString(key_press->key));
+	}
 }
 
+void_t MousePressedFunction(Application app, Event event) {
+	if (event.type == SPARK_EVENT_MOUSE_BUTTON_PRESSED) {
+		EventDataMouseButtonPressed mouse_press = event.data;
+		SPARK_LOG_DEBUG("Mouse Button Pressed: %s", MouseButtonToString(mouse_press->button));
+	}
+	else if (event.type == SPARK_EVENT_MOUSE_BUTTON_RELEASED) {
+		EventDataMouseButtonReleased mouse_press = event.data;
+		SPARK_LOG_DEBUG("Mouse Button Released: %s", MouseButtonToString(mouse_press->button));
+	}
+}
 
-int main() {
-    SparkThreadPool pool = SparkCreateThreadPool(4);
-    if (pool == NULL) {
-        fprintf(stderr, "Failed to create thread pool\n");
-        return EXIT_FAILURE;
-    }
+void_t StartFunction(Application app) {
+	for (size_t i = 0; i < 100; i++) {
+		Entity entity = CreateEntity(app->ecs);
+		Component component = CreateComponent("Transform", "Transform", "TRANSFORM_COMPONENT", SPARK_NULL);
+		AddComponent(app->ecs, entity, component);
+		SPARK_LOG_DEBUG("Created entity: %d, Added component: %s", i, GetComponent(app->ecs, entity, "Transform", "Transform")->data);
+	}
 
-    SparkTaskHandle tasks[NUM_TASKS];
-    int args[NUM_TASKS];
-    SparkResult result;
+	for (size_t i = 0; i < 50; i++) {
+		DestroyEntity(app->ecs, i);
+		SPARK_LOG_DEBUG("Destroyed entity: %d", i);
+	}
 
-    /* Submit multiple tasks to the thread pool */
-    for (int i = 0; i < NUM_TASKS; ++i) {
-        args[i] = i + 1; // Arguments from 1 to NUM_TASKS
-        tasks[i] = SparkAddTaskThreadPool(pool, SquareFunction, &args[i]);
-        
-    }
+	for (size_t i = 0; i < 1000; i++) {
+		CreateEntity(app->ecs);
+		SPARK_LOG_DEBUG("Created entity: %d", i);
+	}
+}
 
-    /* Wait for all tasks to complete and collect results */
-    for (int i = 0; i < NUM_TASKS; ++i) {
-        result = SparkWaitTask(tasks[i]);
-        if (result != SPARK_SUCCESS) {
-            fprintf(stderr, "Failed to wait for task %d\n", i);
-            continue;
-        }
+i32 main() {
+	Application app = CreateApplication(
+		CreateWindow(
+			CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)
+		)
+	);
 
-        int* task_result = (int*)tasks[i]->result;
-        if (task_result != NULL) {
-            printf("Main Thread: Task %d result = %d\n", i, *task_result);
-            free(task_result);
-        }
-        else {
-            printf("Main Thread: Task %d failed to compute result\n", i);
-        }
+	AddStartFunctionApplication(app, StartFunction);
 
-        /* Clean up the task */
-        SparkTaskDestroy(tasks[i]);
-    }
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_KEY_RELEASED, KeyPressedFunction);
+	AddEventFunctionApplication(app, SPARK_EVENT_MOUSE_BUTTON_PRESSED | SPARK_EVENT_MOUSE_BUTTON_RELEASED, MousePressedFunction);
 
-    /* Clean up the thread pool */
-    SparkDestroyThreadPool(pool);
 
-    return EXIT_SUCCESS;
+
+	StartApplication(app);
+
+	return 0;
 }
