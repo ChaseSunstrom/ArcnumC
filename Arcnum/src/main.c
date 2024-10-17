@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void_t KeyPressedFunction(Event event) {
+void_t KeyPressedFunction(Application app, Event event) {
 	if (event.type == SPARK_EVENT_KEY_PRESSED) {
 		EventDataKeyPressed key_press = event.data;
 		SPARK_LOG_DEBUG("Key Pressed: %s", KeyToString(key_press->key));
@@ -16,7 +16,7 @@ void_t KeyPressedFunction(Event event) {
 	}
 }
 
-void_t MousePressedFunction(Event event) {
+void_t MousePressedFunction(Application app, Event event) {
 	if (event.type == SPARK_EVENT_MOUSE_BUTTON_PRESSED) {
 		EventDataMouseButtonPressed mouse_press = event.data;
 		SPARK_LOG_DEBUG("Mouse Button Pressed: %s", MouseButtonToString(mouse_press->button));
@@ -27,8 +27,7 @@ void_t MousePressedFunction(Event event) {
 	}
 }
 
-i32 main()
-{
+i32 main() {
 	Application app = CreateApplication(
 		CreateWindow(
 			CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)
@@ -40,6 +39,9 @@ i32 main()
 
 	AddEventFunctionApplication(app, SPARK_EVENT_MOUSE_BUTTON_PRESSED |
 		                             SPARK_EVENT_MOUSE_BUTTON_RELEASED, MousePressedFunction);
+
+
+
 
 	UpdateApplication(app);
 

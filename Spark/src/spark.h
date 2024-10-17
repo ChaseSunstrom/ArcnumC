@@ -603,8 +603,14 @@ typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
 typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
 typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs, SparkF32 delta);
 typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
-typedef SparkResult(*SparkEventFunction)(struct SparkEventT event);
 typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkHandle b);
+
+typedef SparkVoid(*SparkApplicationStartFunction)(struct SparkApplicationT* app);
+typedef SparkVoid(*SparkApplicationUpdateFunction)(struct SparkApplicationT* app);
+typedef SparkVoid(*SparkApplicationStopFunction)(struct SparkApplicationT* app);
+typedef SparkVoid(*SparkApplicationEventFunction)(struct SparkApplicationT* app, struct SparkEventT event);
+typedef SparkVoid(*SparkApplicationQueryFunction)(struct SparkApplicationT* app, struct SparkVectorT* query);
+typedef SparkVoid(*SparkApplicationQueryEventFunction)(struct ApplicationT* app, struct SparkVectorT* query, struct SparkEventT event);
 
 typedef struct SparkAllocatorT {
 	SparkAllocateFunction allocate;
@@ -712,12 +718,13 @@ typedef struct SparkEventT {
 
 typedef struct SparkEventHandlerFunctionT {
 	SparkEventType type;
-	SparkEventFunction function;
+	SparkApplicationEventFunction function;
 } *SparkEventHandlerFunction;
 
 typedef struct SparkEventHandlerT {
 	/* Vector <SparkEventHandlerFunction> */
 	SparkVector functions;
+	struct SparkApplicationT* application;
 } *SparkEventHandler;
 
 typedef SparkI32 SparkEntity;
@@ -821,6 +828,18 @@ typedef struct SparkApplicationT {
 	SparkEcs ecs;
 	SparkResourceRegistry resource_registry;
 	SparkEventHandler event_handler;
+	/* Vector <SparkApplicationStartFunction> */
+	SparkVector start_functions;
+	/* Vector <SparkApplicationUpdateFunction> */
+	SparkVector update_functions;
+	/* Vector <SparkApplicationStopFunction> */
+	SparkVector stop_functions;
+	/* Vector <SparkApplicationEventFunction> */
+	SparkVector event_functions;
+	/* Vector <SparkApplicationQueryFunction> */
+	SparkVector query_functions;
+	/* Vector <SparkApplicationQueryEventFunction> */
+	SparkVector query_event_functions;
 	SparkF32 delta_time;
 } *SparkApplication;
 
@@ -1710,8 +1729,8 @@ SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs);
 SPARKAPI SparkEventHandler SparkDefaultEventHandler();
 SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count);
 SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler);
-SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function);
-SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function);
+SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function);
+SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function);
 SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event);
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor);
 SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor, SparkConstString time_stamp);
@@ -1727,9 +1746,15 @@ SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer);
 
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window);
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app);
-SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app);
-SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkEventFunction function);
+SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app);
 SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app, SparkEvent event);
+SPARKAPI SparkResult SparkAddStartFunctionApplication(SparkApplication app, SparkApplicationStartFunction function);
+SPARKAPI SparkResult SparkAddUpdateFunctionApplication(SparkApplication app, SparkApplicationUpdateFunction function);
+SPARKAPI SparkResult SparkAddStopFunctionApplication(SparkApplication app, SparkApplicationStopFunction function);
+SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkApplicationEventFunction function);
+SPARKAPI SparkResult SparkAddQueryFunctionApplication(SparkApplication app, SparkConstString component_type, SparkApplicationQueryFunction function);
+SPARKAPI SparkResult SparkAddQueryEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkConstString component_type, SparkApplicationQueryEventFunction function);
+SPARKAPI SparkResult SparkStartApplication(SparkApplication app);
 
 #define SPARK_ASSERT(condition, message) if (!(condition)) { assert(SPARK_FALSE && message); }
 #define SPARK_ASSERT_NULL(pointer) SPARK_ASSERT(pointer != SPARK_NULL, "Pointer is null")
@@ -1768,6 +1793,8 @@ SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app, SparkEv
 
 #define SPARK_CRASH_PROGRAM(reason) \
     SPARK_ASSERT(SPARK_FALSE, "Program was forcibly closed for: " #reason)
+
+#define SPARK_UNIMPLIMENTED SPARK_CRASH_PROGRAM("Unimplemented function!");
 
 #if defined(SPARK_DEFINE_BASIC_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 

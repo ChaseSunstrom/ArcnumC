@@ -3613,7 +3613,7 @@ SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler) {
 	SparkFree(event_handler);
 }
 
-SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function) {
+SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function) {
 	SparkEventHandlerFunction event_handler_function = SparkAllocate(sizeof(struct SparkEventHandlerFunctionT));
 	if (!event_handler_function) return SPARK_ERROR_INVALID_STATE;
 	event_handler_function->type = event_type;
@@ -3622,10 +3622,9 @@ SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, Spar
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkEventFunction function) {
-	SparkEventHandlerFunction event_handler_function = SPARK_NULL;
+SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function) {
 	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
-		event_handler_function = (SparkEventHandlerFunction)SparkGetElementVector(event_handler->functions, i);
+		SparkEventHandlerFunction event_handler_function = (SparkEventHandlerFunction)SparkGetElementVector(event_handler->functions, i);
 		if (event_handler_function->type == event_type && event_handler_function->function == function) {
 			SparkRemoveVector(event_handler->functions, i);
 			SparkFree(event_handler_function);
@@ -3639,7 +3638,7 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEv
 	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
 		SparkEventHandlerFunction function = SparkGetElementVector(event_handler->functions, i);
 		if (function->type & event.type) {
-			function->function(event);
+			function->function(event_handler->application, event);
 		}
 	}
 
@@ -3857,6 +3856,13 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	app->window = window;
 	app->ecs = SparkCreateEcs();
 	app->event_handler = window->window_data->event_handler;
+	app->start_functions = SparkDefaultVector();
+	app->stop_functions = SparkDefaultVector();
+	app->update_functions = SparkDefaultVector();
+	app->query_functions = SparkDefaultVector();
+	app->event_functions = SparkDefaultVector();
+	app->query_event_functions = SparkDefaultVector();
+	app->event_handler->application = app;
 	return app;
 }
 
@@ -3864,20 +3870,50 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyWindow(app->window);
 	SparkDestroyEcs(app->ecs);
 	SparkDestroyEventHandler(app->event_handler);
+	SparkDestroyVector(app->start_functions);
+	SparkDestroyVector(app->stop_functions);
+	SparkDestroyVector(app->update_functions);
+	SparkDestroyVector(app->query_functions);
+	SparkDestroyVector(app->event_functions);
+	SparkDestroyVector(app->query_event_functions);
 	SparkFree(app);
+}
+
+SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
+	for (SparkSize i = 0; i < app->start_functions->size; i++) {
+		SparkApplicationStartFunction function = SparkGetElementVector(app->start_functions, i);
+		function(app);
+	}
+
+	return SparkUpdateApplication(app);
 }
 
 SPARKAPI SPARKSTATIC SparkBool __SparkApplicationKeepOpen(SparkApplication app) {
 	return !glfwWindowShouldClose(app->window) || SPARK_TRUE;
 }
 
-SPARKAPI SparkVoid SparkUpdateApplication(SparkApplication app) {
+SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
+	for (SparkSize i = 0; i < app->stop_functions->size; i++) {
+		SparkApplicationStopFunction function = SparkGetElementVector(app->stop_functions, i);
+		function(app);
+	}
+	SparkDestroyApplication(app);
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app) {
 	while (__SparkApplicationKeepOpen(app)) {
 		__SparkUpdateWindow(app->window);
 	}
+
+	if (__SparkStopApplication(app) != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkEventFunction function) {
+SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkApplicationEventFunction function) {
 	return SparkAddEventListener(app->event_handler, event_type, function);
 }
 
