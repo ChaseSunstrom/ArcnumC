@@ -1,92 +1,80 @@
+/* main.c */
 #define SPARK_DEFINE_ALL_ALIASES
-#define SPARK_FAST_CALL
-#include <spark.h>
-#include <stdio.h>
-#include <string.h>
+#include "spark.h"
 
-void_t KeyPressedFunction(Application app, Event event) {
-  if (event.type == SPARK_EVENT_KEY_PRESSED) {
-    EventDataKeyPressed key_press = event.data;
-    SPARK_LOG_DEBUG("Key Pressed: %s", KeyToString(key_press->key));
-  } else if (event.type == SPARK_EVENT_KEY_RELEASED) {
-    EventDataKeyReleased key_press = event.data;
-    SPARK_LOG_DEBUG("Key Released: %s", KeyToString(key_press->key));
-  }
+/* Server receive callback */
+void server_receive_callback(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
+    printf("Server received data from client.\n");
+    /* Echo the data back to the client */
+    SparkSendToClient(server, client, envelope);
 }
 
-void_t MousePressedFunction(Application app, Event event) {
-  if (event.type == SPARK_EVENT_MOUSE_BUTTON_PRESSED) {
-    EventDataMouseButtonPressed mouse_press = event.data;
-    SPARK_LOG_DEBUG("Mouse Button Pressed: %s",
-                    MouseButtonToString(mouse_press->button));
-  } else if (event.type == SPARK_EVENT_MOUSE_BUTTON_RELEASED) {
-    EventDataMouseButtonReleased mouse_press = event.data;
-    SPARK_LOG_DEBUG("Mouse Button Released: %s",
-                    MouseButtonToString(mouse_press->button));
-  }
+/* Client receive callback */
+void client_receive_callback(SparkClient client, SparkEnvelope* envelope) {
+    printf("Client received data from server.\n");
+    /* Process the data */
 }
 
-void_t QueryEventFunction(Application app, Vector components, Event event) {
-  if (event.type == SPARK_EVENT_MOUSE_BUTTON_PRESSED) {
-    for (size_t i = 0; i < components->size; i++) {
-      Component component = components->elements[i];
-      SPARK_LOG_INFO("Transform Component: %s", component->data);
+int main() {
+    /* Create server */ 
+    Application app = CreateApplication(
+        CreateWindow(
+            CreateWindowData("Hello", 1080, 1080, SPARK_FALSE)
+        ),
+        8
+    );
+
+
+    SparkServer server = SparkCreateServer(app->thread_pool, 12345, server_receive_callback);
+    if (!server) {
+        printf("Failed to create server.\n");
+        return 1;
     }
-  } else if (event.type == SPARK_EVENT_MOUSE_BUTTON_RELEASED) {
-    for (size_t i = 0; i < components->size; i++) {
-      Component component = components->elements[i];
-      SPARK_LOG_ERROR("Transform Component: %s", component->data);
+
+    if (SparkStartServer(server) != SPARK_SUCCESS) {
+        printf("Failed to start server.\n");
+        SparkDestroyServer(server);
+        return 1;
     }
-  }
-}
 
-void_t StartFunction(Application app) {
-  for (size_t i = 0; i < 1000; i++) {
-    Entity entity = CreateEntity(app->ecs);
-    Component component =
-        CreateComponent(SPARK_TRANSFORM_COMPONENT, "Transform",
-                        "TRANSFORM_COMPONENT", SPARK_NULL);
-    AddComponent(app->ecs, entity, component);
-    SPARK_LOG_DEBUG(
-        "Created entity: %d, Added component: %s", i,
-        GetComponent(app->ecs, entity, SPARK_TRANSFORM_COMPONENT, "Transform")
-            ->data);
-  }
+    /* Create client */
+    SparkClient client = SparkCreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
+    if (!client) {
+        printf("Failed to create client.\n");
+        SparkDestroyServer(server);
+        return 1;
+    }
 
-  for (size_t i = 0; i < 50; i++) {
-    DestroyEntity(app->ecs, i);
-    SPARK_LOG_DEBUG("Destroyed entity: %d", i);
-  }
+    if (SparkConnectClient(client) != SPARK_SUCCESS) {
+        printf("Failed to connect client.\n");
+        SparkDestroyClient(client);
+        SparkDestroyServer(server);
+        return 1;
+    }
 
-  for (size_t i = 0; i < 1000; i++) {
-    CreateEntity(app->ecs);
-    SPARK_LOG_DEBUG("Created entity: %d", i);
-  }
-}
+    /* Send data from client to server */
+    SparkEnvelope envelope;
+    envelope.type = SPARK_ENVELOPE_TYPE_DATA;
+    const char* message = "Hello, Server!";
+    envelope.packet.size = strlen(message) + 1;
+    envelope.packet.data = (SparkBuffer)message;
 
-void_t QueryFunction(Application app, Vector(Component) transform_components) {}
+    if (SparkSendToServer(client, &envelope) != SPARK_SUCCESS) {
+        printf("Failed to send data to server.\n");
+    }
 
-i32 main() {
-  Application app = CreateApplication(
-      CreateWindow(CreateWindowData("Hello", 1000, 1000, SPARK_FALSE)));
+    /* Wait for a while to receive data */
+#ifdef _WIN32
+    Sleep(2000);
+#else
+    sleep(2);
+#endif
 
-  AddStartFunctionApplication(app, StartFunction);
+    /* Clean up */
+    SparkDisconnectClient(client);
+    SparkDestroyClient(client);
+    SparkStopServer(server);
+    SparkDestroyServer(server);
 
-  AddEventFunctionApplication(
-      app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_KEY_RELEASED,
-      KeyPressedFunction);
-
-  AddEventFunctionApplication(
-      app, SPARK_EVENT_MOUSE_BUTTON_PRESSED | SPARK_EVENT_MOUSE_BUTTON_RELEASED,
-      MousePressedFunction);
-
-  AddQueryFunctionApplication(app, "", QueryFunction);
-
-  AddQueryEventFunctionApplication(
-      app, SPARK_EVENT_MOUSE_BUTTON_PRESSED | SPARK_EVENT_MOUSE_BUTTON_RELEASED,
-      SPARK_TRANSFORM_COMPONENT, QueryEventFunction);
-
-  StartApplication(app);
-
-  return 0;
+    return 0;
 }

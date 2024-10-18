@@ -4272,6 +4272,449 @@ SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task) {
 
 #pragma endregion
 
+#pragma region NETWORKING
+
+/* Platform-specific definitions */
+#ifdef _WIN32
+#define close closesocket
+#define SOCKET_TYPE SOCKET
+#else
+#define SOCKET_TYPE SparkI32
+#endif
+
+/* Server and Client Structures */
+struct SparkClientConnectionT {
+    SOCKET_TYPE socket;
+    struct sockaddr_in address;
+    SparkServer server;
+};
+
+struct SparkServerT {
+    SOCKET_TYPE listen_socket;
+    SparkU16 port;
+    SparkThreadPool thread_pool;
+    SparkBool running;
+    SparkMutex mutex;
+    SparkVector clients; /* Vector of SparkClientConnection */
+    SparkServerReceiveCallback receive_callback;
+};
+
+struct SparkClientT {
+    SOCKET_TYPE socket;
+    struct sockaddr_in server_address;
+    SparkThreadPool thread_pool;
+    SparkBool connected;
+    SparkClientReceiveCallback receive_callback;
+};
+
+/* Utility functions for networking */
+static SparkResult SparkInitNetworking() {
+#ifdef _WIN32
+    WSADATA wsa_data;
+    int result;
+    if ((result = WSAStartup(MAKEWORD(2, 2), &wsa_data)) != 0) {
+        printf("WSAStartup failed: %d\n", result);
+        return SPARK_FAILURE;
+    }
+#endif
+    return SPARK_SUCCESS;
+}
+
+static SparkVoid SparkCleanupNetworking() {
+#ifdef _WIN32
+    WSACleanup();
+#endif
+}
+
+/* Serialize and Deserialize Envelopes */
+SPARKAPI SparkResult SPARKCALL SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffer* buffer, SparkSize* size) {
+    if (!envelope || !buffer || !size) {
+        return SPARK_FAILURE;
+    }
+
+    SparkSize total_size = sizeof(SparkU32) + sizeof(SparkSize) + envelope->packet.size;
+    *buffer = (SparkBuffer)SparkAllocate(total_size);
+    if (!*buffer) {
+        return SPARK_FAILURE;
+    }
+
+    SparkU32 type_net = htonl(envelope->type);
+    SparkSize size_net = htonl(envelope->packet.size);
+
+    memcpy(*buffer, &type_net, sizeof(SparkU32));
+    memcpy(*buffer + sizeof(SparkU32), &size_net, sizeof(SparkSize));
+    memcpy(*buffer + sizeof(SparkU32) + sizeof(SparkSize), envelope->packet.data, envelope->packet.size);
+
+    *size = total_size;
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope* envelope) {
+    if (!buffer || !envelope || size < sizeof(SparkU32) + sizeof(SparkSize)) {
+        return SPARK_FAILURE;
+    }
+
+    SparkU32 type_net;
+    SparkSize size_net;
+    memcpy(&type_net, buffer, sizeof(SparkU32));
+    memcpy(&size_net, buffer + sizeof(SparkU32), sizeof(SparkSize));
+
+    envelope->type = ntohl(type_net);
+    envelope->packet.size = ntohl(size_net);
+
+    if (size < sizeof(SparkU32) + sizeof(SparkSize) + envelope->packet.size) {
+        return SPARK_FAILURE;
+    }
+
+    envelope->packet.data = (SparkBuffer)SparkAllocate(envelope->packet.size);
+    if (!envelope->packet.data) {
+        return SPARK_FAILURE;
+    }
+
+    memcpy(envelope->packet.data, buffer + sizeof(SparkU32) + sizeof(SparkSize), envelope->packet.size);
+    return SPARK_SUCCESS;
+}
+
+/* Client Handler Function */
+static SparkHandle SparkClientHandler(SparkHandle arg) {
+    SparkClientConnection client = (SparkClientConnection)arg;
+    SparkServer server = client->server;
+    SparkI8 recv_buffer[SPARK_PACKET_MAX_SIZE];
+    SparkI32 bytes_received;
+
+    while ((bytes_received = recv(client->socket, recv_buffer, SPARK_PACKET_MAX_SIZE, 0)) > 0) {
+        SparkEnvelope envelope;
+        if (SparkDeserializeEnvelope((SparkBuffer)recv_buffer, bytes_received, &envelope) == SPARK_SUCCESS) {
+            /* Call the receive callback */
+            server->receive_callback(server, client, &envelope);
+            /* Clean up envelope data */
+            SparkFree(envelope.packet.data);
+        }
+    }
+
+    /* Remove client from server's client list */
+    SparkMutexLock(server->mutex);
+    for (SparkSize i = 0; i < server->clients->size; ++i) {
+        SparkClientConnection conn = (SparkClientConnection)SparkGetElementVector(server->clients, i);
+        if (conn == client) {
+            SparkRemoveVector(server->clients, i);
+            break;
+        }
+    }
+    SparkMutexUnlock(server->mutex);
+
+    close(client->socket);
+    SparkFree(client);
+    return NULL;
+}
+
+/* Server Functions */
+SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback) {
+    if (SparkInitNetworking() != SPARK_SUCCESS) {
+        return NULL;
+    }
+
+    SparkServer server = (SparkServer)SparkAllocate(sizeof(struct SparkServerT));
+    if (!server) {
+        return NULL;
+    }
+
+    server->port = port;
+    server->running = SPARK_FALSE;
+    server->receive_callback = callback;
+    server->clients = SparkCreateVector(10, SparkDefaultAllocator(), SparkFree);
+
+    SparkMutexInit(server->mutex);
+
+    /* Create ThreadPool */
+    server->thread_pool = tp;
+
+    return server;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyServer(SparkServer server) {
+    if (!server) {
+        return;
+    }
+
+    SparkStopServer(server);
+    SparkDestroyVector(server->clients);
+    SparkMutexDestroy(server->mutex);
+    SparkFree(server);
+
+    SparkCleanupNetworking();
+}
+
+SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
+    SparkServer srv = (SparkServer)arg;
+    while (srv->running) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_len = sizeof(client_addr);
+        SOCKET_TYPE client_socket = accept(srv->listen_socket, (struct sockaddr*)&client_addr, &addr_len);
+        if (client_socket == -1) {
+            if (!srv->running) {
+                break;
+            }
+            perror("Accept failed");
+            continue;
+        }
+
+        SparkClientConnection client = (SparkClientConnection)SparkAllocate(sizeof(struct SparkClientConnectionT));
+        client->socket = client_socket;
+        client->address = client_addr;
+        client->server = srv;
+
+        /* Add client to server's client list */
+        SparkMutexLock(srv->mutex);
+        SparkPushBackVector(srv->clients, client);
+        SparkMutexUnlock(srv->mutex);
+
+        /* Handle client in a separate thread */
+        SparkAddTaskThreadPool(srv->thread_pool, SparkClientHandler, client);
+    }
+    return NULL;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkStartServer(SparkServer server) {
+    if (!server) {
+        return SPARK_FAILURE;
+    }
+
+    SOCKET_TYPE listen_socket;
+    struct sockaddr_in server_addr;
+
+    /* Create socket */
+    if ((listen_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Socket creation failed");
+        return SPARK_FAILURE;
+    }
+
+    /* Set socket options */
+    SparkI32 opt = 1;
+    if (
+#ifdef _WIN32
+        setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt))
+#else
+        setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))
+#endif
+        < 0) {
+        perror("Setsockopt failed");
+        return SPARK_FAILURE;
+    }
+
+    /* Bind socket */
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(server->port);
+    memset(&(server_addr.sin_zero), 0, 8);
+
+    if (bind(listen_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Bind failed");
+        return SPARK_FAILURE;
+    }
+
+    /* Listen */
+    if (listen(listen_socket, 5) < 0) {
+        perror("Listen failed");
+        return SPARK_FAILURE;
+    }
+
+    server->listen_socket = listen_socket;
+    server->running = SPARK_TRUE;
+
+    /* Accept connections in a separate thread */
+    SparkAddTaskThreadPool(server->thread_pool, __SparkAcceptConnections, server);
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkStopServer(SparkServer server) {
+    if (!server) {
+        return SPARK_FAILURE;
+    }
+
+    server->running = SPARK_FALSE;
+    close(server->listen_socket);
+
+    /* Close all client connections */
+    SparkMutexLock(server->mutex);
+    for (SparkSize i = 0; i < server->clients->size; ++i) {
+        SparkClientConnection client = (SparkClientConnection)SparkGetElementVector(server->clients, i);
+        close(client->socket);
+        SparkFree(client);
+    }
+    SparkClearVector(server->clients);
+    SparkMutexUnlock(server->mutex);
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
+    if (!server || !client || !envelope) {
+        return SPARK_FAILURE;
+    }
+
+    SparkBuffer buffer;
+    SparkSize size;
+    if (SparkSerializeEnvelope(envelope, &buffer, &size) != SPARK_SUCCESS) {
+        return SPARK_FAILURE;
+    }
+
+    int bytes_sent = send(client->socket, buffer, size, 0);
+    SparkFree(buffer);
+    if (bytes_sent < 0) {
+        perror("Send to client failed");
+        return SPARK_FAILURE;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkBroadcast(SparkServer server, SparkEnvelope* envelope) {
+    if (!server || !envelope) {
+        return SPARK_FAILURE;
+    }
+
+    SparkMutexLock(server->mutex);
+    for (SparkSize i = 0; i < server->clients->size; ++i) {
+        SparkClientConnection client = (SparkClientConnection)SparkGetElementVector(server->clients, i);
+        SparkSendToClient(server, client, envelope);
+    }
+    SparkMutexUnlock(server->mutex);
+
+    return SPARK_SUCCESS;
+}
+
+/* Client Receive Handler */
+SPARKAPI SPARKSTATIC SparkHandle __SparkClientReceiveHandler(SparkHandle arg) {
+    SparkClient client = (SparkClient)arg;
+    SparkI8 recv_buffer[SPARK_PACKET_MAX_SIZE];
+    SparkI32 bytes_received;
+
+    while ((bytes_received = recv(client->socket, recv_buffer, SPARK_PACKET_MAX_SIZE, 0)) > 0) {
+        SparkEnvelope envelope;
+        if (SparkDeserializeEnvelope((SparkBuffer)recv_buffer, bytes_received, &envelope) == SPARK_SUCCESS) {
+            /* Call the receive callback */
+            client->receive_callback(client, &envelope);
+            /* Clean up envelope data */
+            SparkFree(envelope.packet.data);
+        }
+    }
+
+    client->connected = SPARK_FALSE;
+    close(client->socket);
+    return NULL;
+}
+
+/* Client Functions */
+SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
+    if (SparkInitNetworking() != SPARK_SUCCESS) {
+        return NULL;
+    }
+
+    SparkClient client = (SparkClient)SparkAllocate(sizeof(struct SparkClientT));
+    if (!client) {
+        return NULL;
+    }
+
+    client->connected = SPARK_FALSE;
+    client->receive_callback = callback;
+
+    /* Set up server address */
+    client->server_address.sin_family = AF_INET;
+    client->server_address.sin_port = htons(port);
+
+#ifdef _WIN32
+    if (InetPton(AF_INET, address, &client->server_address.sin_addr.s_addr) <= 0) {
+        printf("Invalid address / Address not supported\n");
+        SparkFree(client);
+        return NULL;
+    }
+#else
+    if (inet_pton(AF_INET, address, &client->server_address.sin_addr) <= 0) {
+        perror("Invalid address / Address not supported");
+        SparkFree(client);
+        return NULL;
+    }
+#endif
+
+    /* Create ThreadPool */
+    client->thread_pool = tp;
+
+    return client;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
+    if (!client) {
+        return;
+    }
+
+    SparkDisconnectClient(client);
+    SparkFree(client);
+
+    SparkCleanupNetworking();
+}
+
+SPARKAPI SparkResult SPARKCALL SparkConnectClient(SparkClient client) {
+    if (!client) {
+        return SPARK_FAILURE;
+    }
+
+    SOCKET_TYPE sockfd;
+    /* Create socket */
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Socket creation failed");
+        return SPARK_FAILURE;
+    }
+
+    /* Connect to server */
+    if (connect(sockfd, (struct sockaddr*)&client->server_address, sizeof(client->server_address)) < 0) {
+        perror("Connection Failed");
+        return SPARK_FAILURE;
+    }
+
+    client->socket = sockfd;
+    client->connected = SPARK_TRUE;
+
+    /* Start receiving data in a separate thread */
+    SparkAddTaskThreadPool(client->thread_pool, __SparkClientReceiveHandler, client);
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkDisconnectClient(SparkClient client) {
+    if (!client || !client->connected) {
+        return SPARK_FAILURE;
+    }
+
+    client->connected = SPARK_FALSE;
+    close(client->socket);
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkSendToServer(SparkClient client, SparkEnvelope* envelope) {
+    if (!client || !envelope || !client->connected) {
+        return SPARK_FAILURE;
+    }
+
+    SparkBuffer buffer;
+    SparkSize size;
+    if (SparkSerializeEnvelope(envelope, &buffer, &size) != SPARK_SUCCESS) {
+        return SPARK_FAILURE;
+    }
+
+    int bytes_sent = send(client->socket, buffer, size, 0);
+    SparkFree(buffer);
+    if (bytes_sent < 0) {
+        perror("Send to server failed");
+        return SPARK_FAILURE;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+#pragma endregion
+
 #pragma region ECS
 
 SPARKAPI SparkEcs SparkCreateEcs() {
@@ -6153,7 +6596,7 @@ SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer) {
 
 #pragma region APPLICATION
 
-SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
+SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize thread_count) {
   SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
   app->window = window;
   app->ecs = SparkCreateEcs();
@@ -6162,6 +6605,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
   app->start_functions = SparkDefaultVector();
   app->stop_functions = SparkDefaultVector();
   app->update_functions = SparkDefaultVector();
+  app->thread_pool = SparkCreateThreadPool(thread_count);
   app->query_functions =
       SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL,
                          SPARK_NULL, SparkDestroyVector);
@@ -6182,6 +6626,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
   SparkDestroyVector(app->query_functions);
   SparkDestroyVector(app->event_functions);
   SparkDestroyVector(app->query_event_functions);
+  SparkDestroyThreadPool(app->thread_pool);
   SparkFree(app);
 }
 

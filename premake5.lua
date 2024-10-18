@@ -39,7 +39,8 @@ project "Spark"
         "version.lib",
         "setupapi.lib",
         "lib/glfw3.lib",
-        "vulkan-1.lib"
+        "vulkan-1.lib",
+        "ws2_32.lib"
     }
 
     filter "configurations:Debug"
