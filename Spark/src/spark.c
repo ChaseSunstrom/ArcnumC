@@ -5,10 +5,10 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <string.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #pragma region ENUM
@@ -16,723 +16,1308 @@
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
 	switch (type) {
 		/* False, None, Null*/
-	case SPARK_NONE: return "SPARK_NONE";
+	case SPARK_NONE:
+		return "SPARK_NONE";
 		/* True, Success, Valid */
-	case SPARK_SUCCESS: return "SPARK_SUCCESS";
+	case SPARK_SUCCESS:
+		return "SPARK_SUCCESS";
 		/* Invalid, */
-	case SPARK_INVALID: return "SPARK_INVALID";
-	case SPARK_ERROR: return "SPARK_ERROR";
-	case SPARK_UNKNOWN: return "SPARK_UNKNOWN";
-	case SPARK_PENDING: return "SPARK_PENDING";
-	case SPARK_IN_PROGRESS: return "SPARK_IN_PROGRESS";
-	case SPARK_COMPLETE: return "SPARK_COMPLETE";
-	case SPARK_TIMEOUT: return "SPARK_TIMEOUT";
-	case SPARK_CANCELLED: return "SPARK_CANCELLED";
-	case SPARK_NOT_IMPLEMENTED: return "SPARK_NOT_IMPLEMENTED";
-	case SPARK_ACCESS_DENIED: return "SPARK_ACCESS_DENIED";
-	case SPARK_NOT_FOUND: return "SPARK_NOT_FOUND";
-	case SPARK_BUSY: return "SPARK_BUSY";
-	case SPARK_OVERLOADED: return "SPARK_OVERLOADED";
-	case SPARK_DISCONNECTED: return "SPARK_DISCONNECTED";
-	case SPARK_CONNECTED: return "SPARK_CONNECTED";
-	case SPARK_RETRY: return "SPARK_RETRY";
-	case SPARK_DEPRECATED: return "SPARK_DEPRECATED";
-	case SPARK_UNSUPPORTED: return "SPARK_UNSUPPORTED";
-	case SPARK_INITIALIZED: return "SPARK_INITIALIZED";
-	case SPARK_UNINITIALIZED: return "SPARK_UNINITIALIZED";
-	case SPARK_ENABLED: return "SPARK_ENABLED";
-	case SPARK_DISABLED: return "SPARK_DISABLED";
-	case SPARK_READ_ONLY: return "SPARK_READ_ONLY";
-	case SPARK_WRITE_ONLY: return "SPARK_WRITE_ONLY";
-	case SPARK_READ_WRITE: return "SPARK_READ_WRITE";
-	case SPARK_SUCCESS_PARTIAL: return "SPARK_SUCCESS_PARTIAL";
-	case SPARK_INVALID_ARGUMENT: return "SPARK_INVALID_ARGUMENT";
-	case SPARK_OUT_OF_MEMORY: return "SPARK_OUT_OF_MEMORY";
-	case SPARK_OVERFLOW: return "SPARK_OVERFLOW";
-	case SPARK_UNDERFLOW: return "SPARK_UNDERFLOW";
-	case SPARK_END_OF_FILE: return "SPARK_END_OF_FILE";
-	case SPARK_PERMISSION_DENIED: return "SPARK_PERMISSION_DENIED";
-	case SPARK_BAD_REQUEST: return "SPARK_BAD_REQUEST";
-	case SPARK_CONFLICT: return "SPARK_CONFLICT";
-	case SPARK_PRECONDITION_FAILED: return "SPARK_PRECONDITION_FAILED";
-	default: return "UNKNOWN_SPARK_TYPE";
+	case SPARK_INVALID:
+		return "SPARK_INVALID";
+	case SPARK_ERROR:
+		return "SPARK_ERROR";
+	case SPARK_UNKNOWN:
+		return "SPARK_UNKNOWN";
+	case SPARK_PENDING:
+		return "SPARK_PENDING";
+	case SPARK_IN_PROGRESS:
+		return "SPARK_IN_PROGRESS";
+	case SPARK_COMPLETE:
+		return "SPARK_COMPLETE";
+	case SPARK_TIMEOUT:
+		return "SPARK_TIMEOUT";
+	case SPARK_CANCELLED:
+		return "SPARK_CANCELLED";
+	case SPARK_NOT_IMPLEMENTED:
+		return "SPARK_NOT_IMPLEMENTED";
+	case SPARK_ACCESS_DENIED:
+		return "SPARK_ACCESS_DENIED";
+	case SPARK_NOT_FOUND:
+		return "SPARK_NOT_FOUND";
+	case SPARK_BUSY:
+		return "SPARK_BUSY";
+	case SPARK_OVERLOADED:
+		return "SPARK_OVERLOADED";
+	case SPARK_DISCONNECTED:
+		return "SPARK_DISCONNECTED";
+	case SPARK_CONNECTED:
+		return "SPARK_CONNECTED";
+	case SPARK_RETRY:
+		return "SPARK_RETRY";
+	case SPARK_DEPRECATED:
+		return "SPARK_DEPRECATED";
+	case SPARK_UNSUPPORTED:
+		return "SPARK_UNSUPPORTED";
+	case SPARK_INITIALIZED:
+		return "SPARK_INITIALIZED";
+	case SPARK_UNINITIALIZED:
+		return "SPARK_UNINITIALIZED";
+	case SPARK_ENABLED:
+		return "SPARK_ENABLED";
+	case SPARK_DISABLED:
+		return "SPARK_DISABLED";
+	case SPARK_READ_ONLY:
+		return "SPARK_READ_ONLY";
+	case SPARK_WRITE_ONLY:
+		return "SPARK_WRITE_ONLY";
+	case SPARK_READ_WRITE:
+		return "SPARK_READ_WRITE";
+	case SPARK_SUCCESS_PARTIAL:
+		return "SPARK_SUCCESS_PARTIAL";
+	case SPARK_INVALID_ARGUMENT:
+		return "SPARK_INVALID_ARGUMENT";
+	case SPARK_OUT_OF_MEMORY:
+		return "SPARK_OUT_OF_MEMORY";
+	case SPARK_OVERFLOW:
+		return "SPARK_OVERFLOW";
+	case SPARK_UNDERFLOW:
+		return "SPARK_UNDERFLOW";
+	case SPARK_END_OF_FILE:
+		return "SPARK_END_OF_FILE";
+	case SPARK_PERMISSION_DENIED:
+		return "SPARK_PERMISSION_DENIED";
+	case SPARK_BAD_REQUEST:
+		return "SPARK_BAD_REQUEST";
+	case SPARK_CONFLICT:
+		return "SPARK_CONFLICT";
+	case SPARK_PRECONDITION_FAILED:
+		return "SPARK_PRECONDITION_FAILED";
+	default:
+		return "UNKNOWN_SPARK_TYPE";
 	}
 }
 
 SPARKAPI SparkType SparkStringToType(SparkConstString string) {
-	if (strcmp(string, "SPARK_FALSE") == 0) return SPARK_FALSE;
-	else if (strcmp(string, "SPARK_TRUE") == 0) return SPARK_TRUE;
-	else if (strcmp(string, "SPARK_SUCCESS") == 0) return SPARK_SUCCESS;
-	else if (strcmp(string, "SPARK_FAILURE") == 0) return SPARK_FAILURE;
-	else if (strcmp(string, "SPARK_ERROR") == 0) return SPARK_ERROR;
-	else if (strcmp(string, "SPARK_VALID") == 0) return SPARK_VALID;
-	else if (strcmp(string, "SPARK_INVALID") == 0) return SPARK_INVALID;
-	else if (strcmp(string, "SPARK_NULL") == 0) return SPARK_NULL;
-	else if (strcmp(string, "SPARK_NONE") == 0) return SPARK_NONE;
-	else if (strcmp(string, "SPARK_UNKNOWN") == 0) return SPARK_UNKNOWN;
-	else if (strcmp(string, "SPARK_PENDING") == 0) return SPARK_PENDING;
-	else if (strcmp(string, "SPARK_IN_PROGRESS") == 0) return SPARK_IN_PROGRESS;
-	else if (strcmp(string, "SPARK_COMPLETE") == 0) return SPARK_COMPLETE;
-	else if (strcmp(string, "SPARK_TIMEOUT") == 0) return SPARK_TIMEOUT;
-	else if (strcmp(string, "SPARK_CANCELLED") == 0) return SPARK_CANCELLED;
-	else if (strcmp(string, "SPARK_NOT_IMPLEMENTED") == 0) return SPARK_NOT_IMPLEMENTED;
-	else if (strcmp(string, "SPARK_ACCESS_DENIED") == 0) return SPARK_ACCESS_DENIED;
-	else if (strcmp(string, "SPARK_NOT_FOUND") == 0) return SPARK_NOT_FOUND;
-	else if (strcmp(string, "SPARK_BUSY") == 0) return SPARK_BUSY;
-	else if (strcmp(string, "SPARK_OVERLOADED") == 0) return SPARK_OVERLOADED;
-	else if (strcmp(string, "SPARK_DISCONNECTED") == 0) return SPARK_DISCONNECTED;
-	else if (strcmp(string, "SPARK_CONNECTED") == 0) return SPARK_CONNECTED;
-	else if (strcmp(string, "SPARK_RETRY") == 0) return SPARK_RETRY;
-	else if (strcmp(string, "SPARK_DEPRECATED") == 0) return SPARK_DEPRECATED;
-	else if (strcmp(string, "SPARK_UNSUPPORTED") == 0) return SPARK_UNSUPPORTED;
-	else if (strcmp(string, "SPARK_INITIALIZED") == 0) return SPARK_INITIALIZED;
-	else if (strcmp(string, "SPARK_UNINITIALIZED") == 0) return SPARK_UNINITIALIZED;
-	else if (strcmp(string, "SPARK_ENABLED") == 0) return SPARK_ENABLED;
-	else if (strcmp(string, "SPARK_DISABLED") == 0) return SPARK_DISABLED;
-	else if (strcmp(string, "SPARK_READ_ONLY") == 0) return SPARK_READ_ONLY;
-	else if (strcmp(string, "SPARK_WRITE_ONLY") == 0) return SPARK_WRITE_ONLY;
-	else if (strcmp(string, "SPARK_READ_WRITE") == 0) return SPARK_READ_WRITE;
-	else if (strcmp(string, "SPARK_SUCCESS_PARTIAL") == 0) return SPARK_SUCCESS_PARTIAL;
-	else if (strcmp(string, "SPARK_INVALID_ARGUMENT") == 0) return SPARK_INVALID_ARGUMENT;
-	else if (strcmp(string, "SPARK_OUT_OF_MEMORY") == 0) return SPARK_OUT_OF_MEMORY;
-	else if (strcmp(string, "SPARK_OVERFLOW") == 0) return SPARK_OVERFLOW;
-	else if (strcmp(string, "SPARK_UNDERFLOW") == 0) return SPARK_UNDERFLOW;
-	else if (strcmp(string, "SPARK_END_OF_FILE") == 0) return SPARK_END_OF_FILE;
-	else if (strcmp(string, "SPARK_PERMISSION_DENIED") == 0) return SPARK_PERMISSION_DENIED;
-	else if (strcmp(string, "SPARK_BAD_REQUEST") == 0) return SPARK_BAD_REQUEST;
-	else if (strcmp(string, "SPARK_CONFLICT") == 0) return SPARK_CONFLICT;
-	else if (strcmp(string, "SPARK_PRECONDITION_FAILED") == 0) return SPARK_PRECONDITION_FAILED;
-	else return SPARK_UNKNOWN;
+	if (strcmp(string, "SPARK_FALSE") == 0)
+		return SPARK_FALSE;
+	else if (strcmp(string, "SPARK_TRUE") == 0)
+		return SPARK_TRUE;
+	else if (strcmp(string, "SPARK_SUCCESS") == 0)
+		return SPARK_SUCCESS;
+	else if (strcmp(string, "SPARK_FAILURE") == 0)
+		return SPARK_FAILURE;
+	else if (strcmp(string, "SPARK_ERROR") == 0)
+		return SPARK_ERROR;
+	else if (strcmp(string, "SPARK_VALID") == 0)
+		return SPARK_VALID;
+	else if (strcmp(string, "SPARK_INVALID") == 0)
+		return SPARK_INVALID;
+	else if (strcmp(string, "SPARK_NULL") == 0)
+		return SPARK_NULL;
+	else if (strcmp(string, "SPARK_NONE") == 0)
+		return SPARK_NONE;
+	else if (strcmp(string, "SPARK_UNKNOWN") == 0)
+		return SPARK_UNKNOWN;
+	else if (strcmp(string, "SPARK_PENDING") == 0)
+		return SPARK_PENDING;
+	else if (strcmp(string, "SPARK_IN_PROGRESS") == 0)
+		return SPARK_IN_PROGRESS;
+	else if (strcmp(string, "SPARK_COMPLETE") == 0)
+		return SPARK_COMPLETE;
+	else if (strcmp(string, "SPARK_TIMEOUT") == 0)
+		return SPARK_TIMEOUT;
+	else if (strcmp(string, "SPARK_CANCELLED") == 0)
+		return SPARK_CANCELLED;
+	else if (strcmp(string, "SPARK_NOT_IMPLEMENTED") == 0)
+		return SPARK_NOT_IMPLEMENTED;
+	else if (strcmp(string, "SPARK_ACCESS_DENIED") == 0)
+		return SPARK_ACCESS_DENIED;
+	else if (strcmp(string, "SPARK_NOT_FOUND") == 0)
+		return SPARK_NOT_FOUND;
+	else if (strcmp(string, "SPARK_BUSY") == 0)
+		return SPARK_BUSY;
+	else if (strcmp(string, "SPARK_OVERLOADED") == 0)
+		return SPARK_OVERLOADED;
+	else if (strcmp(string, "SPARK_DISCONNECTED") == 0)
+		return SPARK_DISCONNECTED;
+	else if (strcmp(string, "SPARK_CONNECTED") == 0)
+		return SPARK_CONNECTED;
+	else if (strcmp(string, "SPARK_RETRY") == 0)
+		return SPARK_RETRY;
+	else if (strcmp(string, "SPARK_DEPRECATED") == 0)
+		return SPARK_DEPRECATED;
+	else if (strcmp(string, "SPARK_UNSUPPORTED") == 0)
+		return SPARK_UNSUPPORTED;
+	else if (strcmp(string, "SPARK_INITIALIZED") == 0)
+		return SPARK_INITIALIZED;
+	else if (strcmp(string, "SPARK_UNINITIALIZED") == 0)
+		return SPARK_UNINITIALIZED;
+	else if (strcmp(string, "SPARK_ENABLED") == 0)
+		return SPARK_ENABLED;
+	else if (strcmp(string, "SPARK_DISABLED") == 0)
+		return SPARK_DISABLED;
+	else if (strcmp(string, "SPARK_READ_ONLY") == 0)
+		return SPARK_READ_ONLY;
+	else if (strcmp(string, "SPARK_WRITE_ONLY") == 0)
+		return SPARK_WRITE_ONLY;
+	else if (strcmp(string, "SPARK_READ_WRITE") == 0)
+		return SPARK_READ_WRITE;
+	else if (strcmp(string, "SPARK_SUCCESS_PARTIAL") == 0)
+		return SPARK_SUCCESS_PARTIAL;
+	else if (strcmp(string, "SPARK_INVALID_ARGUMENT") == 0)
+		return SPARK_INVALID_ARGUMENT;
+	else if (strcmp(string, "SPARK_OUT_OF_MEMORY") == 0)
+		return SPARK_OUT_OF_MEMORY;
+	else if (strcmp(string, "SPARK_OVERFLOW") == 0)
+		return SPARK_OVERFLOW;
+	else if (strcmp(string, "SPARK_UNDERFLOW") == 0)
+		return SPARK_UNDERFLOW;
+	else if (strcmp(string, "SPARK_END_OF_FILE") == 0)
+		return SPARK_END_OF_FILE;
+	else if (strcmp(string, "SPARK_PERMISSION_DENIED") == 0)
+		return SPARK_PERMISSION_DENIED;
+	else if (strcmp(string, "SPARK_BAD_REQUEST") == 0)
+		return SPARK_BAD_REQUEST;
+	else if (strcmp(string, "SPARK_CONFLICT") == 0)
+		return SPARK_CONFLICT;
+	else if (strcmp(string, "SPARK_PRECONDITION_FAILED") == 0)
+		return SPARK_PRECONDITION_FAILED;
+	else
+		return SPARK_UNKNOWN;
 }
 
 SPARKAPI SparkConstString SparkErrorToString(SparkError error) {
 	switch (error) {
-	case SPARK_ERROR_NONE: return "SPARK_ERROR_NONE";
-	case SPARK_ERROR_UNKNOWN: return "SPARK_ERROR_UNKNOWN";
-	case SPARK_ERROR_INVALID: return "SPARK_ERROR_INVALID";
-	case SPARK_ERROR_NULL: return "SPARK_ERROR_NULL";
-	case SPARK_ERROR_NOT_FOUND: return "SPARK_ERROR_NOT_FOUND";
-	case SPARK_ERROR_NOT_IMPLEMENTED: return "SPARK_ERROR_NOT_IMPLEMENTED";
-	case SPARK_ERROR_ACCESS_DENIED: return "SPARK_ERROR_ACCESS_DENIED";
-	case SPARK_ERROR_BUSY: return "SPARK_ERROR_BUSY";
-	case SPARK_ERROR_OVERLOADED: return "SPARK_ERROR_OVERLOADED";
-	case SPARK_ERROR_DISCONNECTED: return "SPARK_ERROR_DISCONNECTED";
-	case SPARK_ERROR_TIMEOUT: return "SPARK_ERROR_TIMEOUT";
-	case SPARK_ERROR_CANCELLED: return "SPARK_ERROR_CANCELLED";
-	case SPARK_ERROR_RETRY: return "SPARK_ERROR_RETRY";
-	case SPARK_ERROR_UNSUPPORTED: return "SPARK_ERROR_UNSUPPORTED";
-	case SPARK_ERROR_DEPRECATED: return "SPARK_ERROR_DEPRECATED";
-	case SPARK_ERROR_UNINITIALIZED: return "SPARK_ERROR_UNINITIALIZED";
-	case SPARK_ERROR_DISABLED: return "SPARK_ERROR_DISABLED";
-	case SPARK_ERROR_READ_ONLY: return "SPARK_ERROR_READ_ONLY";
-	case SPARK_ERROR_WRITE_ONLY: return "SPARK_ERROR_WRITE_ONLY";
-	case SPARK_ERROR_OUT_OF_MEMORY: return "SPARK_ERROR_OUT_OF_MEMORY";
-	case SPARK_ERROR_OVERFLOW: return "SPARK_ERROR_OVERFLOW";
-	case SPARK_ERROR_UNDERFLOW: return "SPARK_ERROR_UNDERFLOW";
-	case SPARK_ERROR_END_OF_FILE: return "SPARK_ERROR_END_OF_FILE";
-	case SPARK_ERROR_PERMISSION_DENIED: return "SPARK_ERROR_PERMISSION_DENIED";
-	case SPARK_ERROR_BAD_REQUEST: return "SPARK_ERROR_BAD_REQUEST";
-	case SPARK_ERROR_CONFLICT: return "SPARK_ERROR_CONFLICT";
-	case SPARK_ERROR_PRECONDITION_FAILED: return "SPARK_ERROR_PRECONDITION_FAILED";
-	case SPARK_ERROR_INVALID_ARGUMENT: return "SPARK_ERROR_INVALID_ARGUMENT";
-	case SPARK_ERROR_INVALID_STATE: return "SPARK_ERROR_INVALID_STATE";
-	case SPARK_ERROR_INVALID_FUNCTION_CALL: return "SPARK_ERROR_INVALID_FUNCTION_CALL";
-	default: return "UNKNOWN_SPARK_ERROR";
+	case SPARK_ERROR_NONE:
+		return "SPARK_ERROR_NONE";
+	case SPARK_ERROR_UNKNOWN:
+		return "SPARK_ERROR_UNKNOWN";
+	case SPARK_ERROR_INVALID:
+		return "SPARK_ERROR_INVALID";
+	case SPARK_ERROR_NULL:
+		return "SPARK_ERROR_NULL";
+	case SPARK_ERROR_NOT_FOUND:
+		return "SPARK_ERROR_NOT_FOUND";
+	case SPARK_ERROR_NOT_IMPLEMENTED:
+		return "SPARK_ERROR_NOT_IMPLEMENTED";
+	case SPARK_ERROR_ACCESS_DENIED:
+		return "SPARK_ERROR_ACCESS_DENIED";
+	case SPARK_ERROR_BUSY:
+		return "SPARK_ERROR_BUSY";
+	case SPARK_ERROR_OVERLOADED:
+		return "SPARK_ERROR_OVERLOADED";
+	case SPARK_ERROR_DISCONNECTED:
+		return "SPARK_ERROR_DISCONNECTED";
+	case SPARK_ERROR_TIMEOUT:
+		return "SPARK_ERROR_TIMEOUT";
+	case SPARK_ERROR_CANCELLED:
+		return "SPARK_ERROR_CANCELLED";
+	case SPARK_ERROR_RETRY:
+		return "SPARK_ERROR_RETRY";
+	case SPARK_ERROR_UNSUPPORTED:
+		return "SPARK_ERROR_UNSUPPORTED";
+	case SPARK_ERROR_DEPRECATED:
+		return "SPARK_ERROR_DEPRECATED";
+	case SPARK_ERROR_UNINITIALIZED:
+		return "SPARK_ERROR_UNINITIALIZED";
+	case SPARK_ERROR_DISABLED:
+		return "SPARK_ERROR_DISABLED";
+	case SPARK_ERROR_READ_ONLY:
+		return "SPARK_ERROR_READ_ONLY";
+	case SPARK_ERROR_WRITE_ONLY:
+		return "SPARK_ERROR_WRITE_ONLY";
+	case SPARK_ERROR_OUT_OF_MEMORY:
+		return "SPARK_ERROR_OUT_OF_MEMORY";
+	case SPARK_ERROR_OVERFLOW:
+		return "SPARK_ERROR_OVERFLOW";
+	case SPARK_ERROR_UNDERFLOW:
+		return "SPARK_ERROR_UNDERFLOW";
+	case SPARK_ERROR_END_OF_FILE:
+		return "SPARK_ERROR_END_OF_FILE";
+	case SPARK_ERROR_PERMISSION_DENIED:
+		return "SPARK_ERROR_PERMISSION_DENIED";
+	case SPARK_ERROR_BAD_REQUEST:
+		return "SPARK_ERROR_BAD_REQUEST";
+	case SPARK_ERROR_CONFLICT:
+		return "SPARK_ERROR_CONFLICT";
+	case SPARK_ERROR_PRECONDITION_FAILED:
+		return "SPARK_ERROR_PRECONDITION_FAILED";
+	case SPARK_ERROR_INVALID_ARGUMENT:
+		return "SPARK_ERROR_INVALID_ARGUMENT";
+	case SPARK_ERROR_INVALID_STATE:
+		return "SPARK_ERROR_INVALID_STATE";
+	case SPARK_ERROR_INVALID_FUNCTION_CALL:
+		return "SPARK_ERROR_INVALID_FUNCTION_CALL";
+	default:
+		return "UNKNOWN_SPARK_ERROR";
 	}
 }
 
 SPARKAPI SparkError SparkStringToError(SparkConstString string) {
-	if (strcmp(string, "SPARK_ERROR_NONE") == 0) return SPARK_ERROR_NONE;
-	else if (strcmp(string, "SPARK_ERROR_UNKNOWN") == 0) return SPARK_ERROR_UNKNOWN;
-	else if (strcmp(string, "SPARK_ERROR_INVALID") == 0) return SPARK_ERROR_INVALID;
-	else if (strcmp(string, "SPARK_ERROR_NULL") == 0) return SPARK_ERROR_NULL;
-	else if (strcmp(string, "SPARK_ERROR_NOT_FOUND") == 0) return SPARK_ERROR_NOT_FOUND;
-	else if (strcmp(string, "SPARK_ERROR_NOT_IMPLEMENTED") == 0) return SPARK_ERROR_NOT_IMPLEMENTED;
-	else if (strcmp(string, "SPARK_ERROR_ACCESS_DENIED") == 0) return SPARK_ERROR_ACCESS_DENIED;
-	else if (strcmp(string, "SPARK_ERROR_BUSY") == 0) return SPARK_ERROR_BUSY;
-	else if (strcmp(string, "SPARK_ERROR_OVERLOADED") == 0) return SPARK_ERROR_OVERLOADED;
-	else if (strcmp(string, "SPARK_ERROR_DISCONNECTED") == 0) return SPARK_ERROR_DISCONNECTED;
-	else if (strcmp(string, "SPARK_ERROR_TIMEOUT") == 0) return SPARK_ERROR_TIMEOUT;
-	else if (strcmp(string, "SPARK_ERROR_CANCELLED") == 0) return SPARK_ERROR_CANCELLED;
-	else if (strcmp(string, "SPARK_ERROR_RETRY") == 0) return SPARK_ERROR_RETRY;
-	else if (strcmp(string, "SPARK_ERROR_UNSUPPORTED") == 0) return SPARK_ERROR_UNSUPPORTED;
-	else if (strcmp(string, "SPARK_ERROR_DEPRECATED") == 0) return SPARK_ERROR_DEPRECATED;
-	else if (strcmp(string, "SPARK_ERROR_UNINITIALIZED") == 0) return SPARK_ERROR_UNINITIALIZED;
-	else if (strcmp(string, "SPARK_ERROR_DISABLED") == 0) return SPARK_ERROR_DISABLED;
-	else if (strcmp(string, "SPARK_ERROR_READ_ONLY") == 0) return SPARK_ERROR_READ_ONLY;
-	else if (strcmp(string, "SPARK_ERROR_WRITE_ONLY") == 0) return SPARK_ERROR_WRITE_ONLY;
-	else if (strcmp(string, "SPARK_ERROR_OUT_OF_MEMORY") == 0) return SPARK_ERROR_OUT_OF_MEMORY;
-	else if (strcmp(string, "SPARK_ERROR_OVERFLOW") == 0) return SPARK_ERROR_OVERFLOW;
-	else if (strcmp(string, "SPARK_ERROR_UNDERFLOW") == 0) return SPARK_ERROR_UNDERFLOW;
-	else if (strcmp(string, "SPARK_ERROR_END_OF_FILE") == 0) return SPARK_ERROR_END_OF_FILE;
-	else if (strcmp(string, "SPARK_ERROR_PERMISSION_DENIED") == 0) return SPARK_ERROR_PERMISSION_DENIED;
-	else if (strcmp(string, "SPARK_ERROR_BAD_REQUEST") == 0) return SPARK_ERROR_BAD_REQUEST;
-	else if (strcmp(string, "SPARK_ERROR_CONFLICT") == 0) return SPARK_ERROR_CONFLICT;
-	else if (strcmp(string, "SPARK_ERROR_PRECONDITION_FAILED") == 0) return SPARK_ERROR_PRECONDITION_FAILED;
-	else if (strcmp(string, "SPARK_ERROR_INVALID_ARGUMENT") == 0) return SPARK_ERROR_INVALID_ARGUMENT;
-	else if (strcmp(string, "SPARK_ERROR_INVALID_STATE") == 0) return SPARK_ERROR_INVALID_STATE;
-	else if (strcmp(string, "SPARK_ERROR_INVALID_FUNCTION_CALL") == 0) return SPARK_ERROR_INVALID_FUNCTION_CALL;
-	else return SPARK_ERROR_UNKNOWN;
+	if (strcmp(string, "SPARK_ERROR_NONE") == 0)
+		return SPARK_ERROR_NONE;
+	else if (strcmp(string, "SPARK_ERROR_UNKNOWN") == 0)
+		return SPARK_ERROR_UNKNOWN;
+	else if (strcmp(string, "SPARK_ERROR_INVALID") == 0)
+		return SPARK_ERROR_INVALID;
+	else if (strcmp(string, "SPARK_ERROR_NULL") == 0)
+		return SPARK_ERROR_NULL;
+	else if (strcmp(string, "SPARK_ERROR_NOT_FOUND") == 0)
+		return SPARK_ERROR_NOT_FOUND;
+	else if (strcmp(string, "SPARK_ERROR_NOT_IMPLEMENTED") == 0)
+		return SPARK_ERROR_NOT_IMPLEMENTED;
+	else if (strcmp(string, "SPARK_ERROR_ACCESS_DENIED") == 0)
+		return SPARK_ERROR_ACCESS_DENIED;
+	else if (strcmp(string, "SPARK_ERROR_BUSY") == 0)
+		return SPARK_ERROR_BUSY;
+	else if (strcmp(string, "SPARK_ERROR_OVERLOADED") == 0)
+		return SPARK_ERROR_OVERLOADED;
+	else if (strcmp(string, "SPARK_ERROR_DISCONNECTED") == 0)
+		return SPARK_ERROR_DISCONNECTED;
+	else if (strcmp(string, "SPARK_ERROR_TIMEOUT") == 0)
+		return SPARK_ERROR_TIMEOUT;
+	else if (strcmp(string, "SPARK_ERROR_CANCELLED") == 0)
+		return SPARK_ERROR_CANCELLED;
+	else if (strcmp(string, "SPARK_ERROR_RETRY") == 0)
+		return SPARK_ERROR_RETRY;
+	else if (strcmp(string, "SPARK_ERROR_UNSUPPORTED") == 0)
+		return SPARK_ERROR_UNSUPPORTED;
+	else if (strcmp(string, "SPARK_ERROR_DEPRECATED") == 0)
+		return SPARK_ERROR_DEPRECATED;
+	else if (strcmp(string, "SPARK_ERROR_UNINITIALIZED") == 0)
+		return SPARK_ERROR_UNINITIALIZED;
+	else if (strcmp(string, "SPARK_ERROR_DISABLED") == 0)
+		return SPARK_ERROR_DISABLED;
+	else if (strcmp(string, "SPARK_ERROR_READ_ONLY") == 0)
+		return SPARK_ERROR_READ_ONLY;
+	else if (strcmp(string, "SPARK_ERROR_WRITE_ONLY") == 0)
+		return SPARK_ERROR_WRITE_ONLY;
+	else if (strcmp(string, "SPARK_ERROR_OUT_OF_MEMORY") == 0)
+		return SPARK_ERROR_OUT_OF_MEMORY;
+	else if (strcmp(string, "SPARK_ERROR_OVERFLOW") == 0)
+		return SPARK_ERROR_OVERFLOW;
+	else if (strcmp(string, "SPARK_ERROR_UNDERFLOW") == 0)
+		return SPARK_ERROR_UNDERFLOW;
+	else if (strcmp(string, "SPARK_ERROR_END_OF_FILE") == 0)
+		return SPARK_ERROR_END_OF_FILE;
+	else if (strcmp(string, "SPARK_ERROR_PERMISSION_DENIED") == 0)
+		return SPARK_ERROR_PERMISSION_DENIED;
+	else if (strcmp(string, "SPARK_ERROR_BAD_REQUEST") == 0)
+		return SPARK_ERROR_BAD_REQUEST;
+	else if (strcmp(string, "SPARK_ERROR_CONFLICT") == 0)
+		return SPARK_ERROR_CONFLICT;
+	else if (strcmp(string, "SPARK_ERROR_PRECONDITION_FAILED") == 0)
+		return SPARK_ERROR_PRECONDITION_FAILED;
+	else if (strcmp(string, "SPARK_ERROR_INVALID_ARGUMENT") == 0)
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	else if (strcmp(string, "SPARK_ERROR_INVALID_STATE") == 0)
+		return SPARK_ERROR_INVALID_STATE;
+	else if (strcmp(string, "SPARK_ERROR_INVALID_FUNCTION_CALL") == 0)
+		return SPARK_ERROR_INVALID_FUNCTION_CALL;
+	else
+		return SPARK_ERROR_UNKNOWN;
 }
 
 SPARKAPI SparkConstString SparkResultToString(SparkResult result) {
 	switch (result) {
-	case SPARK_SUCCESS: return "SPARK_SUCCESS";
-	case SPARK_FAILURE: return "SPARK_FAILURE";
-	default: "SPARK_INVALID";
+	case SPARK_SUCCESS:
+		return "SPARK_SUCCESS";
+	case SPARK_FAILURE:
+		return "SPARK_FAILURE";
+	default:
+		"SPARK_INVALID";
 	}
 }
 
 SPARKAPI SparkResult SparkStringToResult(SparkConstString string) {
-	if (strcmp(string, "SPARK_SUCCESS") == 0) return SPARK_SUCCESS;
-	else if (strcmp(string, "SPARK_FAILURE") == 0) return SPARK_FAILURE;
-	else return SPARK_INVALID;
+	if (strcmp(string, "SPARK_SUCCESS") == 0)
+		return SPARK_SUCCESS;
+	else if (strcmp(string, "SPARK_FAILURE") == 0)
+		return SPARK_FAILURE;
+	else
+		return SPARK_INVALID;
 }
 
 SPARKAPI SparkConstString SparkAccessToString(SparkAccess access) {
 	switch (access) {
-	case SPARK_ACCESS_NONE: return "SPARK_ACCESS_NONE";
-	case SPARK_ACCESS_READ: return "SPARK_ACCESS_READ";
-	case SPARK_ACCESS_WRITE: return "SPARK_ACCESS_WRITE";
-	case SPARK_ACCESS_READ_WRITE: return "SPARK_ACCESS_READ_WRITE";
-	default: return "UNKNOWN_SPARK_ACCESS";
+	case SPARK_ACCESS_NONE:
+		return "SPARK_ACCESS_NONE";
+	case SPARK_ACCESS_READ:
+		return "SPARK_ACCESS_READ";
+	case SPARK_ACCESS_WRITE:
+		return "SPARK_ACCESS_WRITE";
+	case SPARK_ACCESS_READ_WRITE:
+		return "SPARK_ACCESS_READ_WRITE";
+	default:
+		return "UNKNOWN_SPARK_ACCESS";
 	}
 }
 
 SPARKAPI SparkAccess SparkStringToAccess(SparkConstString string) {
-	if (strcmp(string, "SPARK_ACCESS_NONE") == 0) return SPARK_ACCESS_NONE;
-	else if (strcmp(string, "SPARK_ACCESS_READ") == 0) return SPARK_ACCESS_READ;
-	else if (strcmp(string, "SPARK_ACCESS_WRITE") == 0) return SPARK_ACCESS_WRITE;
-	else if (strcmp(string, "SPARK_ACCESS_READ_WRITE") == 0) return SPARK_ACCESS_READ_WRITE;
-	else return SPARK_ACCESS_NONE;
+	if (strcmp(string, "SPARK_ACCESS_NONE") == 0)
+		return SPARK_ACCESS_NONE;
+	else if (strcmp(string, "SPARK_ACCESS_READ") == 0)
+		return SPARK_ACCESS_READ;
+	else if (strcmp(string, "SPARK_ACCESS_WRITE") == 0)
+		return SPARK_ACCESS_WRITE;
+	else if (strcmp(string, "SPARK_ACCESS_READ_WRITE") == 0)
+		return SPARK_ACCESS_READ_WRITE;
+	else
+		return SPARK_ACCESS_NONE;
 }
 
 SPARKAPI SparkConstString SparkMouseButtonToString(SparkMouseButton button) {
 	switch (button) {
 		/* Left */
-	case SPARK_MOUSE_BUTTON_1: return "SPARK_MOUSE_BUTTON_1";
+	case SPARK_MOUSE_BUTTON_1:
+		return "SPARK_MOUSE_BUTTON_1";
 		/* Right */
-	case SPARK_MOUSE_BUTTON_2: return "SPARK_MOUSE_BUTTON_2";
+	case SPARK_MOUSE_BUTTON_2:
+		return "SPARK_MOUSE_BUTTON_2";
 		/* Middle */
-	case SPARK_MOUSE_BUTTON_3: return "SPARK_MOUSE_BUTTON_3";
-	case SPARK_MOUSE_BUTTON_4: return "SPARK_MOUSE_BUTTON_4";
-	case SPARK_MOUSE_BUTTON_5: return "SPARK_MOUSE_BUTTON_5";
-	case SPARK_MOUSE_BUTTON_6: return "SPARK_MOUSE_BUTTON_6";
-	case SPARK_MOUSE_BUTTON_7: return "SPARK_MOUSE_BUTTON_7";
-	case SPARK_MOUSE_BUTTON_8: return "SPARK_MOUSE_BUTTON_8";
-	default: return "UNKNOWN_SPARK_MOUSE_BUTTON";
+	case SPARK_MOUSE_BUTTON_3:
+		return "SPARK_MOUSE_BUTTON_3";
+	case SPARK_MOUSE_BUTTON_4:
+		return "SPARK_MOUSE_BUTTON_4";
+	case SPARK_MOUSE_BUTTON_5:
+		return "SPARK_MOUSE_BUTTON_5";
+	case SPARK_MOUSE_BUTTON_6:
+		return "SPARK_MOUSE_BUTTON_6";
+	case SPARK_MOUSE_BUTTON_7:
+		return "SPARK_MOUSE_BUTTON_7";
+	case SPARK_MOUSE_BUTTON_8:
+		return "SPARK_MOUSE_BUTTON_8";
+	default:
+		return "UNKNOWN_SPARK_MOUSE_BUTTON";
 	}
 }
 
 SPARKAPI SparkMouseButton SparkStringToMouseButton(SparkConstString string) {
-	if (strcmp(string, "SPARK_MOUSE_BUTTON_1") == 0) return SPARK_MOUSE_BUTTON_1;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_2") == 0) return SPARK_MOUSE_BUTTON_2;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_3") == 0) return SPARK_MOUSE_BUTTON_3;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_4") == 0) return SPARK_MOUSE_BUTTON_4;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_5") == 0) return SPARK_MOUSE_BUTTON_5;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_6") == 0) return SPARK_MOUSE_BUTTON_6;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_7") == 0) return SPARK_MOUSE_BUTTON_7;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_8") == 0) return SPARK_MOUSE_BUTTON_8;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_LAST") == 0) return SPARK_MOUSE_BUTTON_LAST;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_LEFT") == 0) return SPARK_MOUSE_BUTTON_LEFT;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_RIGHT") == 0) return SPARK_MOUSE_BUTTON_RIGHT;
-	else if (strcmp(string, "SPARK_MOUSE_BUTTON_MIDDLE") == 0) return SPARK_MOUSE_BUTTON_MIDDLE;
-	else return (SparkMouseButton)-1;
+	if (strcmp(string, "SPARK_MOUSE_BUTTON_1") == 0)
+		return SPARK_MOUSE_BUTTON_1;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_2") == 0)
+		return SPARK_MOUSE_BUTTON_2;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_3") == 0)
+		return SPARK_MOUSE_BUTTON_3;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_4") == 0)
+		return SPARK_MOUSE_BUTTON_4;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_5") == 0)
+		return SPARK_MOUSE_BUTTON_5;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_6") == 0)
+		return SPARK_MOUSE_BUTTON_6;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_7") == 0)
+		return SPARK_MOUSE_BUTTON_7;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_8") == 0)
+		return SPARK_MOUSE_BUTTON_8;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_LAST") == 0)
+		return SPARK_MOUSE_BUTTON_LAST;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_LEFT") == 0)
+		return SPARK_MOUSE_BUTTON_LEFT;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_RIGHT") == 0)
+		return SPARK_MOUSE_BUTTON_RIGHT;
+	else if (strcmp(string, "SPARK_MOUSE_BUTTON_MIDDLE") == 0)
+		return SPARK_MOUSE_BUTTON_MIDDLE;
+	else
+		return (SparkMouseButton)-1;
 }
 
-SPARKAPI SparkConstString SparkKeyToString(SparkKey key)
-{
-	switch (key)
-	{
-	case SPARK_KEY_UNKNOWN: return "SPARK_KEY_UNKNOWN";
-	case SPARK_KEY_SPACE: return "SPARK_KEY_SPACE";
-	case SPARK_KEY_APOSTROPHE: return "SPARK_KEY_APOSTROPHE";
-	case SPARK_KEY_COMMA: return "SPARK_KEY_COMMA";
-	case SPARK_KEY_MINUS: return "SPARK_KEY_MINUS";
-	case SPARK_KEY_PERIOD: return "SPARK_KEY_PERIOD";
-	case SPARK_KEY_SLASH: return "SPARK_KEY_SLASH";
-	case SPARK_KEY_0: return "SPARK_KEY_0";
-	case SPARK_KEY_1: return "SPARK_KEY_1";
-	case SPARK_KEY_2: return "SPARK_KEY_2";
-	case SPARK_KEY_3: return "SPARK_KEY_3";
-	case SPARK_KEY_4: return "SPARK_KEY_4";
-	case SPARK_KEY_5: return "SPARK_KEY_5";
-	case SPARK_KEY_6: return "SPARK_KEY_6";
-	case SPARK_KEY_7: return "SPARK_KEY_7";
-	case SPARK_KEY_8: return "SPARK_KEY_8";
-	case SPARK_KEY_9: return "SPARK_KEY_9";
-	case SPARK_KEY_SEMICOLON: return "SPARK_KEY_SEMICOLON";
-	case SPARK_KEY_EQUAL: return "SPARK_KEY_EQUAL";
-	case SPARK_KEY_A: return "SPARK_KEY_A";
-	case SPARK_KEY_B: return "SPARK_KEY_B";
-	case SPARK_KEY_C: return "SPARK_KEY_C";
-	case SPARK_KEY_D: return "SPARK_KEY_D";
-	case SPARK_KEY_E: return "SPARK_KEY_E";
-	case SPARK_KEY_F: return "SPARK_KEY_F";
-	case SPARK_KEY_G: return "SPARK_KEY_G";
-	case SPARK_KEY_H: return "SPARK_KEY_H";
-	case SPARK_KEY_I: return "SPARK_KEY_I";
-	case SPARK_KEY_J: return "SPARK_KEY_J";
-	case SPARK_KEY_K: return "SPARK_KEY_K";
-	case SPARK_KEY_L: return "SPARK_KEY_L";
-	case SPARK_KEY_M: return "SPARK_KEY_M";
-	case SPARK_KEY_N: return "SPARK_KEY_N";
-	case SPARK_KEY_O: return "SPARK_KEY_O";
-	case SPARK_KEY_P: return "SPARK_KEY_P";
-	case SPARK_KEY_Q: return "SPARK_KEY_Q";
-	case SPARK_KEY_R: return "SPARK_KEY_R";
-	case SPARK_KEY_S: return "SPARK_KEY_S";
-	case SPARK_KEY_T: return "SPARK_KEY_T";
-	case SPARK_KEY_U: return "SPARK_KEY_U";
-	case SPARK_KEY_V: return "SPARK_KEY_V";
-	case SPARK_KEY_W: return "SPARK_KEY_W";
-	case SPARK_KEY_X: return "SPARK_KEY_X";
-	case SPARK_KEY_Y: return "SPARK_KEY_Y";
-	case SPARK_KEY_Z: return "SPARK_KEY_Z";
-	case SPARK_KEY_LEFT_BRACKET: return "SPARK_KEY_LEFT_BRACKET";
-	case SPARK_KEY_BACKSLASH: return "SPARK_KEY_BACKSLASH";
-	case SPARK_KEY_RIGHT_BRACKET: return "SPARK_KEY_RIGHT_BRACKET";
-	case SPARK_KEY_GRAVE_ACCENT: return "SPARK_KEY_GRAVE_ACCENT";
-	case SPARK_KEY_WORLD_1: return "SPARK_KEY_WORLD_1";
-	case SPARK_KEY_WORLD_2: return "SPARK_KEY_WORLD_2";
-	case SPARK_KEY_ESCAPE: return "SPARK_KEY_ESCAPE";
-	case SPARK_KEY_ENTER: return "SPARK_KEY_ENTER";
-	case SPARK_KEY_TAB: return "SPARK_KEY_TAB";
-	case SPARK_KEY_BACKSPACE: return "SPARK_KEY_BACKSPACE";
-	case SPARK_KEY_INSERT: return "SPARK_KEY_INSERT";
-	case SPARK_KEY_DELETE: return "SPARK_KEY_DELETE";
-	case SPARK_KEY_RIGHT: return "SPARK_KEY_RIGHT";
-	case SPARK_KEY_LEFT: return "SPARK_KEY_LEFT";
-	case SPARK_KEY_DOWN: return "SPARK_KEY_DOWN";
-	case SPARK_KEY_UP: return "SPARK_KEY_UP";
-	case SPARK_KEY_PAGE_UP: return "SPARK_KEY_PAGE_UP";
-	case SPARK_KEY_PAGE_DOWN: return "SPARK_KEY_PAGE_DOWN";
-	case SPARK_KEY_HOME: return "SPARK_KEY_HOME";
-	case SPARK_KEY_END: return "SPARK_KEY_END";
-	case SPARK_KEY_CAPS_LOCK: return "SPARK_KEY_CAPS_LOCK";
-	case SPARK_KEY_SCROLL_LOCK: return "SPARK_KEY_SCROLL_LOCK";
-	case SPARK_KEY_NUM_LOCK: return "SPARK_KEY_NUM_LOCK";
-	case SPARK_KEY_PRINT_SCREEN: return "SPARK_KEY_PRINT_SCREEN";
-	case SPARK_KEY_PAUSE: return "SPARK_KEY_PAUSE";
-	case SPARK_KEY_F1: return "SPARK_KEY_F1";
-	case SPARK_KEY_F2: return "SPARK_KEY_F2";
-	case SPARK_KEY_F3: return "SPARK_KEY_F3";
-	case SPARK_KEY_F4: return "SPARK_KEY_F4";
-	case SPARK_KEY_F5: return "SPARK_KEY_F5";
-	case SPARK_KEY_F6: return "SPARK_KEY_F6";
-	case SPARK_KEY_F7: return "SPARK_KEY_F7";
-	case SPARK_KEY_F8: return "SPARK_KEY_F8";
-	case SPARK_KEY_F9: return "SPARK_KEY_F9";
-	case SPARK_KEY_F10: return "SPARK_KEY_F10";
-	case SPARK_KEY_F11: return "SPARK_KEY_F11";
-	case SPARK_KEY_F12: return "SPARK_KEY_F12";
-	case SPARK_KEY_F13: return "SPARK_KEY_F13";
-	case SPARK_KEY_F14: return "SPARK_KEY_F14";
-	case SPARK_KEY_F15: return "SPARK_KEY_F15";
-	case SPARK_KEY_F16: return "SPARK_KEY_F16";
-	case SPARK_KEY_F17: return "SPARK_KEY_F17";
-	case SPARK_KEY_F18: return "SPARK_KEY_F18";
-	case SPARK_KEY_F19: return "SPARK_KEY_F19";
-	case SPARK_KEY_F20: return "SPARK_KEY_F20";
-	case SPARK_KEY_F21: return "SPARK_KEY_F21";
-	case SPARK_KEY_F22: return "SPARK_KEY_F22";
-	case SPARK_KEY_F23: return "SPARK_KEY_F23";
-	case SPARK_KEY_F24: return "SPARK_KEY_F24";
-	case SPARK_KEY_F25: return "SPARK_KEY_F25";
-	case SPARK_KEY_KP_0: return "SPARK_KEY_KP_0";
-	case SPARK_KEY_KP_1: return "SPARK_KEY_KP_1";
-	case SPARK_KEY_KP_2: return "SPARK_KEY_KP_2";
-	case SPARK_KEY_KP_3: return "SPARK_KEY_KP_3";
-	case SPARK_KEY_KP_4: return "SPARK_KEY_KP_4";
-	case SPARK_KEY_KP_5: return "SPARK_KEY_KP_5";
-	case SPARK_KEY_KP_6: return "SPARK_KEY_KP_6";
-	case SPARK_KEY_KP_7: return "SPARK_KEY_KP_7";
-	case SPARK_KEY_KP_8: return "SPARK_KEY_KP_8";
-	case SPARK_KEY_KP_9: return "SPARK_KEY_KP_9";
-	case SPARK_KEY_KP_DECIMAL: return "SPARK_KEY_KP_DECIMAL";
-	case SPARK_KEY_KP_DIVIDE: return "SPARK_KEY_KP_DIVIDE";
-	case SPARK_KEY_KP_MULTIPLY: return "SPARK_KEY_KP_MULTIPLY";
-	case SPARK_KEY_KP_SUBTRACT: return "SPARK_KEY_KP_SUBTRACT";
-	case SPARK_KEY_KP_ADD: return "SPARK_KEY_KP_ADD";
-	case SPARK_KEY_KP_ENTER: return "SPARK_KEY_KP_ENTER";
-	case SPARK_KEY_KP_EQUAL: return "SPARK_KEY_KP_EQUAL";
-	case SPARK_KEY_LEFT_SHIFT: return "SPARK_KEY_LEFT_SHIFT";
-	case SPARK_KEY_LEFT_CONTROL: return "SPARK_KEY_LEFT_CONTROL";
-	case SPARK_KEY_LEFT_ALT: return "SPARK_KEY_LEFT_ALT";
-	case SPARK_KEY_LEFT_SUPER: return "SPARK_KEY_LEFT_SUPER";
-	case SPARK_KEY_RIGHT_SHIFT: return "SPARK_KEY_RIGHT_SHIFT";
-	case SPARK_KEY_RIGHT_CONTROL: return "SPARK_KEY_RIGHT_CONTROL";
-	case SPARK_KEY_RIGHT_ALT: return "SPARK_KEY_RIGHT_ALT";
-	case SPARK_KEY_RIGHT_SUPER: return "SPARK_KEY_RIGHT_SUPER";
-	case SPARK_KEY_MENU: return "SPARK_KEY_MENU";
-	default: return "UNKNOWN_SPARK_KEY";
+SPARKAPI SparkConstString SparkKeyToString(SparkKey key) {
+	switch (key) {
+	case SPARK_KEY_UNKNOWN:
+		return "SPARK_KEY_UNKNOWN";
+	case SPARK_KEY_SPACE:
+		return "SPARK_KEY_SPACE";
+	case SPARK_KEY_APOSTROPHE:
+		return "SPARK_KEY_APOSTROPHE";
+	case SPARK_KEY_COMMA:
+		return "SPARK_KEY_COMMA";
+	case SPARK_KEY_MINUS:
+		return "SPARK_KEY_MINUS";
+	case SPARK_KEY_PERIOD:
+		return "SPARK_KEY_PERIOD";
+	case SPARK_KEY_SLASH:
+		return "SPARK_KEY_SLASH";
+	case SPARK_KEY_0:
+		return "SPARK_KEY_0";
+	case SPARK_KEY_1:
+		return "SPARK_KEY_1";
+	case SPARK_KEY_2:
+		return "SPARK_KEY_2";
+	case SPARK_KEY_3:
+		return "SPARK_KEY_3";
+	case SPARK_KEY_4:
+		return "SPARK_KEY_4";
+	case SPARK_KEY_5:
+		return "SPARK_KEY_5";
+	case SPARK_KEY_6:
+		return "SPARK_KEY_6";
+	case SPARK_KEY_7:
+		return "SPARK_KEY_7";
+	case SPARK_KEY_8:
+		return "SPARK_KEY_8";
+	case SPARK_KEY_9:
+		return "SPARK_KEY_9";
+	case SPARK_KEY_SEMICOLON:
+		return "SPARK_KEY_SEMICOLON";
+	case SPARK_KEY_EQUAL:
+		return "SPARK_KEY_EQUAL";
+	case SPARK_KEY_A:
+		return "SPARK_KEY_A";
+	case SPARK_KEY_B:
+		return "SPARK_KEY_B";
+	case SPARK_KEY_C:
+		return "SPARK_KEY_C";
+	case SPARK_KEY_D:
+		return "SPARK_KEY_D";
+	case SPARK_KEY_E:
+		return "SPARK_KEY_E";
+	case SPARK_KEY_F:
+		return "SPARK_KEY_F";
+	case SPARK_KEY_G:
+		return "SPARK_KEY_G";
+	case SPARK_KEY_H:
+		return "SPARK_KEY_H";
+	case SPARK_KEY_I:
+		return "SPARK_KEY_I";
+	case SPARK_KEY_J:
+		return "SPARK_KEY_J";
+	case SPARK_KEY_K:
+		return "SPARK_KEY_K";
+	case SPARK_KEY_L:
+		return "SPARK_KEY_L";
+	case SPARK_KEY_M:
+		return "SPARK_KEY_M";
+	case SPARK_KEY_N:
+		return "SPARK_KEY_N";
+	case SPARK_KEY_O:
+		return "SPARK_KEY_O";
+	case SPARK_KEY_P:
+		return "SPARK_KEY_P";
+	case SPARK_KEY_Q:
+		return "SPARK_KEY_Q";
+	case SPARK_KEY_R:
+		return "SPARK_KEY_R";
+	case SPARK_KEY_S:
+		return "SPARK_KEY_S";
+	case SPARK_KEY_T:
+		return "SPARK_KEY_T";
+	case SPARK_KEY_U:
+		return "SPARK_KEY_U";
+	case SPARK_KEY_V:
+		return "SPARK_KEY_V";
+	case SPARK_KEY_W:
+		return "SPARK_KEY_W";
+	case SPARK_KEY_X:
+		return "SPARK_KEY_X";
+	case SPARK_KEY_Y:
+		return "SPARK_KEY_Y";
+	case SPARK_KEY_Z:
+		return "SPARK_KEY_Z";
+	case SPARK_KEY_LEFT_BRACKET:
+		return "SPARK_KEY_LEFT_BRACKET";
+	case SPARK_KEY_BACKSLASH:
+		return "SPARK_KEY_BACKSLASH";
+	case SPARK_KEY_RIGHT_BRACKET:
+		return "SPARK_KEY_RIGHT_BRACKET";
+	case SPARK_KEY_GRAVE_ACCENT:
+		return "SPARK_KEY_GRAVE_ACCENT";
+	case SPARK_KEY_WORLD_1:
+		return "SPARK_KEY_WORLD_1";
+	case SPARK_KEY_WORLD_2:
+		return "SPARK_KEY_WORLD_2";
+	case SPARK_KEY_ESCAPE:
+		return "SPARK_KEY_ESCAPE";
+	case SPARK_KEY_ENTER:
+		return "SPARK_KEY_ENTER";
+	case SPARK_KEY_TAB:
+		return "SPARK_KEY_TAB";
+	case SPARK_KEY_BACKSPACE:
+		return "SPARK_KEY_BACKSPACE";
+	case SPARK_KEY_INSERT:
+		return "SPARK_KEY_INSERT";
+	case SPARK_KEY_DELETE:
+		return "SPARK_KEY_DELETE";
+	case SPARK_KEY_RIGHT:
+		return "SPARK_KEY_RIGHT";
+	case SPARK_KEY_LEFT:
+		return "SPARK_KEY_LEFT";
+	case SPARK_KEY_DOWN:
+		return "SPARK_KEY_DOWN";
+	case SPARK_KEY_UP:
+		return "SPARK_KEY_UP";
+	case SPARK_KEY_PAGE_UP:
+		return "SPARK_KEY_PAGE_UP";
+	case SPARK_KEY_PAGE_DOWN:
+		return "SPARK_KEY_PAGE_DOWN";
+	case SPARK_KEY_HOME:
+		return "SPARK_KEY_HOME";
+	case SPARK_KEY_END:
+		return "SPARK_KEY_END";
+	case SPARK_KEY_CAPS_LOCK:
+		return "SPARK_KEY_CAPS_LOCK";
+	case SPARK_KEY_SCROLL_LOCK:
+		return "SPARK_KEY_SCROLL_LOCK";
+	case SPARK_KEY_NUM_LOCK:
+		return "SPARK_KEY_NUM_LOCK";
+	case SPARK_KEY_PRINT_SCREEN:
+		return "SPARK_KEY_PRINT_SCREEN";
+	case SPARK_KEY_PAUSE:
+		return "SPARK_KEY_PAUSE";
+	case SPARK_KEY_F1:
+		return "SPARK_KEY_F1";
+	case SPARK_KEY_F2:
+		return "SPARK_KEY_F2";
+	case SPARK_KEY_F3:
+		return "SPARK_KEY_F3";
+	case SPARK_KEY_F4:
+		return "SPARK_KEY_F4";
+	case SPARK_KEY_F5:
+		return "SPARK_KEY_F5";
+	case SPARK_KEY_F6:
+		return "SPARK_KEY_F6";
+	case SPARK_KEY_F7:
+		return "SPARK_KEY_F7";
+	case SPARK_KEY_F8:
+		return "SPARK_KEY_F8";
+	case SPARK_KEY_F9:
+		return "SPARK_KEY_F9";
+	case SPARK_KEY_F10:
+		return "SPARK_KEY_F10";
+	case SPARK_KEY_F11:
+		return "SPARK_KEY_F11";
+	case SPARK_KEY_F12:
+		return "SPARK_KEY_F12";
+	case SPARK_KEY_F13:
+		return "SPARK_KEY_F13";
+	case SPARK_KEY_F14:
+		return "SPARK_KEY_F14";
+	case SPARK_KEY_F15:
+		return "SPARK_KEY_F15";
+	case SPARK_KEY_F16:
+		return "SPARK_KEY_F16";
+	case SPARK_KEY_F17:
+		return "SPARK_KEY_F17";
+	case SPARK_KEY_F18:
+		return "SPARK_KEY_F18";
+	case SPARK_KEY_F19:
+		return "SPARK_KEY_F19";
+	case SPARK_KEY_F20:
+		return "SPARK_KEY_F20";
+	case SPARK_KEY_F21:
+		return "SPARK_KEY_F21";
+	case SPARK_KEY_F22:
+		return "SPARK_KEY_F22";
+	case SPARK_KEY_F23:
+		return "SPARK_KEY_F23";
+	case SPARK_KEY_F24:
+		return "SPARK_KEY_F24";
+	case SPARK_KEY_F25:
+		return "SPARK_KEY_F25";
+	case SPARK_KEY_KP_0:
+		return "SPARK_KEY_KP_0";
+	case SPARK_KEY_KP_1:
+		return "SPARK_KEY_KP_1";
+	case SPARK_KEY_KP_2:
+		return "SPARK_KEY_KP_2";
+	case SPARK_KEY_KP_3:
+		return "SPARK_KEY_KP_3";
+	case SPARK_KEY_KP_4:
+		return "SPARK_KEY_KP_4";
+	case SPARK_KEY_KP_5:
+		return "SPARK_KEY_KP_5";
+	case SPARK_KEY_KP_6:
+		return "SPARK_KEY_KP_6";
+	case SPARK_KEY_KP_7:
+		return "SPARK_KEY_KP_7";
+	case SPARK_KEY_KP_8:
+		return "SPARK_KEY_KP_8";
+	case SPARK_KEY_KP_9:
+		return "SPARK_KEY_KP_9";
+	case SPARK_KEY_KP_DECIMAL:
+		return "SPARK_KEY_KP_DECIMAL";
+	case SPARK_KEY_KP_DIVIDE:
+		return "SPARK_KEY_KP_DIVIDE";
+	case SPARK_KEY_KP_MULTIPLY:
+		return "SPARK_KEY_KP_MULTIPLY";
+	case SPARK_KEY_KP_SUBTRACT:
+		return "SPARK_KEY_KP_SUBTRACT";
+	case SPARK_KEY_KP_ADD:
+		return "SPARK_KEY_KP_ADD";
+	case SPARK_KEY_KP_ENTER:
+		return "SPARK_KEY_KP_ENTER";
+	case SPARK_KEY_KP_EQUAL:
+		return "SPARK_KEY_KP_EQUAL";
+	case SPARK_KEY_LEFT_SHIFT:
+		return "SPARK_KEY_LEFT_SHIFT";
+	case SPARK_KEY_LEFT_CONTROL:
+		return "SPARK_KEY_LEFT_CONTROL";
+	case SPARK_KEY_LEFT_ALT:
+		return "SPARK_KEY_LEFT_ALT";
+	case SPARK_KEY_LEFT_SUPER:
+		return "SPARK_KEY_LEFT_SUPER";
+	case SPARK_KEY_RIGHT_SHIFT:
+		return "SPARK_KEY_RIGHT_SHIFT";
+	case SPARK_KEY_RIGHT_CONTROL:
+		return "SPARK_KEY_RIGHT_CONTROL";
+	case SPARK_KEY_RIGHT_ALT:
+		return "SPARK_KEY_RIGHT_ALT";
+	case SPARK_KEY_RIGHT_SUPER:
+		return "SPARK_KEY_RIGHT_SUPER";
+	case SPARK_KEY_MENU:
+		return "SPARK_KEY_MENU";
+	default:
+		return "UNKNOWN_SPARK_KEY";
 	}
 }
 
-SPARKAPI SparkKey SparkStringToKey(SparkConstString string)
-{
-	if (strcmp(string, "SPARK_KEY_UNKNOWN") == 0) return SPARK_KEY_UNKNOWN;
-	else if (strcmp(string, "SPARK_KEY_SPACE") == 0) return SPARK_KEY_SPACE;
-	else if (strcmp(string, "SPARK_KEY_APOSTROPHE") == 0) return SPARK_KEY_APOSTROPHE;
-	else if (strcmp(string, "SPARK_KEY_COMMA") == 0) return SPARK_KEY_COMMA;
-	else if (strcmp(string, "SPARK_KEY_MINUS") == 0) return SPARK_KEY_MINUS;
-	else if (strcmp(string, "SPARK_KEY_PERIOD") == 0) return SPARK_KEY_PERIOD;
-	else if (strcmp(string, "SPARK_KEY_SLASH") == 0) return SPARK_KEY_SLASH;
-	else if (strcmp(string, "SPARK_KEY_0") == 0) return SPARK_KEY_0;
-	else if (strcmp(string, "SPARK_KEY_1") == 0) return SPARK_KEY_1;
-	else if (strcmp(string, "SPARK_KEY_2") == 0) return SPARK_KEY_2;
-	else if (strcmp(string, "SPARK_KEY_3") == 0) return SPARK_KEY_3;
-	else if (strcmp(string, "SPARK_KEY_4") == 0) return SPARK_KEY_4;
-	else if (strcmp(string, "SPARK_KEY_5") == 0) return SPARK_KEY_5;
-	else if (strcmp(string, "SPARK_KEY_6") == 0) return SPARK_KEY_6;
-	else if (strcmp(string, "SPARK_KEY_7") == 0) return SPARK_KEY_7;
-	else if (strcmp(string, "SPARK_KEY_8") == 0) return SPARK_KEY_8;
-	else if (strcmp(string, "SPARK_KEY_9") == 0) return SPARK_KEY_9;
-	else if (strcmp(string, "SPARK_KEY_SEMICOLON") == 0) return SPARK_KEY_SEMICOLON;
-	else if (strcmp(string, "SPARK_KEY_EQUAL") == 0) return SPARK_KEY_EQUAL;
-	else if (strcmp(string, "SPARK_KEY_A") == 0) return SPARK_KEY_A;
-	else if (strcmp(string, "SPARK_KEY_B") == 0) return SPARK_KEY_B;
-	else if (strcmp(string, "SPARK_KEY_C") == 0) return SPARK_KEY_C;
-	else if (strcmp(string, "SPARK_KEY_D") == 0) return SPARK_KEY_D;
-	else if (strcmp(string, "SPARK_KEY_E") == 0) return SPARK_KEY_E;
-	else if (strcmp(string, "SPARK_KEY_F") == 0) return SPARK_KEY_F;
-	else if (strcmp(string, "SPARK_KEY_G") == 0) return SPARK_KEY_G;
-	else if (strcmp(string, "SPARK_KEY_H") == 0) return SPARK_KEY_H;
-	else if (strcmp(string, "SPARK_KEY_I") == 0) return SPARK_KEY_I;
-	else if (strcmp(string, "SPARK_KEY_J") == 0) return SPARK_KEY_J;
-	else if (strcmp(string, "SPARK_KEY_K") == 0) return SPARK_KEY_K;
-	else if (strcmp(string, "SPARK_KEY_L") == 0) return SPARK_KEY_L;
-	else if (strcmp(string, "SPARK_KEY_M") == 0) return SPARK_KEY_M;
-	else if (strcmp(string, "SPARK_KEY_N") == 0) return SPARK_KEY_N;
-	else if (strcmp(string, "SPARK_KEY_O") == 0) return SPARK_KEY_O;
-	else if (strcmp(string, "SPARK_KEY_P") == 0) return SPARK_KEY_P;
-	else if (strcmp(string, "SPARK_KEY_Q") == 0) return SPARK_KEY_Q;
-	else if (strcmp(string, "SPARK_KEY_R") == 0) return SPARK_KEY_R;
-	else if (strcmp(string, "SPARK_KEY_S") == 0) return SPARK_KEY_S;
-	else if (strcmp(string, "SPARK_KEY_T") == 0) return SPARK_KEY_T;
-	else if (strcmp(string, "SPARK_KEY_U") == 0) return SPARK_KEY_U;
-	else if (strcmp(string, "SPARK_KEY_V") == 0) return SPARK_KEY_V;
-	else if (strcmp(string, "SPARK_KEY_W") == 0) return SPARK_KEY_W;
-	else if (strcmp(string, "SPARK_KEY_X") == 0) return SPARK_KEY_X;
-	else if (strcmp(string, "SPARK_KEY_Y") == 0) return SPARK_KEY_Y;
-	else if (strcmp(string, "SPARK_KEY_Z") == 0) return SPARK_KEY_Z;
-	else if (strcmp(string, "SPARK_KEY_LEFT_BRACKET") == 0) return SPARK_KEY_LEFT_BRACKET;
-	else if (strcmp(string, "SPARK_KEY_BACKSLASH") == 0) return SPARK_KEY_BACKSLASH;
-	else if (strcmp(string, "SPARK_KEY_RIGHT_BRACKET") == 0) return SPARK_KEY_RIGHT_BRACKET;
-	else if (strcmp(string, "SPARK_KEY_GRAVE_ACCENT") == 0) return SPARK_KEY_GRAVE_ACCENT;
-	else if (strcmp(string, "SPARK_KEY_WORLD_1") == 0) return SPARK_KEY_WORLD_1;
-	else if (strcmp(string, "SPARK_KEY_WORLD_2") == 0) return SPARK_KEY_WORLD_2;
-	else if (strcmp(string, "SPARK_KEY_ESCAPE") == 0) return SPARK_KEY_ESCAPE;
-	else if (strcmp(string, "SPARK_KEY_ENTER") == 0) return SPARK_KEY_ENTER;
-	else if (strcmp(string, "SPARK_KEY_TAB") == 0) return SPARK_KEY_TAB;
-	else if (strcmp(string, "SPARK_KEY_BACKSPACE") == 0) return SPARK_KEY_BACKSPACE;
-	else if (strcmp(string, "SPARK_KEY_INSERT") == 0) return SPARK_KEY_INSERT;
-	else if (strcmp(string, "SPARK_KEY_DELETE") == 0) return SPARK_KEY_DELETE;
-	else if (strcmp(string, "SPARK_KEY_RIGHT") == 0) return SPARK_KEY_RIGHT;
-	else if (strcmp(string, "SPARK_KEY_LEFT") == 0) return SPARK_KEY_LEFT;
-	else if (strcmp(string, "SPARK_KEY_DOWN") == 0) return SPARK_KEY_DOWN;
-	else if (strcmp(string, "SPARK_KEY_UP") == 0) return SPARK_KEY_UP;
-	else if (strcmp(string, "SPARK_KEY_PAGE_UP") == 0) return SPARK_KEY_PAGE_UP;
-	else if (strcmp(string, "SPARK_KEY_PAGE_DOWN") == 0) return SPARK_KEY_PAGE_DOWN;
-	else if (strcmp(string, "SPARK_KEY_HOME") == 0) return SPARK_KEY_HOME;
-	else if (strcmp(string, "SPARK_KEY_END") == 0) return SPARK_KEY_END;
-	else if (strcmp(string, "SPARK_KEY_CAPS_LOCK") == 0) return SPARK_KEY_CAPS_LOCK;
-	else if (strcmp(string, "SPARK_KEY_SCROLL_LOCK") == 0) return SPARK_KEY_SCROLL_LOCK;
-	else if (strcmp(string, "SPARK_KEY_NUM_LOCK") == 0) return SPARK_KEY_NUM_LOCK;
-	else if (strcmp(string, "SPARK_KEY_PRINT_SCREEN") == 0) return SPARK_KEY_PRINT_SCREEN;
-	else if (strcmp(string, "SPARK_KEY_PAUSE") == 0) return SPARK_KEY_PAUSE;
-	else if (strcmp(string, "SPARK_KEY_F1") == 0) return SPARK_KEY_F1;
-	else if (strcmp(string, "SPARK_KEY_F2") == 0) return SPARK_KEY_F2;
-	else if (strcmp(string, "SPARK_KEY_F3") == 0) return SPARK_KEY_F3;
-	else if (strcmp(string, "SPARK_KEY_F4") == 0) return SPARK_KEY_F4;
-	else if (strcmp(string, "SPARK_KEY_F5") == 0) return SPARK_KEY_F5;
-	else if (strcmp(string, "SPARK_KEY_F6") == 0) return SPARK_KEY_F6;
-	else if (strcmp(string, "SPARK_KEY_F7") == 0) return SPARK_KEY_F7;
-	else if (strcmp(string, "SPARK_KEY_F8") == 0) return SPARK_KEY_F8;
-	else if (strcmp(string, "SPARK_KEY_F9") == 0) return SPARK_KEY_F9;
-	else if (strcmp(string, "SPARK_KEY_F10") == 0) return SPARK_KEY_F10;
-	else if (strcmp(string, "SPARK_KEY_F11") == 0) return SPARK_KEY_F11;
-	else if (strcmp(string, "SPARK_KEY_F12") == 0) return SPARK_KEY_F12;
-	else if (strcmp(string, "SPARK_KEY_F13") == 0) return SPARK_KEY_F13;
-	else if (strcmp(string, "SPARK_KEY_F14") == 0) return SPARK_KEY_F14;
-	else if (strcmp(string, "SPARK_KEY_F15") == 0) return SPARK_KEY_F15;
-	else if (strcmp(string, "SPARK_KEY_F16") == 0) return SPARK_KEY_F16;
-	else if (strcmp(string, "SPARK_KEY_F17") == 0) return SPARK_KEY_F17;
-	else if (strcmp(string, "SPARK_KEY_F18") == 0) return SPARK_KEY_F18;
-	else if (strcmp(string, "SPARK_KEY_F19") == 0) return SPARK_KEY_F19;
-	else if (strcmp(string, "SPARK_KEY_F20") == 0) return SPARK_KEY_F20;
-	else if (strcmp(string, "SPARK_KEY_F21") == 0) return SPARK_KEY_F21;
-	else if (strcmp(string, "SPARK_KEY_F22") == 0) return SPARK_KEY_F22;
-	else if (strcmp(string, "SPARK_KEY_F23") == 0) return SPARK_KEY_F23;
-	else if (strcmp(string, "SPARK_KEY_F24") == 0) return SPARK_KEY_F24;
-	else if (strcmp(string, "SPARK_KEY_F25") == 0) return SPARK_KEY_F25;
-	else if (strcmp(string, "SPARK_KEY_KP_0") == 0) return SPARK_KEY_KP_0;
-	else if (strcmp(string, "SPARK_KEY_KP_1") == 0) return SPARK_KEY_KP_1;
-	else if (strcmp(string, "SPARK_KEY_KP_2") == 0) return SPARK_KEY_KP_2;
-	else if (strcmp(string, "SPARK_KEY_KP_3") == 0) return SPARK_KEY_KP_3;
-	else if (strcmp(string, "SPARK_KEY_KP_4") == 0) return SPARK_KEY_KP_4;
-	else if (strcmp(string, "SPARK_KEY_KP_5") == 0) return SPARK_KEY_KP_5;
-	else if (strcmp(string, "SPARK_KEY_KP_6") == 0) return SPARK_KEY_KP_6;
-	else if (strcmp(string, "SPARK_KEY_KP_7") == 0) return SPARK_KEY_KP_7;
-	else if (strcmp(string, "SPARK_KEY_KP_8") == 0) return SPARK_KEY_KP_8;
-	else if (strcmp(string, "SPARK_KEY_KP_9") == 0) return SPARK_KEY_KP_9;
-	else if (strcmp(string, "SPARK_KEY_KP_DECIMAL") == 0) return SPARK_KEY_KP_DECIMAL;
-	else if (strcmp(string, "SPARK_KEY_KP_DIVIDE") == 0) return SPARK_KEY_KP_DIVIDE;
-	else if (strcmp(string, "SPARK_KEY_KP_MULTIPLY") == 0) return SPARK_KEY_KP_MULTIPLY;
-	else if (strcmp(string, "SPARK_KEY_KP_SUBTRACT") == 0) return SPARK_KEY_KP_SUBTRACT;
-	else if (strcmp(string, "SPARK_KEY_KP_ADD") == 0) return SPARK_KEY_KP_ADD;
-	else if (strcmp(string, "SPARK_KEY_KP_ENTER") == 0) return SPARK_KEY_KP_ENTER;
-	else if (strcmp(string, "SPARK_KEY_KP_EQUAL") == 0) return SPARK_KEY_KP_EQUAL;
-	else if (strcmp(string, "SPARK_KEY_LEFT_SHIFT") == 0) return SPARK_KEY_LEFT_SHIFT;
-	else if (strcmp(string, "SPARK_KEY_LEFT_CONTROL") == 0) return SPARK_KEY_LEFT_CONTROL;
-	else if (strcmp(string, "SPARK_KEY_LEFT_ALT") == 0) return SPARK_KEY_LEFT_ALT;
-	else if (strcmp(string, "SPARK_KEY_LEFT_SUPER") == 0) return SPARK_KEY_LEFT_SUPER;
-	else if (strcmp(string, "SPARK_KEY_RIGHT_SHIFT") == 0) return SPARK_KEY_RIGHT_SHIFT;
-	else if (strcmp(string, "SPARK_KEY_RIGHT_CONTROL") == 0) return SPARK_KEY_RIGHT_CONTROL;
-	else if (strcmp(string, "SPARK_KEY_RIGHT_ALT") == 0) return SPARK_KEY_RIGHT_ALT;
-	else if (strcmp(string, "SPARK_KEY_RIGHT_SUPER") == 0) return SPARK_KEY_RIGHT_SUPER;
-	else if (strcmp(string, "SPARK_KEY_MENU") == 0) return SPARK_KEY_MENU;
+SPARKAPI SparkKey SparkStringToKey(SparkConstString string) {
+	if (strcmp(string, "SPARK_KEY_UNKNOWN") == 0)
+		return SPARK_KEY_UNKNOWN;
+	else if (strcmp(string, "SPARK_KEY_SPACE") == 0)
+		return SPARK_KEY_SPACE;
+	else if (strcmp(string, "SPARK_KEY_APOSTROPHE") == 0)
+		return SPARK_KEY_APOSTROPHE;
+	else if (strcmp(string, "SPARK_KEY_COMMA") == 0)
+		return SPARK_KEY_COMMA;
+	else if (strcmp(string, "SPARK_KEY_MINUS") == 0)
+		return SPARK_KEY_MINUS;
+	else if (strcmp(string, "SPARK_KEY_PERIOD") == 0)
+		return SPARK_KEY_PERIOD;
+	else if (strcmp(string, "SPARK_KEY_SLASH") == 0)
+		return SPARK_KEY_SLASH;
+	else if (strcmp(string, "SPARK_KEY_0") == 0)
+		return SPARK_KEY_0;
+	else if (strcmp(string, "SPARK_KEY_1") == 0)
+		return SPARK_KEY_1;
+	else if (strcmp(string, "SPARK_KEY_2") == 0)
+		return SPARK_KEY_2;
+	else if (strcmp(string, "SPARK_KEY_3") == 0)
+		return SPARK_KEY_3;
+	else if (strcmp(string, "SPARK_KEY_4") == 0)
+		return SPARK_KEY_4;
+	else if (strcmp(string, "SPARK_KEY_5") == 0)
+		return SPARK_KEY_5;
+	else if (strcmp(string, "SPARK_KEY_6") == 0)
+		return SPARK_KEY_6;
+	else if (strcmp(string, "SPARK_KEY_7") == 0)
+		return SPARK_KEY_7;
+	else if (strcmp(string, "SPARK_KEY_8") == 0)
+		return SPARK_KEY_8;
+	else if (strcmp(string, "SPARK_KEY_9") == 0)
+		return SPARK_KEY_9;
+	else if (strcmp(string, "SPARK_KEY_SEMICOLON") == 0)
+		return SPARK_KEY_SEMICOLON;
+	else if (strcmp(string, "SPARK_KEY_EQUAL") == 0)
+		return SPARK_KEY_EQUAL;
+	else if (strcmp(string, "SPARK_KEY_A") == 0)
+		return SPARK_KEY_A;
+	else if (strcmp(string, "SPARK_KEY_B") == 0)
+		return SPARK_KEY_B;
+	else if (strcmp(string, "SPARK_KEY_C") == 0)
+		return SPARK_KEY_C;
+	else if (strcmp(string, "SPARK_KEY_D") == 0)
+		return SPARK_KEY_D;
+	else if (strcmp(string, "SPARK_KEY_E") == 0)
+		return SPARK_KEY_E;
+	else if (strcmp(string, "SPARK_KEY_F") == 0)
+		return SPARK_KEY_F;
+	else if (strcmp(string, "SPARK_KEY_G") == 0)
+		return SPARK_KEY_G;
+	else if (strcmp(string, "SPARK_KEY_H") == 0)
+		return SPARK_KEY_H;
+	else if (strcmp(string, "SPARK_KEY_I") == 0)
+		return SPARK_KEY_I;
+	else if (strcmp(string, "SPARK_KEY_J") == 0)
+		return SPARK_KEY_J;
+	else if (strcmp(string, "SPARK_KEY_K") == 0)
+		return SPARK_KEY_K;
+	else if (strcmp(string, "SPARK_KEY_L") == 0)
+		return SPARK_KEY_L;
+	else if (strcmp(string, "SPARK_KEY_M") == 0)
+		return SPARK_KEY_M;
+	else if (strcmp(string, "SPARK_KEY_N") == 0)
+		return SPARK_KEY_N;
+	else if (strcmp(string, "SPARK_KEY_O") == 0)
+		return SPARK_KEY_O;
+	else if (strcmp(string, "SPARK_KEY_P") == 0)
+		return SPARK_KEY_P;
+	else if (strcmp(string, "SPARK_KEY_Q") == 0)
+		return SPARK_KEY_Q;
+	else if (strcmp(string, "SPARK_KEY_R") == 0)
+		return SPARK_KEY_R;
+	else if (strcmp(string, "SPARK_KEY_S") == 0)
+		return SPARK_KEY_S;
+	else if (strcmp(string, "SPARK_KEY_T") == 0)
+		return SPARK_KEY_T;
+	else if (strcmp(string, "SPARK_KEY_U") == 0)
+		return SPARK_KEY_U;
+	else if (strcmp(string, "SPARK_KEY_V") == 0)
+		return SPARK_KEY_V;
+	else if (strcmp(string, "SPARK_KEY_W") == 0)
+		return SPARK_KEY_W;
+	else if (strcmp(string, "SPARK_KEY_X") == 0)
+		return SPARK_KEY_X;
+	else if (strcmp(string, "SPARK_KEY_Y") == 0)
+		return SPARK_KEY_Y;
+	else if (strcmp(string, "SPARK_KEY_Z") == 0)
+		return SPARK_KEY_Z;
+	else if (strcmp(string, "SPARK_KEY_LEFT_BRACKET") == 0)
+		return SPARK_KEY_LEFT_BRACKET;
+	else if (strcmp(string, "SPARK_KEY_BACKSLASH") == 0)
+		return SPARK_KEY_BACKSLASH;
+	else if (strcmp(string, "SPARK_KEY_RIGHT_BRACKET") == 0)
+		return SPARK_KEY_RIGHT_BRACKET;
+	else if (strcmp(string, "SPARK_KEY_GRAVE_ACCENT") == 0)
+		return SPARK_KEY_GRAVE_ACCENT;
+	else if (strcmp(string, "SPARK_KEY_WORLD_1") == 0)
+		return SPARK_KEY_WORLD_1;
+	else if (strcmp(string, "SPARK_KEY_WORLD_2") == 0)
+		return SPARK_KEY_WORLD_2;
+	else if (strcmp(string, "SPARK_KEY_ESCAPE") == 0)
+		return SPARK_KEY_ESCAPE;
+	else if (strcmp(string, "SPARK_KEY_ENTER") == 0)
+		return SPARK_KEY_ENTER;
+	else if (strcmp(string, "SPARK_KEY_TAB") == 0)
+		return SPARK_KEY_TAB;
+	else if (strcmp(string, "SPARK_KEY_BACKSPACE") == 0)
+		return SPARK_KEY_BACKSPACE;
+	else if (strcmp(string, "SPARK_KEY_INSERT") == 0)
+		return SPARK_KEY_INSERT;
+	else if (strcmp(string, "SPARK_KEY_DELETE") == 0)
+		return SPARK_KEY_DELETE;
+	else if (strcmp(string, "SPARK_KEY_RIGHT") == 0)
+		return SPARK_KEY_RIGHT;
+	else if (strcmp(string, "SPARK_KEY_LEFT") == 0)
+		return SPARK_KEY_LEFT;
+	else if (strcmp(string, "SPARK_KEY_DOWN") == 0)
+		return SPARK_KEY_DOWN;
+	else if (strcmp(string, "SPARK_KEY_UP") == 0)
+		return SPARK_KEY_UP;
+	else if (strcmp(string, "SPARK_KEY_PAGE_UP") == 0)
+		return SPARK_KEY_PAGE_UP;
+	else if (strcmp(string, "SPARK_KEY_PAGE_DOWN") == 0)
+		return SPARK_KEY_PAGE_DOWN;
+	else if (strcmp(string, "SPARK_KEY_HOME") == 0)
+		return SPARK_KEY_HOME;
+	else if (strcmp(string, "SPARK_KEY_END") == 0)
+		return SPARK_KEY_END;
+	else if (strcmp(string, "SPARK_KEY_CAPS_LOCK") == 0)
+		return SPARK_KEY_CAPS_LOCK;
+	else if (strcmp(string, "SPARK_KEY_SCROLL_LOCK") == 0)
+		return SPARK_KEY_SCROLL_LOCK;
+	else if (strcmp(string, "SPARK_KEY_NUM_LOCK") == 0)
+		return SPARK_KEY_NUM_LOCK;
+	else if (strcmp(string, "SPARK_KEY_PRINT_SCREEN") == 0)
+		return SPARK_KEY_PRINT_SCREEN;
+	else if (strcmp(string, "SPARK_KEY_PAUSE") == 0)
+		return SPARK_KEY_PAUSE;
+	else if (strcmp(string, "SPARK_KEY_F1") == 0)
+		return SPARK_KEY_F1;
+	else if (strcmp(string, "SPARK_KEY_F2") == 0)
+		return SPARK_KEY_F2;
+	else if (strcmp(string, "SPARK_KEY_F3") == 0)
+		return SPARK_KEY_F3;
+	else if (strcmp(string, "SPARK_KEY_F4") == 0)
+		return SPARK_KEY_F4;
+	else if (strcmp(string, "SPARK_KEY_F5") == 0)
+		return SPARK_KEY_F5;
+	else if (strcmp(string, "SPARK_KEY_F6") == 0)
+		return SPARK_KEY_F6;
+	else if (strcmp(string, "SPARK_KEY_F7") == 0)
+		return SPARK_KEY_F7;
+	else if (strcmp(string, "SPARK_KEY_F8") == 0)
+		return SPARK_KEY_F8;
+	else if (strcmp(string, "SPARK_KEY_F9") == 0)
+		return SPARK_KEY_F9;
+	else if (strcmp(string, "SPARK_KEY_F10") == 0)
+		return SPARK_KEY_F10;
+	else if (strcmp(string, "SPARK_KEY_F11") == 0)
+		return SPARK_KEY_F11;
+	else if (strcmp(string, "SPARK_KEY_F12") == 0)
+		return SPARK_KEY_F12;
+	else if (strcmp(string, "SPARK_KEY_F13") == 0)
+		return SPARK_KEY_F13;
+	else if (strcmp(string, "SPARK_KEY_F14") == 0)
+		return SPARK_KEY_F14;
+	else if (strcmp(string, "SPARK_KEY_F15") == 0)
+		return SPARK_KEY_F15;
+	else if (strcmp(string, "SPARK_KEY_F16") == 0)
+		return SPARK_KEY_F16;
+	else if (strcmp(string, "SPARK_KEY_F17") == 0)
+		return SPARK_KEY_F17;
+	else if (strcmp(string, "SPARK_KEY_F18") == 0)
+		return SPARK_KEY_F18;
+	else if (strcmp(string, "SPARK_KEY_F19") == 0)
+		return SPARK_KEY_F19;
+	else if (strcmp(string, "SPARK_KEY_F20") == 0)
+		return SPARK_KEY_F20;
+	else if (strcmp(string, "SPARK_KEY_F21") == 0)
+		return SPARK_KEY_F21;
+	else if (strcmp(string, "SPARK_KEY_F22") == 0)
+		return SPARK_KEY_F22;
+	else if (strcmp(string, "SPARK_KEY_F23") == 0)
+		return SPARK_KEY_F23;
+	else if (strcmp(string, "SPARK_KEY_F24") == 0)
+		return SPARK_KEY_F24;
+	else if (strcmp(string, "SPARK_KEY_F25") == 0)
+		return SPARK_KEY_F25;
+	else if (strcmp(string, "SPARK_KEY_KP_0") == 0)
+		return SPARK_KEY_KP_0;
+	else if (strcmp(string, "SPARK_KEY_KP_1") == 0)
+		return SPARK_KEY_KP_1;
+	else if (strcmp(string, "SPARK_KEY_KP_2") == 0)
+		return SPARK_KEY_KP_2;
+	else if (strcmp(string, "SPARK_KEY_KP_3") == 0)
+		return SPARK_KEY_KP_3;
+	else if (strcmp(string, "SPARK_KEY_KP_4") == 0)
+		return SPARK_KEY_KP_4;
+	else if (strcmp(string, "SPARK_KEY_KP_5") == 0)
+		return SPARK_KEY_KP_5;
+	else if (strcmp(string, "SPARK_KEY_KP_6") == 0)
+		return SPARK_KEY_KP_6;
+	else if (strcmp(string, "SPARK_KEY_KP_7") == 0)
+		return SPARK_KEY_KP_7;
+	else if (strcmp(string, "SPARK_KEY_KP_8") == 0)
+		return SPARK_KEY_KP_8;
+	else if (strcmp(string, "SPARK_KEY_KP_9") == 0)
+		return SPARK_KEY_KP_9;
+	else if (strcmp(string, "SPARK_KEY_KP_DECIMAL") == 0)
+		return SPARK_KEY_KP_DECIMAL;
+	else if (strcmp(string, "SPARK_KEY_KP_DIVIDE") == 0)
+		return SPARK_KEY_KP_DIVIDE;
+	else if (strcmp(string, "SPARK_KEY_KP_MULTIPLY") == 0)
+		return SPARK_KEY_KP_MULTIPLY;
+	else if (strcmp(string, "SPARK_KEY_KP_SUBTRACT") == 0)
+		return SPARK_KEY_KP_SUBTRACT;
+	else if (strcmp(string, "SPARK_KEY_KP_ADD") == 0)
+		return SPARK_KEY_KP_ADD;
+	else if (strcmp(string, "SPARK_KEY_KP_ENTER") == 0)
+		return SPARK_KEY_KP_ENTER;
+	else if (strcmp(string, "SPARK_KEY_KP_EQUAL") == 0)
+		return SPARK_KEY_KP_EQUAL;
+	else if (strcmp(string, "SPARK_KEY_LEFT_SHIFT") == 0)
+		return SPARK_KEY_LEFT_SHIFT;
+	else if (strcmp(string, "SPARK_KEY_LEFT_CONTROL") == 0)
+		return SPARK_KEY_LEFT_CONTROL;
+	else if (strcmp(string, "SPARK_KEY_LEFT_ALT") == 0)
+		return SPARK_KEY_LEFT_ALT;
+	else if (strcmp(string, "SPARK_KEY_LEFT_SUPER") == 0)
+		return SPARK_KEY_LEFT_SUPER;
+	else if (strcmp(string, "SPARK_KEY_RIGHT_SHIFT") == 0)
+		return SPARK_KEY_RIGHT_SHIFT;
+	else if (strcmp(string, "SPARK_KEY_RIGHT_CONTROL") == 0)
+		return SPARK_KEY_RIGHT_CONTROL;
+	else if (strcmp(string, "SPARK_KEY_RIGHT_ALT") == 0)
+		return SPARK_KEY_RIGHT_ALT;
+	else if (strcmp(string, "SPARK_KEY_RIGHT_SUPER") == 0)
+		return SPARK_KEY_RIGHT_SUPER;
+	else if (strcmp(string, "SPARK_KEY_MENU") == 0)
+		return SPARK_KEY_MENU;
 	return SPARK_KEY_UNKNOWN;
 }
 
 SPARKAPI SparkConstString SparkModifierToString(SparkModifier modifier) {
 	switch (modifier) {
-	case SPARK_MOD_SHIFT:   return "SPARK_MOD_SHIFT";
-	case SPARK_MOD_CONTROL: return "SPARK_MOD_CONTROL";
-	case SPARK_MOD_ALT:     return "SPARK_MOD_ALT";
-	case SPARK_MOD_SUPER:   return "SPARK_MOD_SUPER";
-	default:                return "UNKNOWN_SPARK_MODIFIER";
+	case SPARK_MOD_SHIFT:
+		return "SPARK_MOD_SHIFT";
+	case SPARK_MOD_CONTROL:
+		return "SPARK_MOD_CONTROL";
+	case SPARK_MOD_ALT:
+		return "SPARK_MOD_ALT";
+	case SPARK_MOD_SUPER:
+		return "SPARK_MOD_SUPER";
+	default:
+		return "UNKNOWN_SPARK_MODIFIER";
 	}
 }
 
 SPARKAPI SparkModifier SparkStringToModifier(SparkConstString string) {
-	if (strcmp(string, "SPARK_MOD_SHIFT") == 0)         return SPARK_MOD_SHIFT;
-	else if (strcmp(string, "SPARK_MOD_CONTROL") == 0)  return SPARK_MOD_CONTROL;
-	else if (strcmp(string, "SPARK_MOD_ALT") == 0)      return SPARK_MOD_ALT;
-	else if (strcmp(string, "SPARK_MOD_SUPER") == 0)    return SPARK_MOD_SUPER;
-	else                                                return (SparkModifier)0;
+	if (strcmp(string, "SPARK_MOD_SHIFT") == 0)
+		return SPARK_MOD_SHIFT;
+	else if (strcmp(string, "SPARK_MOD_CONTROL") == 0)
+		return SPARK_MOD_CONTROL;
+	else if (strcmp(string, "SPARK_MOD_ALT") == 0)
+		return SPARK_MOD_ALT;
+	else if (strcmp(string, "SPARK_MOD_SUPER") == 0)
+		return SPARK_MOD_SUPER;
+	else
+		return (SparkModifier)0;
 }
 
 SPARKAPI SparkConstString SparkActionToString(SparkAction action) {
 	switch (action) {
-	case SPARK_RELEASE: return "SPARK_RELEASE";
-	case SPARK_PRESS:   return "SPARK_PRESS";
-	case SPARK_REPEAT:  return "SPARK_REPEAT";
-	default:            return "UNKNOWN_SPARK_ACTION";
+	case SPARK_RELEASE:
+		return "SPARK_RELEASE";
+	case SPARK_PRESS:
+		return "SPARK_PRESS";
+	case SPARK_REPEAT:
+		return "SPARK_REPEAT";
+	default:
+		return "UNKNOWN_SPARK_ACTION";
 	}
 }
 
 SPARKAPI SparkAction SparkStringToAction(SparkConstString string) {
-	if (strcmp(string, "SPARK_RELEASE") == 0)      return SPARK_RELEASE;
-	else if (strcmp(string, "SPARK_PRESS") == 0)   return SPARK_PRESS;
-	else if (strcmp(string, "SPARK_REPEAT") == 0)  return SPARK_REPEAT;
-	else                                           return (SparkAction)-1;
+	if (strcmp(string, "SPARK_RELEASE") == 0)
+		return SPARK_RELEASE;
+	else if (strcmp(string, "SPARK_PRESS") == 0)
+		return SPARK_PRESS;
+	else if (strcmp(string, "SPARK_REPEAT") == 0)
+		return SPARK_REPEAT;
+	else
+		return (SparkAction)-1;
 }
 
 SPARKAPI SparkConstString SparkCursorToString(SparkCursor cursor) {
 	switch (cursor) {
-	case SPARK_CURSOR_ARROW:     return "SPARK_CURSOR_ARROW";
-	case SPARK_CURSOR_IBEAM:     return "SPARK_CURSOR_IBEAM";
-	case SPARK_CURSOR_CROSSHAIR: return "SPARK_CURSOR_CROSSHAIR";
-	case SPARK_CURSOR_HAND:      return "SPARK_CURSOR_HAND";
-	case SPARK_CURSOR_HRESIZE:   return "SPARK_CURSOR_HRESIZE";
-	case SPARK_CURSOR_VRESIZE:   return "SPARK_CURSOR_VRESIZE";
-	default:                     return "UNKNOWN_SPARK_CURSOR";
+	case SPARK_CURSOR_ARROW:
+		return "SPARK_CURSOR_ARROW";
+	case SPARK_CURSOR_IBEAM:
+		return "SPARK_CURSOR_IBEAM";
+	case SPARK_CURSOR_CROSSHAIR:
+		return "SPARK_CURSOR_CROSSHAIR";
+	case SPARK_CURSOR_HAND:
+		return "SPARK_CURSOR_HAND";
+	case SPARK_CURSOR_HRESIZE:
+		return "SPARK_CURSOR_HRESIZE";
+	case SPARK_CURSOR_VRESIZE:
+		return "SPARK_CURSOR_VRESIZE";
+	default:
+		return "UNKNOWN_SPARK_CURSOR";
 	}
 }
 
 SPARKAPI SparkCursor SparkStringToCursor(SparkConstString string) {
-	if (strcmp(string, "SPARK_CURSOR_ARROW") == 0)         return SPARK_CURSOR_ARROW;
-	else if (strcmp(string, "SPARK_CURSOR_IBEAM") == 0)    return SPARK_CURSOR_IBEAM;
-	else if (strcmp(string, "SPARK_CURSOR_CROSSHAIR") == 0)return SPARK_CURSOR_CROSSHAIR;
-	else if (strcmp(string, "SPARK_CURSOR_HAND") == 0)     return SPARK_CURSOR_HAND;
-	else if (strcmp(string, "SPARK_CURSOR_HRESIZE") == 0)  return SPARK_CURSOR_HRESIZE;
-	else if (strcmp(string, "SPARK_CURSOR_VRESIZE") == 0)  return SPARK_CURSOR_VRESIZE;
-	else                                                   return (SparkCursor)-1;
+	if (strcmp(string, "SPARK_CURSOR_ARROW") == 0)
+		return SPARK_CURSOR_ARROW;
+	else if (strcmp(string, "SPARK_CURSOR_IBEAM") == 0)
+		return SPARK_CURSOR_IBEAM;
+	else if (strcmp(string, "SPARK_CURSOR_CROSSHAIR") == 0)
+		return SPARK_CURSOR_CROSSHAIR;
+	else if (strcmp(string, "SPARK_CURSOR_HAND") == 0)
+		return SPARK_CURSOR_HAND;
+	else if (strcmp(string, "SPARK_CURSOR_HRESIZE") == 0)
+		return SPARK_CURSOR_HRESIZE;
+	else if (strcmp(string, "SPARK_CURSOR_VRESIZE") == 0)
+		return SPARK_CURSOR_VRESIZE;
+	else
+		return (SparkCursor)-1;
 }
 
 SPARKAPI SparkConstString SparkEventTypeToString(SparkEventType eventType) {
 	switch (eventType) {
-	case SPARK_EVENT_NONE:                     return "SPARK_EVENT_NONE";
-	case SPARK_EVENT_WINDOW_CLOSE:             return "SPARK_EVENT_WINDOW_CLOSE";
-	case SPARK_EVENT_WINDOW_RESIZE:            return "SPARK_EVENT_WINDOW_RESIZE";
-	case SPARK_EVENT_WINDOW_FOCUS:             return "SPARK_EVENT_WINDOW_FOCUS";
-	case SPARK_EVENT_WINDOW_LOST_FOCUS:        return "SPARK_EVENT_WINDOW_LOST_FOCUS";
-	case SPARK_EVENT_WINDOW_MOVED:             return "SPARK_EVENT_WINDOW_MOVED";
-	case SPARK_EVENT_KEY_PRESSED:              return "SPARK_EVENT_KEY_PRESSED";
-	case SPARK_EVENT_KEY_RELEASED:             return "SPARK_EVENT_KEY_RELEASED";
-	case SPARK_EVENT_KEY_TYPED:                return "SPARK_EVENT_KEY_TYPED";
-	case SPARK_EVENT_MOUSE_BUTTON_PRESSED:     return "SPARK_EVENT_MOUSE_BUTTON_PRESSED";
-	case SPARK_EVENT_MOUSE_BUTTON_RELEASED:    return "SPARK_EVENT_MOUSE_BUTTON_RELEASED";
-	case SPARK_EVENT_MOUSE_MOVED:              return "SPARK_EVENT_MOUSE_MOVED";
-	case SPARK_EVENT_MOUSE_SCROLLED:           return "SPARK_EVENT_MOUSE_SCROLLED";
-	default:                                   return "UNKNOWN_SPARK_EVENT_TYPE";
+	case SPARK_EVENT_NONE:
+		return "SPARK_EVENT_NONE";
+	case SPARK_EVENT_WINDOW_CLOSE:
+		return "SPARK_EVENT_WINDOW_CLOSE";
+	case SPARK_EVENT_WINDOW_RESIZE:
+		return "SPARK_EVENT_WINDOW_RESIZE";
+	case SPARK_EVENT_WINDOW_FOCUS:
+		return "SPARK_EVENT_WINDOW_FOCUS";
+	case SPARK_EVENT_WINDOW_LOST_FOCUS:
+		return "SPARK_EVENT_WINDOW_LOST_FOCUS";
+	case SPARK_EVENT_WINDOW_MOVED:
+		return "SPARK_EVENT_WINDOW_MOVED";
+	case SPARK_EVENT_KEY_PRESSED:
+		return "SPARK_EVENT_KEY_PRESSED";
+	case SPARK_EVENT_KEY_RELEASED:
+		return "SPARK_EVENT_KEY_RELEASED";
+	case SPARK_EVENT_KEY_TYPED:
+		return "SPARK_EVENT_KEY_TYPED";
+	case SPARK_EVENT_MOUSE_BUTTON_PRESSED:
+		return "SPARK_EVENT_MOUSE_BUTTON_PRESSED";
+	case SPARK_EVENT_MOUSE_BUTTON_RELEASED:
+		return "SPARK_EVENT_MOUSE_BUTTON_RELEASED";
+	case SPARK_EVENT_MOUSE_MOVED:
+		return "SPARK_EVENT_MOUSE_MOVED";
+	case SPARK_EVENT_MOUSE_SCROLLED:
+		return "SPARK_EVENT_MOUSE_SCROLLED";
+	default:
+		return "UNKNOWN_SPARK_EVENT_TYPE";
 	}
 }
 
 SPARKAPI SparkEventType SparkStringToEventType(SparkConstString string) {
-	if (strcmp(string, "SPARK_EVENT_NONE") == 0)                      return SPARK_EVENT_NONE;
-	else if (strcmp(string, "SPARK_EVENT_WINDOW_CLOSE") == 0)         return SPARK_EVENT_WINDOW_CLOSE;
-	else if (strcmp(string, "SPARK_EVENT_WINDOW_RESIZE") == 0)        return SPARK_EVENT_WINDOW_RESIZE;
-	else if (strcmp(string, "SPARK_EVENT_WINDOW_FOCUS") == 0)         return SPARK_EVENT_WINDOW_FOCUS;
-	else if (strcmp(string, "SPARK_EVENT_WINDOW_LOST_FOCUS") == 0)    return SPARK_EVENT_WINDOW_LOST_FOCUS;
-	else if (strcmp(string, "SPARK_EVENT_WINDOW_MOVED") == 0)         return SPARK_EVENT_WINDOW_MOVED;
-	else if (strcmp(string, "SPARK_EVENT_KEY_PRESSED") == 0)          return SPARK_EVENT_KEY_PRESSED;
-	else if (strcmp(string, "SPARK_EVENT_KEY_RELEASED") == 0)         return SPARK_EVENT_KEY_RELEASED;
-	else if (strcmp(string, "SPARK_EVENT_KEY_TYPED") == 0)            return SPARK_EVENT_KEY_TYPED;
-	else if (strcmp(string, "SPARK_EVENT_MOUSE_BUTTON_PRESSED") == 0) return SPARK_EVENT_MOUSE_BUTTON_PRESSED;
-	else if (strcmp(string, "SPARK_EVENT_MOUSE_BUTTON_RELEASED") == 0)return SPARK_EVENT_MOUSE_BUTTON_RELEASED;
-	else if (strcmp(string, "SPARK_EVENT_MOUSE_MOVED") == 0)          return SPARK_EVENT_MOUSE_MOVED;
-	else if (strcmp(string, "SPARK_EVENT_MOUSE_SCROLLED") == 0)       return SPARK_EVENT_MOUSE_SCROLLED;
-	else                                                              return (SparkEventType)-1;
+	if (strcmp(string, "SPARK_EVENT_NONE") == 0)
+		return SPARK_EVENT_NONE;
+	else if (strcmp(string, "SPARK_EVENT_WINDOW_CLOSE") == 0)
+		return SPARK_EVENT_WINDOW_CLOSE;
+	else if (strcmp(string, "SPARK_EVENT_WINDOW_RESIZE") == 0)
+		return SPARK_EVENT_WINDOW_RESIZE;
+	else if (strcmp(string, "SPARK_EVENT_WINDOW_FOCUS") == 0)
+		return SPARK_EVENT_WINDOW_FOCUS;
+	else if (strcmp(string, "SPARK_EVENT_WINDOW_LOST_FOCUS") == 0)
+		return SPARK_EVENT_WINDOW_LOST_FOCUS;
+	else if (strcmp(string, "SPARK_EVENT_WINDOW_MOVED") == 0)
+		return SPARK_EVENT_WINDOW_MOVED;
+	else if (strcmp(string, "SPARK_EVENT_KEY_PRESSED") == 0)
+		return SPARK_EVENT_KEY_PRESSED;
+	else if (strcmp(string, "SPARK_EVENT_KEY_RELEASED") == 0)
+		return SPARK_EVENT_KEY_RELEASED;
+	else if (strcmp(string, "SPARK_EVENT_KEY_TYPED") == 0)
+		return SPARK_EVENT_KEY_TYPED;
+	else if (strcmp(string, "SPARK_EVENT_MOUSE_BUTTON_PRESSED") == 0)
+		return SPARK_EVENT_MOUSE_BUTTON_PRESSED;
+	else if (strcmp(string, "SPARK_EVENT_MOUSE_BUTTON_RELEASED") == 0)
+		return SPARK_EVENT_MOUSE_BUTTON_RELEASED;
+	else if (strcmp(string, "SPARK_EVENT_MOUSE_MOVED") == 0)
+		return SPARK_EVENT_MOUSE_MOVED;
+	else if (strcmp(string, "SPARK_EVENT_MOUSE_SCROLLED") == 0)
+		return SPARK_EVENT_MOUSE_SCROLLED;
+	else
+		return (SparkEventType)-1;
 }
 
 SPARKAPI SparkConstString SparkShaderTypeToString(SparkShaderType shaderType) {
 	switch (shaderType) {
-	case SPARK_SHADER_VERTEX:                  return "SPARK_SHADER_VERTEX";
-	case SPARK_SHADER_FRAGMENT:                return "SPARK_SHADER_FRAGMENT";
-	case SPARK_SHADER_GEOMETRY:                return "SPARK_SHADER_GEOMETRY";
-	case SPARK_SHADER_TESSELLATION_CONTROL:    return "SPARK_SHADER_TESSELLATION_CONTROL";
-	case SPARK_SHADER_TESSELLATION_EVALUATION: return "SPARK_SHADER_TESSELLATION_EVALUATION";
-	case SPARK_SHADER_COMPUTE:                 return "SPARK_SHADER_COMPUTE";
-	default:                                   return "UNKNOWN_SPARK_SHADER_TYPE";
+	case SPARK_SHADER_VERTEX:
+		return "SPARK_SHADER_VERTEX";
+	case SPARK_SHADER_FRAGMENT:
+		return "SPARK_SHADER_FRAGMENT";
+	case SPARK_SHADER_GEOMETRY:
+		return "SPARK_SHADER_GEOMETRY";
+	case SPARK_SHADER_TESSELLATION_CONTROL:
+		return "SPARK_SHADER_TESSELLATION_CONTROL";
+	case SPARK_SHADER_TESSELLATION_EVALUATION:
+		return "SPARK_SHADER_TESSELLATION_EVALUATION";
+	case SPARK_SHADER_COMPUTE:
+		return "SPARK_SHADER_COMPUTE";
+	default:
+		return "UNKNOWN_SPARK_SHADER_TYPE";
 	}
 }
 
 SPARKAPI SparkShaderType SparkStringToShaderType(SparkConstString string) {
-	if (strcmp(string, "SPARK_SHADER_VERTEX") == 0)                   return SPARK_SHADER_VERTEX;
-	else if (strcmp(string, "SPARK_SHADER_FRAGMENT") == 0)            return SPARK_SHADER_FRAGMENT;
-	else if (strcmp(string, "SPARK_SHADER_GEOMETRY") == 0)            return SPARK_SHADER_GEOMETRY;
-	else if (strcmp(string, "SPARK_SHADER_TESSELLATION_CONTROL") == 0)return SPARK_SHADER_TESSELLATION_CONTROL;
-	else if (strcmp(string, "SPARK_SHADER_TESSELLATION_EVALUATION") == 0)return SPARK_SHADER_TESSELLATION_EVALUATION;
-	else if (strcmp(string, "SPARK_SHADER_COMPUTE") == 0)             return SPARK_SHADER_COMPUTE;
-	else                                                              return (SparkShaderType)-1;
+	if (strcmp(string, "SPARK_SHADER_VERTEX") == 0)
+		return SPARK_SHADER_VERTEX;
+	else if (strcmp(string, "SPARK_SHADER_FRAGMENT") == 0)
+		return SPARK_SHADER_FRAGMENT;
+	else if (strcmp(string, "SPARK_SHADER_GEOMETRY") == 0)
+		return SPARK_SHADER_GEOMETRY;
+	else if (strcmp(string, "SPARK_SHADER_TESSELLATION_CONTROL") == 0)
+		return SPARK_SHADER_TESSELLATION_CONTROL;
+	else if (strcmp(string, "SPARK_SHADER_TESSELLATION_EVALUATION") == 0)
+		return SPARK_SHADER_TESSELLATION_EVALUATION;
+	else if (strcmp(string, "SPARK_SHADER_COMPUTE") == 0)
+		return SPARK_SHADER_COMPUTE;
+	else
+		return (SparkShaderType)-1;
 }
 
-SPARKAPI SparkConstString SparkPrimitiveTypeToString(SparkPrimitiveType primitiveType) {
+SPARKAPI SparkConstString
+SparkPrimitiveTypeToString(SparkPrimitiveType primitiveType) {
 	switch (primitiveType) {
-	case SPARK_PRIMITIVE_POINTS:         return "SPARK_PRIMITIVE_POINTS";
-	case SPARK_PRIMITIVE_LINES:          return "SPARK_PRIMITIVE_LINES";
-	case SPARK_PRIMITIVE_LINE_STRIP:     return "SPARK_PRIMITIVE_LINE_STRIP";
-	case SPARK_PRIMITIVE_TRIANGLES:      return "SPARK_PRIMITIVE_TRIANGLES";
-	case SPARK_PRIMITIVE_TRIANGLE_STRIP: return "SPARK_PRIMITIVE_TRIANGLE_STRIP";
-	case SPARK_PRIMITIVE_TRIANGLE_FAN:   return "SPARK_PRIMITIVE_TRIANGLE_FAN";
-	default:                             return "UNKNOWN_SPARK_PRIMITIVE_TYPE";
+	case SPARK_PRIMITIVE_POINTS:
+		return "SPARK_PRIMITIVE_POINTS";
+	case SPARK_PRIMITIVE_LINES:
+		return "SPARK_PRIMITIVE_LINES";
+	case SPARK_PRIMITIVE_LINE_STRIP:
+		return "SPARK_PRIMITIVE_LINE_STRIP";
+	case SPARK_PRIMITIVE_TRIANGLES:
+		return "SPARK_PRIMITIVE_TRIANGLES";
+	case SPARK_PRIMITIVE_TRIANGLE_STRIP:
+		return "SPARK_PRIMITIVE_TRIANGLE_STRIP";
+	case SPARK_PRIMITIVE_TRIANGLE_FAN:
+		return "SPARK_PRIMITIVE_TRIANGLE_FAN";
+	default:
+		return "UNKNOWN_SPARK_PRIMITIVE_TYPE";
 	}
 }
 
-SPARKAPI SparkPrimitiveType SparkStringToPrimitiveType(SparkConstString string) {
-	if (strcmp(string, "SPARK_PRIMITIVE_POINTS") == 0)          return SPARK_PRIMITIVE_POINTS;
-	else if (strcmp(string, "SPARK_PRIMITIVE_LINES") == 0)          return SPARK_PRIMITIVE_LINES;
-	else if (strcmp(string, "SPARK_PRIMITIVE_LINE_STRIP") == 0)     return SPARK_PRIMITIVE_LINE_STRIP;
-	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLES") == 0)      return SPARK_PRIMITIVE_TRIANGLES;
-	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLE_STRIP") == 0) return SPARK_PRIMITIVE_TRIANGLE_STRIP;
-	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLE_FAN") == 0)   return SPARK_PRIMITIVE_TRIANGLE_FAN;
-	else                                                            return (SparkPrimitiveType)-1;
+SPARKAPI SparkPrimitiveType
+SparkStringToPrimitiveType(SparkConstString string) {
+	if (strcmp(string, "SPARK_PRIMITIVE_POINTS") == 0)
+		return SPARK_PRIMITIVE_POINTS;
+	else if (strcmp(string, "SPARK_PRIMITIVE_LINES") == 0)
+		return SPARK_PRIMITIVE_LINES;
+	else if (strcmp(string, "SPARK_PRIMITIVE_LINE_STRIP") == 0)
+		return SPARK_PRIMITIVE_LINE_STRIP;
+	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLES") == 0)
+		return SPARK_PRIMITIVE_TRIANGLES;
+	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLE_STRIP") == 0)
+		return SPARK_PRIMITIVE_TRIANGLE_STRIP;
+	else if (strcmp(string, "SPARK_PRIMITIVE_TRIANGLE_FAN") == 0)
+		return SPARK_PRIMITIVE_TRIANGLE_FAN;
+	else
+		return (SparkPrimitiveType)-1;
 }
 
 SPARKAPI SparkConstString SparkBlendModeToString(SparkBlendMode blendMode) {
 	switch (blendMode) {
-	case SPARK_BLEND_ZERO:                     return "SPARK_BLEND_ZERO";
-	case SPARK_BLEND_ONE:                      return "SPARK_BLEND_ONE";
-	case SPARK_BLEND_SRC_COLOR:                return "SPARK_BLEND_SRC_COLOR";
-	case SPARK_BLEND_ONE_MINUS_SRC_COLOR:      return "SPARK_BLEND_ONE_MINUS_SRC_COLOR";
-	case SPARK_BLEND_DST_COLOR:                return "SPARK_BLEND_DST_COLOR";
-	case SPARK_BLEND_ONE_MINUS_DST_COLOR:      return "SPARK_BLEND_ONE_MINUS_DST_COLOR";
-	case SPARK_BLEND_SRC_ALPHA:                return "SPARK_BLEND_SRC_ALPHA";
-	case SPARK_BLEND_ONE_MINUS_SRC_ALPHA:      return "SPARK_BLEND_ONE_MINUS_SRC_ALPHA";
-	case SPARK_BLEND_DST_ALPHA:                return "SPARK_BLEND_DST_ALPHA";
-	case SPARK_BLEND_ONE_MINUS_DST_ALPHA:      return "SPARK_BLEND_ONE_MINUS_DST_ALPHA";
-	case SPARK_BLEND_CONSTANT_COLOR:           return "SPARK_BLEND_CONSTANT_COLOR";
-	case SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR: return "SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR";
-	case SPARK_BLEND_CONSTANT_ALPHA:           return "SPARK_BLEND_CONSTANT_ALPHA";
-	case SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA: return "SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA";
-	case SPARK_BLEND_SRC_ALPHA_SATURATE:       return "SPARK_BLEND_SRC_ALPHA_SATURATE";
-	default:                                   return "UNKNOWN_SPARK_BLEND_MODE";
+	case SPARK_BLEND_ZERO:
+		return "SPARK_BLEND_ZERO";
+	case SPARK_BLEND_ONE:
+		return "SPARK_BLEND_ONE";
+	case SPARK_BLEND_SRC_COLOR:
+		return "SPARK_BLEND_SRC_COLOR";
+	case SPARK_BLEND_ONE_MINUS_SRC_COLOR:
+		return "SPARK_BLEND_ONE_MINUS_SRC_COLOR";
+	case SPARK_BLEND_DST_COLOR:
+		return "SPARK_BLEND_DST_COLOR";
+	case SPARK_BLEND_ONE_MINUS_DST_COLOR:
+		return "SPARK_BLEND_ONE_MINUS_DST_COLOR";
+	case SPARK_BLEND_SRC_ALPHA:
+		return "SPARK_BLEND_SRC_ALPHA";
+	case SPARK_BLEND_ONE_MINUS_SRC_ALPHA:
+		return "SPARK_BLEND_ONE_MINUS_SRC_ALPHA";
+	case SPARK_BLEND_DST_ALPHA:
+		return "SPARK_BLEND_DST_ALPHA";
+	case SPARK_BLEND_ONE_MINUS_DST_ALPHA:
+		return "SPARK_BLEND_ONE_MINUS_DST_ALPHA";
+	case SPARK_BLEND_CONSTANT_COLOR:
+		return "SPARK_BLEND_CONSTANT_COLOR";
+	case SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR:
+		return "SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR";
+	case SPARK_BLEND_CONSTANT_ALPHA:
+		return "SPARK_BLEND_CONSTANT_ALPHA";
+	case SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA:
+		return "SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA";
+	case SPARK_BLEND_SRC_ALPHA_SATURATE:
+		return "SPARK_BLEND_SRC_ALPHA_SATURATE";
+	default:
+		return "UNKNOWN_SPARK_BLEND_MODE";
 	}
 }
 
 SPARKAPI SparkBlendMode SparkStringToBlendMode(SparkConstString string) {
-	if (strcmp(string, "SPARK_BLEND_ZERO") == 0)                     return SPARK_BLEND_ZERO;
-	else if (strcmp(string, "SPARK_BLEND_ONE") == 0)                      return SPARK_BLEND_ONE;
-	else if (strcmp(string, "SPARK_BLEND_SRC_COLOR") == 0)                return SPARK_BLEND_SRC_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_SRC_COLOR") == 0)      return SPARK_BLEND_ONE_MINUS_SRC_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_DST_COLOR") == 0)                return SPARK_BLEND_DST_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_DST_COLOR") == 0)      return SPARK_BLEND_ONE_MINUS_DST_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_SRC_ALPHA") == 0)                return SPARK_BLEND_SRC_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_SRC_ALPHA") == 0)      return SPARK_BLEND_ONE_MINUS_SRC_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_DST_ALPHA") == 0)                return SPARK_BLEND_DST_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_DST_ALPHA") == 0)      return SPARK_BLEND_ONE_MINUS_DST_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_CONSTANT_COLOR") == 0)           return SPARK_BLEND_CONSTANT_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR") == 0) return SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR;
-	else if (strcmp(string, "SPARK_BLEND_CONSTANT_ALPHA") == 0)           return SPARK_BLEND_CONSTANT_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA") == 0) return SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA;
-	else if (strcmp(string, "SPARK_BLEND_SRC_ALPHA_SATURATE") == 0)       return SPARK_BLEND_SRC_ALPHA_SATURATE;
-	else                                                                  return (SparkBlendMode)-1;
+	if (strcmp(string, "SPARK_BLEND_ZERO") == 0)
+		return SPARK_BLEND_ZERO;
+	else if (strcmp(string, "SPARK_BLEND_ONE") == 0)
+		return SPARK_BLEND_ONE;
+	else if (strcmp(string, "SPARK_BLEND_SRC_COLOR") == 0)
+		return SPARK_BLEND_SRC_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_SRC_COLOR") == 0)
+		return SPARK_BLEND_ONE_MINUS_SRC_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_DST_COLOR") == 0)
+		return SPARK_BLEND_DST_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_DST_COLOR") == 0)
+		return SPARK_BLEND_ONE_MINUS_DST_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_SRC_ALPHA") == 0)
+		return SPARK_BLEND_SRC_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_SRC_ALPHA") == 0)
+		return SPARK_BLEND_ONE_MINUS_SRC_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_DST_ALPHA") == 0)
+		return SPARK_BLEND_DST_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_DST_ALPHA") == 0)
+		return SPARK_BLEND_ONE_MINUS_DST_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_CONSTANT_COLOR") == 0)
+		return SPARK_BLEND_CONSTANT_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR") == 0)
+		return SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR;
+	else if (strcmp(string, "SPARK_BLEND_CONSTANT_ALPHA") == 0)
+		return SPARK_BLEND_CONSTANT_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA") == 0)
+		return SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA;
+	else if (strcmp(string, "SPARK_BLEND_SRC_ALPHA_SATURATE") == 0)
+		return SPARK_BLEND_SRC_ALPHA_SATURATE;
+	else
+		return (SparkBlendMode)-1;
 }
 
-SPARKAPI SparkConstString SparkTextureFilterToString(SparkTextureFilter filter) {
+SPARKAPI SparkConstString
+SparkTextureFilterToString(SparkTextureFilter filter) {
 	switch (filter) {
-	case SPARK_TEXTURE_FILTER_NEAREST:                return "SPARK_TEXTURE_FILTER_NEAREST";
-	case SPARK_TEXTURE_FILTER_LINEAR:                 return "SPARK_TEXTURE_FILTER_LINEAR";
-	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST: return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST";
-	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:  return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST";
-	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:  return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR";
-	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:   return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR";
-	default:                                          return "UNKNOWN_SPARK_TEXTURE_FILTER";
+	case SPARK_TEXTURE_FILTER_NEAREST:
+		return "SPARK_TEXTURE_FILTER_NEAREST";
+	case SPARK_TEXTURE_FILTER_LINEAR:
+		return "SPARK_TEXTURE_FILTER_LINEAR";
+	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+		return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST";
+	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+		return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST";
+	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
+		return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR";
+	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
+		return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR";
+	default:
+		return "UNKNOWN_SPARK_TEXTURE_FILTER";
 	}
 }
 
-SPARKAPI SparkTextureFilter SparkStringToTextureFilter(SparkConstString string) {
-	if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST") == 0)                return SPARK_TEXTURE_FILTER_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR") == 0)                 return SPARK_TEXTURE_FILTER_LINEAR;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST") == 0) return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST") == 0)  return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR") == 0)  return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR") == 0)   return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR;
-	else                                                                         return (SparkTextureFilter)-1;
+SPARKAPI SparkTextureFilter
+SparkStringToTextureFilter(SparkConstString string) {
+	if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST") == 0)
+		return SPARK_TEXTURE_FILTER_NEAREST;
+	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR") == 0)
+		return SPARK_TEXTURE_FILTER_LINEAR;
+	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST") == 0)
+		return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST;
+	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST") == 0)
+		return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST;
+	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR") == 0)
+		return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR;
+	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR") == 0)
+		return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR;
+	else
+		return (SparkTextureFilter)-1;
 }
 
 SPARKAPI SparkConstString SparkLogLevelToString(SparkLogLevel level) {
 	switch (level) {
-	case SPARK_LOG_LEVEL_TRACE: return "SPARK_LOG_LEVEL_TRACE";
-	case SPARK_LOG_LEVEL_DEBUG: return "SPARK_LOG_LEVEL_DEBUG";
-	case SPARK_LOG_LEVEL_INFO:  return "SPARK_LOG_LEVEL_INFO";
-	case SPARK_LOG_LEVEL_WARN:  return "SPARK_LOG_LEVEL_WARN";
-	case SPARK_LOG_LEVEL_ERROR: return "SPARK_LOG_LEVEL_ERROR";
-	case SPARK_LOG_LEVEL_FATAL: return "SPARK_LOG_LEVEL_FATAL";
-	default:                    return "UNKNOWN_SPARK_LOG_LEVEL";
+	case SPARK_LOG_LEVEL_TRACE:
+		return "SPARK_LOG_LEVEL_TRACE";
+	case SPARK_LOG_LEVEL_DEBUG:
+		return "SPARK_LOG_LEVEL_DEBUG";
+	case SPARK_LOG_LEVEL_INFO:
+		return "SPARK_LOG_LEVEL_INFO";
+	case SPARK_LOG_LEVEL_WARN:
+		return "SPARK_LOG_LEVEL_WARN";
+	case SPARK_LOG_LEVEL_ERROR:
+		return "SPARK_LOG_LEVEL_ERROR";
+	case SPARK_LOG_LEVEL_FATAL:
+		return "SPARK_LOG_LEVEL_FATAL";
+	default:
+		return "UNKNOWN_SPARK_LOG_LEVEL";
 	}
 }
 
 SPARKAPI SparkLogLevel SparkStringToLogLevel(SparkConstString string) {
-	if (strcmp(string, "SPARK_LOG_LEVEL_TRACE") == 0) return SPARK_LOG_LEVEL_TRACE;
-	else if (strcmp(string, "SPARK_LOG_LEVEL_DEBUG") == 0) return SPARK_LOG_LEVEL_DEBUG;
-	else if (strcmp(string, "SPARK_LOG_LEVEL_INFO") == 0)  return SPARK_LOG_LEVEL_INFO;
-	else if (strcmp(string, "SPARK_LOG_LEVEL_WARN") == 0)  return SPARK_LOG_LEVEL_WARN;
-	else if (strcmp(string, "SPARK_LOG_LEVEL_ERROR") == 0) return SPARK_LOG_LEVEL_ERROR;
-	else if (strcmp(string, "SPARK_LOG_LEVEL_FATAL") == 0) return SPARK_LOG_LEVEL_FATAL;
-	else                                                   return (SparkLogLevel)-1;
+	if (strcmp(string, "SPARK_LOG_LEVEL_TRACE") == 0)
+		return SPARK_LOG_LEVEL_TRACE;
+	else if (strcmp(string, "SPARK_LOG_LEVEL_DEBUG") == 0)
+		return SPARK_LOG_LEVEL_DEBUG;
+	else if (strcmp(string, "SPARK_LOG_LEVEL_INFO") == 0)
+		return SPARK_LOG_LEVEL_INFO;
+	else if (strcmp(string, "SPARK_LOG_LEVEL_WARN") == 0)
+		return SPARK_LOG_LEVEL_WARN;
+	else if (strcmp(string, "SPARK_LOG_LEVEL_ERROR") == 0)
+		return SPARK_LOG_LEVEL_ERROR;
+	else if (strcmp(string, "SPARK_LOG_LEVEL_FATAL") == 0)
+		return SPARK_LOG_LEVEL_FATAL;
+	else
+		return (SparkLogLevel)-1;
 }
 
 SPARKAPI SparkConstString SparkRenderAPIToString(SparkRenderAPI api) {
 	switch (api) {
-	case SPARK_RENDER_API_NONE:    return "SPARK_RENDER_API_NONE";
-	case SPARK_RENDER_API_OPENGL:  return "SPARK_RENDER_API_OPENGL";
-	case SPARK_RENDER_API_VULKAN:  return "SPARK_RENDER_API_VULKAN";
-	case SPARK_RENDER_API_DIRECTX: return "SPARK_RENDER_API_DIRECTX";
-	case SPARK_RENDER_API_METAL:   return "SPARK_RENDER_API_METAL";
-	default:                       return "UNKNOWN_SPARK_RENDER_API";
+	case SPARK_RENDER_API_NONE:
+		return "SPARK_RENDER_API_NONE";
+	case SPARK_RENDER_API_OPENGL:
+		return "SPARK_RENDER_API_OPENGL";
+	case SPARK_RENDER_API_VULKAN:
+		return "SPARK_RENDER_API_VULKAN";
+	case SPARK_RENDER_API_DIRECTX:
+		return "SPARK_RENDER_API_DIRECTX";
+	case SPARK_RENDER_API_METAL:
+		return "SPARK_RENDER_API_METAL";
+	default:
+		return "UNKNOWN_SPARK_RENDER_API";
 	}
 }
 
 SPARKAPI SparkRenderAPI SparkStringToRenderAPI(SparkConstString string) {
-	if (strcmp(string, "SPARK_RENDER_API_NONE") == 0)    return SPARK_RENDER_API_NONE;
-	else if (strcmp(string, "SPARK_RENDER_API_OPENGL") == 0)  return SPARK_RENDER_API_OPENGL;
-	else if (strcmp(string, "SPARK_RENDER_API_VULKAN") == 0)  return SPARK_RENDER_API_VULKAN;
-	else if (strcmp(string, "SPARK_RENDER_API_DIRECTX") == 0) return SPARK_RENDER_API_DIRECTX;
-	else if (strcmp(string, "SPARK_RENDER_API_METAL") == 0)   return SPARK_RENDER_API_METAL;
-	else                                                      return (SparkRenderAPI)-1;
+	if (strcmp(string, "SPARK_RENDER_API_NONE") == 0)
+		return SPARK_RENDER_API_NONE;
+	else if (strcmp(string, "SPARK_RENDER_API_OPENGL") == 0)
+		return SPARK_RENDER_API_OPENGL;
+	else if (strcmp(string, "SPARK_RENDER_API_VULKAN") == 0)
+		return SPARK_RENDER_API_VULKAN;
+	else if (strcmp(string, "SPARK_RENDER_API_DIRECTX") == 0)
+		return SPARK_RENDER_API_DIRECTX;
+	else if (strcmp(string, "SPARK_RENDER_API_METAL") == 0)
+		return SPARK_RENDER_API_METAL;
+	else
+		return (SparkRenderAPI)-1;
 }
 
 #pragma endregion
@@ -774,14 +1359,13 @@ SPARKAPI SparkVoid SetConsoleColor(SparkU32 color) {}
 
 #endif
 
-SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format, ...)
-{
+SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format,
+	...) {
 	va_list args;
 	va_start(args, format);
 
 	// Set the appropriate color based on the log level
-	switch (log_level)
-	{
+	switch (log_level) {
 	case SPARK_LOG_LEVEL_DEBUG:
 		SetConsoleColor(11);
 		printf("[DEBUG] ");
@@ -811,8 +1395,7 @@ SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format, ..
 	printf("\n"); // Add newline after the message
 
 	// If the log level is fatal, crash the program
-	if (log_level == SPARK_LOG_LEVEL_FATAL)
-	{
+	if (log_level == SPARK_LOG_LEVEL_FATAL) {
 		SPARK_CRASH_PROGRAM("Fatal error occurred!");
 	}
 
@@ -836,8 +1419,8 @@ SPARKAPI SparkConstString SparkGetTime() {
 	SparkConstString output[50];
 
 	snprintf(output, 50, "[%d %d %d %d:%d:%d]", timeinfo->tm_mday,
-		timeinfo->tm_mon + 1, timeinfo->tm_year + 1900,
-		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+		timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour,
+		timeinfo->tm_min, timeinfo->tm_sec);
 
 	return output;
 }
@@ -846,9 +1429,12 @@ SPARKAPI SparkConstString SparkGetTime() {
 
 #pragma region MATH
 
-SPARKAPI SparkScalar SparkClampS(SparkScalar value, SparkScalar min, SparkScalar max) {
-	if (value < min) return min;
-	if (value > max) return max;
+SPARKAPI SparkScalar SparkClampS(SparkScalar value, SparkScalar min,
+	SparkScalar max) {
+	if (value < min)
+		return min;
+	if (value > max)
+		return max;
 	return value;
 }
 
@@ -856,17 +1442,13 @@ SPARKAPI SparkScalar SparkClampS(SparkScalar value, SparkScalar min, SparkScalar
 
 #pragma region ALLOCATOR
 
-SPARKAPI SparkHandle SparkAllocate(SparkSize size) {
-	return malloc(size);
-}
+SPARKAPI SparkHandle SparkAllocate(SparkSize size) { return malloc(size); }
 
 SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size) {
 	return realloc(handle, size);
 }
 
-SPARKAPI SparkVoid SparkFree(SparkHandle handle) {
-	free(handle);
-}
+SPARKAPI SparkVoid SparkFree(SparkHandle handle) { free(handle); }
 
 SPARKAPI SparkAllocator SparkDefaultAllocator() {
 	SparkAllocator allocator = SparkAllocate(sizeof(struct SparkAllocatorT));
@@ -876,7 +1458,9 @@ SPARKAPI SparkAllocator SparkDefaultAllocator() {
 	return allocator;
 }
 
-SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate, SparkReallocateFunction reallocate, SparkFreeFunction free) {
+SPARKAPI SparkAllocator SparkCreateAllocator(SparkAllocateFunction allocate,
+	SparkReallocateFunction reallocate,
+	SparkFreeFunction free) {
 	SparkAllocator allocator = allocate(sizeof(struct SparkAllocatorT));
 	allocator->allocate = allocate;
 	allocator->reallocate = reallocate;
@@ -888,8 +1472,6 @@ SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator) {
 	allocator->free(allocator);
 }
 
-
-
 #pragma endregion
 
 #pragma region VECTOR
@@ -900,12 +1482,15 @@ SPARKAPI SparkVector SparkDefaultVector() {
 	vector->capacity = 1;
 	vector->size = 0;
 	vector->destructor = NULL; // Default destructor is NULL
-	vector->elements = vector->allocator->allocate(vector->capacity * sizeof(SparkHandle));
+	vector->elements =
+		vector->allocator->allocate(vector->capacity * sizeof(SparkHandle));
 	vector->external_allocator = SPARK_FALSE;
 	return vector;
 }
 
-SPARKAPI SparkVector SparkCreateVector(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
+SPARKAPI SparkVector SparkCreateVector(SparkSize capacity,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (!allocator) {
@@ -918,7 +1503,8 @@ SPARKAPI SparkVector SparkCreateVector(SparkSize capacity, SparkAllocator alloca
 	vector->capacity = capacity;
 	vector->size = 0;
 	vector->destructor = destructor; // Set destructor
-	vector->elements = allocator->allocate(vector->capacity * sizeof(SparkHandle));
+	vector->elements =
+		allocator->allocate(vector->capacity * sizeof(SparkHandle));
 	vector->external_allocator = external_allocator;
 	return vector;
 }
@@ -944,7 +1530,8 @@ SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
 	}
 }
 
-SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector, SparkSize index) {
+SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector,
+	SparkSize index) {
 	if (index >= vector->size) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
 		return SPARK_NULL;
@@ -952,10 +1539,12 @@ SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector, SparkSize index) 
 	return vector->elements[index];
 }
 
-SPARKAPI SparkResult SparkPushBackVector(SparkVector vector, SparkHandle element) {
+SPARKAPI SparkResult SparkPushBackVector(SparkVector vector,
+	SparkHandle element) {
 	if (vector->size >= vector->capacity) {
 		vector->capacity *= 2;
-		vector->elements = vector->allocator->reallocate(vector->elements, vector->capacity * sizeof(SparkHandle));
+		vector->elements = vector->allocator->reallocate(
+			vector->elements, vector->capacity * sizeof(SparkHandle));
 		if (vector->elements == SPARK_NULL) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
 			return SPARK_ERROR_INVALID_STATE;
@@ -980,14 +1569,16 @@ SPARKAPI SparkResult SparkPopBackVector(SparkVector vector) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkSize index, SparkHandle element) {
+SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkSize index,
+	SparkHandle element) {
 	if (index > vector->size) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (vector->size >= vector->capacity) {
 		vector->capacity *= 2;
-		vector->elements = vector->allocator->reallocate(vector->elements, vector->capacity * sizeof(SparkHandle));
+		vector->elements = vector->allocator->reallocate(
+			vector->elements, vector->capacity * sizeof(SparkHandle));
 		if (vector->elements == SPARK_NULL) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
 			return SPARK_ERROR_INVALID_STATE;
@@ -1023,7 +1614,8 @@ SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkSize index) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin, SparkSize end) {
+SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin,
+	SparkSize end) {
 	for (SparkSize i = begin; i < end; i++) {
 		if (i >= vector->size) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
@@ -1045,7 +1637,8 @@ SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin, Spark
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkSize index, SparkHandle element) {
+SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkSize index,
+	SparkHandle element) {
 	if (index >= vector->size) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -1071,7 +1664,8 @@ SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity) {
 		vector->size = capacity;
 	}
 	vector->capacity = capacity;
-	vector->elements = vector->allocator->reallocate(vector->elements, vector->capacity * sizeof(SparkHandle));
+	vector->elements = vector->allocator->reallocate(
+		vector->elements, vector->capacity * sizeof(SparkHandle));
 	if (vector->elements == SPARK_NULL) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
 		return SPARK_ERROR_INVALID_STATE;
@@ -1105,7 +1699,8 @@ SPARKAPI SparkList SparkDefaultList() {
 	return list;
 }
 
-SPARKAPI SparkList SparkCreateList(SparkAllocator allocator, SparkFreeFunction destructor) {
+SPARKAPI SparkList SparkCreateList(SparkAllocator allocator,
+	SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (!allocator) {
@@ -1210,7 +1805,8 @@ SPARKAPI SparkResult SparkPopBackList(SparkList list) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index, SparkHandle element) {
+SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index,
+	SparkHandle element) {
 	if (index > list->size) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -1278,7 +1874,8 @@ SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index, SparkHandle element) {
+SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index,
+	SparkHandle element) {
 	if (index >= list->size) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -1462,8 +2059,8 @@ SparkSize SipHash(SparkConstBuffer data, SparkSize size) {
 #define PRIME32_1 2654435761U
 #define PRIME32_2 2246822519U
 #define PRIME32_3 3266489917U
-#define PRIME32_4  668265263U
-#define PRIME32_5  374761393U
+#define PRIME32_4 668265263U
+#define PRIME32_5 374761393U
 
 SparkSize XXHash(SparkConstBuffer data, SparkSize length) {
 	SparkConstBuffer end = data + length;
@@ -1477,24 +2074,29 @@ SparkSize XXHash(SparkConstBuffer data, SparkSize length) {
 		SparkSize v4 = -PRIME32_1;
 
 		do {
-			v1 += *((const SparkU32*)data) * PRIME32_2; data += 4;
+			v1 += *((const SparkU32*)data) * PRIME32_2;
+			data += 4;
 			v1 = (v1 << 13) | (v1 >> 19); // Rotate left 13 bits
 			v1 *= PRIME32_1;
 
-			v2 += *((const SparkU32*)data) * PRIME32_2; data += 4;
+			v2 += *((const SparkU32*)data) * PRIME32_2;
+			data += 4;
 			v2 = (v2 << 13) | (v2 >> 19); // Rotate left 13 bits
 			v2 *= PRIME32_1;
 
-			v3 += *((const SparkU32*)data) * PRIME32_2; data += 4;
+			v3 += *((const SparkU32*)data) * PRIME32_2;
+			data += 4;
 			v3 = (v3 << 13) | (v3 >> 19); // Rotate left 13 bits
 			v3 *= PRIME32_1;
 
-			v4 += *((const SparkU32*)data) * PRIME32_2; data += 4;
+			v4 += *((const SparkU32*)data) * PRIME32_2;
+			data += 4;
 			v4 = (v4 << 13) | (v4 >> 19); // Rotate left 13 bits
 			v4 *= PRIME32_1;
 		} while (data <= limit);
 
-		hash = ((v1 << 1) | (v1 >> 31)) + ((v2 << 7) | (v2 >> 25)) + ((v3 << 12) | (v3 >> 20)) + ((v4 << 18) | (v4 >> 14));
+		hash = ((v1 << 1) | (v1 >> 31)) + ((v2 << 7) | (v2 >> 25)) +
+			((v3 << 12) | (v3 >> 20)) + ((v4 << 18) | (v4 >> 14));
 	}
 	else {
 		hash = PRIME32_5;
@@ -1538,40 +2140,52 @@ SparkSize SparkIntegerHash(SparkConstBuffer key, SparkSize key_size) {
 	return key;
 }
 
-SparkI32 SparkStringCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size) {
-	if (a_size != b_size) return (SparkI32)(a_size - b_size);
+SparkI32 SparkStringCompare(SparkConstBuffer a, SparkSize a_size,
+	SparkConstBuffer b, SparkSize b_size) {
+	if (a_size != b_size)
+		return (SparkI32)(a_size - b_size);
 	return memcmp(a, b, a_size);
 }
 
-SparkI32 SparkIntegerCompare(SparkConstBuffer a, SparkSize a_size, SparkConstBuffer b, SparkSize b_size) {
+SparkI32 SparkIntegerCompare(SparkConstBuffer a, SparkSize a_size,
+	SparkConstBuffer b, SparkSize b_size) {
 	SparkI32 int_a = a;
 	SparkI32 int_b = b;
 	return int_a - int_b;
 }
-
 
 #pragma endregion
 
 #pragma region HASHMAP
 
 SPARKAPI SparkHashMap SparkDefaultHashMap() {
-	return SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, SPARK_NULL);
+	return SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL,
+		SPARK_NULL, SPARK_NULL);
 }
 
-SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction hash_function, SparkCompareFunction compare_function, SparkAllocator allocator, SparkFreeFunction key_destructor, SparkFreeFunction value_destructor) {
+SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity,
+	SparkHashFunction hash_function,
+	SparkCompareFunction compare_function,
+	SparkAllocator allocator,
+	SparkFreeFunction key_destructor,
+	SparkFreeFunction value_destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 	if (!allocator) {
 		allocator = SparkDefaultAllocator();
 		external_allocator = SPARK_FALSE;
 	}
-	if (!hash_function || !compare_function) return SPARK_NULL;
-	SparkHashMap hashmap = (SparkHashMap)allocator->allocate(sizeof(struct SparkHashMapT));
-	if (!hashmap) return SPARK_NULL;
+	if (!hash_function || !compare_function)
+		return SPARK_NULL;
+	SparkHashMap hashmap =
+		(SparkHashMap)allocator->allocate(sizeof(struct SparkHashMapT));
+	if (!hashmap)
+		return SPARK_NULL;
 	hashmap->allocator = allocator;
 	hashmap->capacity = capacity;
 	hashmap->size = 0;
 	hashmap->external_allocator = external_allocator;
-	hashmap->buckets = (SparkHashMapNode*)allocator->allocate(capacity * sizeof(SparkHashMapNode));
+	hashmap->buckets = (SparkHashMapNode*)allocator->allocate(
+		capacity * sizeof(SparkHashMapNode));
 	if (!hashmap->buckets) {
 		allocator->free(hashmap);
 		return SPARK_NULL;
@@ -1585,7 +2199,8 @@ SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity, SparkHashFunction h
 }
 
 SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
-	if (!hashmap) return;
+	if (!hashmap)
+		return;
 	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
 		SparkHashMapNode node = hashmap->buckets[i];
 		while (node) {
@@ -1610,13 +2225,17 @@ SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
 	}
 }
 
-SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size, SparkHandle value) {
-	if (!hashmap || !key) return SPARK_ERROR_INVALID_ARGUMENT;
+SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key,
+	SparkSize key_size, SparkHandle value) {
+	if (!hashmap || !key)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	SparkSize hash = hashmap->hash_function(key, key_size);
 	SparkSize index = hash % hashmap->capacity;
 	SparkHashMapNode node = hashmap->buckets[index];
 	while (node) {
-		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
+		if (node->hash == hash &&
+			hashmap->compare_function(node->key, node->key_size, key, key_size) ==
+			0) {
 			// Key already exists, update value
 			if (hashmap->value_destructor) {
 				hashmap->value_destructor(node->value);
@@ -1627,8 +2246,10 @@ SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, S
 		node = node->next;
 	}
 	// Key not found, insert new node
-	node = (SparkHashMapNode)hashmap->allocator->allocate(sizeof(struct SparkHashMapNodeT));
-	if (!node) return SPARK_ERROR_OUT_OF_MEMORY;
+	node = (SparkHashMapNode)hashmap->allocator->allocate(
+		sizeof(struct SparkHashMapNodeT));
+	if (!node)
+		return SPARK_ERROR_OUT_OF_MEMORY;
 	node->key = key;
 	node->value = value;
 	node->key_size = key_size;
@@ -1639,13 +2260,18 @@ SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key, S
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size) {
-	if (!hashmap || !key) return SPARK_NULL;
+SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap,
+	SparkHandle key,
+	SparkSize key_size) {
+	if (!hashmap || !key)
+		return SPARK_NULL;
 	SparkSize hash = hashmap->hash_function(key, key_size);
 	SparkSize index = hash % hashmap->capacity;
 	SparkHashMapNode node = hashmap->buckets[index];
 	while (node) {
-		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
+		if (node->hash == hash &&
+			hashmap->compare_function(node->key, node->key_size, key, key_size) ==
+			0) {
 			return node->value;
 		}
 		node = node->next;
@@ -1653,14 +2279,36 @@ SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap, SparkHandle ke
 	return SPARK_NULL;
 }
 
-SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size) {
-	if (!hashmap || !key) return SPARK_ERROR_INVALID_ARGUMENT;
+SPARKAPI SparkBool SparkContainsHashMap(SparkHashMap hashmap, SparkHandle key,
+	SparkSize key_size) {
+	if (!hashmap || !key)
+		return SPARK_FALSE;
+	SparkSize hash = hashmap->hash_function(key, key_size);
+	SparkSize index = hash % hashmap->capacity;
+	SparkHashMapNode node = hashmap->buckets[index];
+	while (node) {
+		if (node->hash == hash &&
+			hashmap->compare_function(node->key, node->key_size, key, key_size) ==
+			0) {
+			return SPARK_TRUE;
+		}
+		node = node->next;
+	}
+	return SPARK_FALSE;
+}
+
+SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key,
+	SparkSize key_size) {
+	if (!hashmap || !key)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	SparkSize hash = hashmap->hash_function(key, key_size);
 	SparkSize index = hash % hashmap->capacity;
 	SparkHashMapNode* prev = &hashmap->buckets[index];
 	SparkHashMapNode node = hashmap->buckets[index];
 	while (node) {
-		if (node->hash == hash && hashmap->compare_function(node->key, node->key_size, key, key_size) == 0) {
+		if (node->hash == hash &&
+			hashmap->compare_function(node->key, node->key_size, key, key_size) ==
+			0) {
 			*prev = node->next;
 			if (hashmap->key_destructor) {
 				hashmap->key_destructor(node->key);
@@ -1678,6 +2326,47 @@ SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key, S
 	return SPARK_ERROR_NOT_FOUND;
 }
 
+SPARKAPI SparkHandle* SparkGetAllKeysHashMap(SparkHashMap hashmap, SparkSize* out_count) {
+	if (!hashmap || !out_count)
+		return SPARK_NULL;
+
+	SparkHandle* keys = (SparkHandle*)hashmap->allocator->allocate(sizeof(SparkHandle) * hashmap->size);
+	if (!keys)
+		return SPARK_NULL;
+
+	SparkSize index = 0;
+	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
+		SparkHashMapNode node = hashmap->buckets[i];
+		while (node) {
+			keys[index++] = node->key;
+			node = node->next;
+		}
+	}
+	*out_count = index;
+	return keys;
+}
+
+
+SPARKAPI SparkHandle* SparkGetAllValuesHashMap(SparkHashMap hashmap, SparkSize* out_count) {
+	if (!hashmap || !out_count)
+		return SPARK_NULL;
+
+	SparkHandle* values = (SparkHandle*)hashmap->allocator->allocate(sizeof(SparkHandle) * hashmap->size);
+	if (!values)
+		return SPARK_NULL;
+
+	SparkSize index = 0;
+	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
+		SparkHashMapNode node = hashmap->buckets[i];
+		while (node) {
+			values[index++] = node->value;
+			node = node->next;
+		}
+	}
+	*out_count = index;
+	return values;
+}
+
 
 #pragma endregion
 
@@ -1687,7 +2376,11 @@ SPARKAPI SparkHashSet SparkDefaultHashSet() {
 	return SparkCreateHashSet(16, sizeof(SparkHandle), NULL, NULL, NULL);
 }
 
-SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity, SparkSize element_size, SparkHashFunction hash, SparkAllocator allocator, SparkFreeFunction destructor) {
+SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
+	SparkSize element_size,
+	SparkHashFunction hash,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (!allocator) {
@@ -1716,9 +2409,11 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity, SparkSize element_s
 	hashset->external_allocator = external_allocator;
 	hashset->element_size = element_size;
 
-	hashset->elements = allocator->allocate(hashset->capacity * sizeof(SparkHandle));
+	hashset->elements =
+		allocator->allocate(hashset->capacity * sizeof(SparkHandle));
 	if (hashset->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for hashset elements!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for hashset elements!");
 		allocator->free(hashset);
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
@@ -1728,7 +2423,8 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity, SparkSize element_s
 
 	hashset->hashes = allocator->allocate(hashset->capacity * sizeof(SparkSize));
 	if (hashset->hashes == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for hashset hashes!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for hashset hashes!");
 		allocator->free(hashset->elements);
 		allocator->free(hashset);
 		if (!external_allocator) {
@@ -1782,17 +2478,21 @@ SPARKAPI SparkVoid SparkDestroyHashSet(SparkHashSet hashset) {
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset, SparkSize new_capacity) {
+SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset,
+	SparkSize new_capacity) {
 	SparkHandle* old_elements = hashset->elements;
 	SparkSize* old_hashes = hashset->hashes;
 	SparkSize old_capacity = hashset->capacity;
 
 	hashset->capacity = new_capacity;
-	hashset->elements = hashset->allocator->allocate(hashset->capacity * sizeof(SparkHandle));
-	hashset->hashes = hashset->allocator->allocate(hashset->capacity * sizeof(SparkSize));
+	hashset->elements =
+		hashset->allocator->allocate(hashset->capacity * sizeof(SparkHandle));
+	hashset->hashes =
+		hashset->allocator->allocate(hashset->capacity * sizeof(SparkSize));
 
 	if (hashset->elements == SPARK_NULL || hashset->hashes == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for hashset resizing!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for hashset resizing!");
 
 		// Restore old capacity
 		hashset->capacity = old_capacity;
@@ -1820,9 +2520,11 @@ SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset, SparkS
 	hashset->size = 0;
 	for (SparkSize i = 0; i < old_capacity; i++) {
 		if (old_elements[i] != SPARK_NULL) {
-			SparkResult res = SparkInsertHashSet(hashset, old_elements[i], hashset->element_size);
+			SparkResult res =
+				SparkInsertHashSet(hashset, old_elements[i], hashset->element_size);
 			if (res != SPARK_SUCCESS) {
-				SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to re-insert element during hashset resizing!");
+				SparkLog(SPARK_LOG_LEVEL_ERROR,
+					"Failed to re-insert element during hashset resizing!");
 
 				// Free new elements and hashes
 				hashset->allocator->free(hashset->elements);
@@ -1846,11 +2548,14 @@ SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset, SparkS
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkBool SparkContainsHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size) {
+SPARKAPI SparkBool SparkContainsHashSet(SparkHashSet hashset,
+	SparkHandle element,
+	SparkSize element_size) {
 	if (hashset == SPARK_NULL || element == SPARK_NULL) {
 		return SPARK_FALSE;
 	}
-	SparkSize element_hash = hashset->hash_function((SparkConstBuffer)element, element_size);
+	SparkSize element_hash =
+		hashset->hash_function((SparkConstBuffer)element, element_size);
 	SparkSize index = element_hash % hashset->capacity;
 
 	SparkSize original_index = index;
@@ -1867,7 +2572,9 @@ SPARKAPI SparkBool SparkContainsHashSet(SparkHashSet hashset, SparkHandle elemen
 	return SPARK_FALSE;
 }
 
-SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size) {
+SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset,
+	SparkHandle element,
+	SparkSize element_size) {
 	if (hashset == SPARK_NULL || element == SPARK_NULL) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -1879,7 +2586,8 @@ SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset, SparkHandle elemen
 		}
 	}
 
-	SparkSize element_hash = hashset->hash_function((SparkConstBuffer)element, element_size);
+	SparkSize element_hash =
+		hashset->hash_function((SparkConstBuffer)element, element_size);
 	SparkSize index = element_hash % hashset->capacity;
 
 	while (hashset->elements[index] != SPARK_NULL) {
@@ -1896,11 +2604,14 @@ SPARKAPI SparkResult SparkInsertHashSet(SparkHashSet hashset, SparkHandle elemen
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset, SparkHandle element, SparkSize element_size) {
+SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset,
+	SparkHandle element,
+	SparkSize element_size) {
 	if (hashset == SPARK_NULL || element == SPARK_NULL) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
-	SparkSize element_hash = hashset->hash_function((SparkConstBuffer)element, element_size);
+	SparkSize element_hash =
+		hashset->hash_function((SparkConstBuffer)element, element_size);
 	SparkSize index = element_hash % hashset->capacity;
 
 	SparkSize original_index = index;
@@ -1958,7 +2669,9 @@ SPARKAPI SparkQueue SparkDefaultQueue() {
 	return SparkCreateQueue(16, NULL, NULL);
 }
 
-SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
+SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (capacity == 0) {
@@ -1990,7 +2703,8 @@ SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity, SparkAllocator allocato
 
 	queue->elements = allocator->allocate(queue->capacity * sizeof(SparkHandle));
 	if (queue->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for queue elements!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for queue elements!");
 		allocator->free(queue);
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
@@ -2038,9 +2752,11 @@ SPARKAPI SparkResult SparkEnqueueQueue(SparkQueue queue, SparkHandle element) {
 	if (queue->size >= queue->capacity) {
 		// Resize the queue
 		SparkSize new_capacity = queue->capacity * 2;
-		SparkHandle* new_elements = queue->allocator->allocate(new_capacity * sizeof(SparkHandle));
+		SparkHandle* new_elements =
+			queue->allocator->allocate(new_capacity * sizeof(SparkHandle));
 		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for queue resizing!");
+			SparkLog(SPARK_LOG_LEVEL_ERROR,
+				"Failed to allocate memory for queue resizing!");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
 
@@ -2073,7 +2789,8 @@ SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue) {
 	}
 
 	// Call destructor on the element if destructor is not NULL
-	if (queue->destructor != NULL && queue->elements[queue->front] != SPARK_NULL) {
+	if (queue->destructor != NULL &&
+		queue->elements[queue->front] != SPARK_NULL) {
 		queue->destructor(queue->elements[queue->front]);
 		queue->elements[queue->front] = SPARK_NULL;
 	}
@@ -2128,7 +2845,9 @@ SPARKAPI SparkStack SparkDefaultStack() {
 	return SparkCreateStack(16, NULL, NULL);
 }
 
-SPARKAPI SparkStack SparkCreateStack(SparkSize capacity, SparkAllocator allocator, SparkFreeFunction destructor) {
+SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor) {
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (capacity == 0) {
@@ -2158,7 +2877,8 @@ SPARKAPI SparkStack SparkCreateStack(SparkSize capacity, SparkAllocator allocato
 
 	stack->elements = allocator->allocate(stack->capacity * sizeof(SparkHandle));
 	if (stack->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for stack elements!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for stack elements!");
 		allocator->free(stack);
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
@@ -2204,9 +2924,11 @@ SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkHandle element) {
 	}
 	if (stack->size >= stack->capacity) {
 		SparkSize new_capacity = stack->capacity * 2;
-		SparkHandle* new_elements = stack->allocator->allocate(new_capacity * sizeof(SparkHandle));
+		SparkHandle* new_elements =
+			stack->allocator->allocate(new_capacity * sizeof(SparkHandle));
 		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for stack resizing!");
+			SparkLog(SPARK_LOG_LEVEL_ERROR,
+				"Failed to allocate memory for stack resizing!");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
 		// Copy elements to new array
@@ -2276,7 +2998,8 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #define SparkMutexUnlock(mutex) LeaveCriticalSection(&(mutex))
 #define SparkMutexDestroy(mutex) DeleteCriticalSection(&(mutex))
 #define SparkConditionInit(cond) InitializeConditionVariable(&(cond))
-#define SparkConditionWait(cond, mutex) SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
+#define SparkConditionWait(cond, mutex)                                        \
+  SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
 #define SparkConditionSignal(cond) WakeConditionVariable(&(cond))
 #define SparkConditionBroadcast(cond) WakeAllConditionVariable(&(cond))
 #else
@@ -2331,11 +3054,14 @@ static SparkVoid* SparkThreadPoolWorker(SparkHandle arg) {
 }
 
 SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
-	SparkThreadPool pool = (SparkThreadPool)SparkAllocate(sizeof(struct SparkThreadPoolT));
-	if (pool == NULL) return NULL;
+	SparkThreadPool pool =
+		(SparkThreadPool)SparkAllocate(sizeof(struct SparkThreadPoolT));
+	if (pool == NULL)
+		return NULL;
 
 	pool->thread_count = thread_count;
-	pool->threads = (SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
+	pool->threads =
+		(SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
 	pool->task_queue_head = NULL;
 	pool->task_queue_tail = NULL;
 	pool->stop = 0;
@@ -2345,17 +3071,19 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 
 	for (SparkSize i = 0; i < thread_count; ++i) {
 #ifdef _WIN32
-		pool->threads[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SparkThreadPoolWorker, pool, 0, NULL);
+		pool->threads[i] = CreateThread(
+			NULL, 0, (LPTHREAD_START_ROUTINE)SparkThreadPoolWorker, pool, 0, NULL);
 #else
 		pthread_create(&pool->threads[i], NULL, SparkThreadPoolWorker, pool);
 #endif
-}
+	}
 
 	return pool;
 }
 
 SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
-	if (pool == NULL) return;
+	if (pool == NULL)
+		return;
 
 	/* Stop all threads */
 	SparkMutexLock(pool->mutex);
@@ -2395,11 +3123,15 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 	SparkFree(pool);
 }
 
-SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool, SparkThreadFunction function, SparkHandle arg) {
-	if (pool == NULL || function == NULL) return SPARK_FAILURE;
+SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
+	SparkThreadFunction function,
+	SparkHandle arg) {
+	if (pool == NULL || function == NULL)
+		return SPARK_FAILURE;
 
 	SparkTaskHandle task = SparkAllocate(sizeof(struct SparkTaskT));
-	if (task == NULL) return SPARK_FAILURE;
+	if (task == NULL)
+		return SPARK_FAILURE;
 
 	task->function = function;
 	task->arg = arg;
@@ -2427,7 +3159,8 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool, SparkThrea
 }
 
 SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
-	if (task == NULL) return SPARK_FAILURE;
+	if (task == NULL)
+		return SPARK_FAILURE;
 
 	SparkMutexLock(task->mutex);
 	while (!task->is_done) {
@@ -2439,7 +3172,8 @@ SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
 }
 
 SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
-	if (task == NULL) return SPARK_FALSE;
+	if (task == NULL)
+		return SPARK_FALSE;
 
 	SparkBool is_done;
 	SparkMutexLock(task->mutex);
@@ -2450,7 +3184,8 @@ SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
 }
 
 SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task) {
-	if (task == NULL) return;
+	if (task == NULL)
+		return;
 
 	SparkMutexDestroy(task->mutex);
 #ifndef _WIN32
@@ -2474,18 +3209,17 @@ SPARKAPI SparkEcs SparkCreateEcs() {
 	ecs->systems = SparkCreateVector(8, ecs->allocator, SPARK_NULL);
 	ecs->recycled_ids = SparkCreateStack(16, ecs->allocator, SPARK_NULL);
 	ecs->components = SparkCreateHashMap(
-		16,
-		SparkStringHash,
-		SparkStringCompare,
-		ecs->allocator,
-		SPARK_NULL,       // No key destructor needed for string literals
-		(SparkFreeFunction)SparkDestroyHashMap // Value destructor for component arrays
+		16, SparkStringHash, SparkStringCompare, ecs->allocator,
+		SPARK_NULL, // No key destructor needed for string literals
+		(SparkFreeFunction)
+		SparkDestroyHashMap // Value destructor for component arrays
 	);
 	return ecs;
 }
 
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
-	if (!ecs) return;
+	if (!ecs)
+		return;
 	SparkStopEcs(ecs);
 	SparkDestroyHashMap(ecs->components);
 	SparkDestroyVector(ecs->entities);
@@ -2495,7 +3229,8 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 }
 
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
-	if (!ecs) return SPARK_INVALID;
+	if (!ecs)
+		return SPARK_INVALID;
 	SparkEntity entity_id;
 	if (ecs->recycled_ids->size > 0) {
 		entity_id = (SparkEntity)(intptr_t)SparkGetTopStack(ecs->recycled_ids);
@@ -2504,18 +3239,22 @@ SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 	else {
 		entity_id = ecs->entities->size + 1;
 	}
-	SparkEntity* entity = (SparkEntity*)ecs->allocator->allocate(sizeof(SparkEntity));
-	if (!entity) return SPARK_INVALID;
+	SparkEntity* entity =
+		(SparkEntity*)ecs->allocator->allocate(sizeof(SparkEntity));
+	if (!entity)
+		return SPARK_INVALID;
 	*entity = entity_id;
 	SparkPushBackVector(ecs->entities, entity);
 	return entity_id;
 }
 
 SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
-	if (!ecs || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs || entity_id == SPARK_INVALID)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	SparkRemoveAllEntityComponents(ecs, entity_id);
 	for (SparkSize i = 0; i < ecs->entities->size; ++i) {
-		SparkEntity* entity = (SparkEntity*)SparkGetElementVector(ecs->entities, i);
+		SparkEntity* entity =
+			(SparkEntity*)SparkGetElementVector(ecs->entities, i);
 		if (*entity == entity_id) {
 			SparkRemoveVector(ecs->entities, i);
 			break;
@@ -2525,10 +3264,16 @@ SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type, SparkConstString name, SparkHandle data, SparkFreeFunction destructor) {
-	if (!type) return SPARK_NULL;
-	SparkComponent component = (SparkComponent)SparkAllocate(sizeof(struct SparkComponentT));
-	if (!component) return SPARK_NULL;
+SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type,
+	SparkConstString name,
+	SparkHandle data,
+	SparkFreeFunction destructor) {
+	if (!type)
+		return SPARK_NULL;
+	SparkComponent component =
+		(SparkComponent)SparkAllocate(sizeof(struct SparkComponentT));
+	if (!component)
+		return SPARK_NULL;
 	component->type = type;
 	component->name = name;
 	component->data = data;
@@ -2536,82 +3281,75 @@ SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type, SparkConstSt
 	return component;
 }
 
-SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, SparkComponent component) {
-	if (!ecs || !component || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
+	SparkComponent component) {
+	if (!ecs || !component || entity_id == SPARK_INVALID)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	component->entity = entity_id;
 	// Get or create component array
-	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
-		ecs->components,
-		(SparkHandle)component->type,
-		strlen(component->type)
-	);
-	if (!component_array) {
-		component_array = (SparkComponentArray)ecs->allocator->allocate(sizeof(struct SparkComponentArrayT));
-		if (!component_array) return SPARK_ERROR_OUT_OF_MEMORY;
-		component_array->entity_to_component = SparkCreateHashMap(
-			16,
-			SparkIntegerHash,
-			SparkIntegerCompare,
-			ecs->allocator,
-			SPARK_NULL,
-			component->destructor
-		);
-		SparkInsertHashMap(
-			ecs->components,
+	SparkComponentArray component_array =
+		(SparkComponentArray)SparkGetElementHashMap(ecs->components,
 			(SparkHandle)component->type,
-			strlen(component->type),
-			component_array
-		);
+			strlen(component->type));
+	if (!component_array) {
+		component_array = (SparkComponentArray)ecs->allocator->allocate(
+			sizeof(struct SparkComponentArrayT));
+		if (!component_array)
+			return SPARK_ERROR_OUT_OF_MEMORY;
+		component_array->entity_to_component =
+			SparkCreateHashMap(16, SparkIntegerHash, SparkIntegerCompare,
+				ecs->allocator, SPARK_NULL, component->destructor);
+		SparkInsertHashMap(ecs->components, (SparkHandle)component->type,
+			strlen(component->type), component_array);
 	}
-	SparkInsertHashMap(
-		component_array->entity_to_component,
-		(SparkHandle)(intptr_t)entity_id,
-		sizeof(SparkEntity),
-		component
-	);
+	SparkInsertHashMap(component_array->entity_to_component,
+		(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity),
+		component);
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
-	if (!ecs || !component_type || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
-	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
-		ecs->components,
-		(SparkHandle)component_type,
-		strlen(component_type)
-	);
-	if (!component_array) return SPARK_ERROR_NOT_FOUND;
-	SparkResult res = SparkRemoveHashMap(
-		component_array->entity_to_component,
-		(SparkHandle)(intptr_t)entity_id,
-		sizeof(SparkEntity)
-	);
+SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id,
+	SparkConstString component_type,
+	SparkConstString component_name) {
+	if (!ecs || !component_type || entity_id == SPARK_INVALID)
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	SparkComponentArray component_array =
+		(SparkComponentArray)SparkGetElementHashMap(
+			ecs->components, (SparkHandle)component_type, strlen(component_type));
+	if (!component_array)
+		return SPARK_ERROR_NOT_FOUND;
+	SparkResult res =
+		SparkRemoveHashMap(component_array->entity_to_component,
+			(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity));
 	return res;
 }
 
-SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
-	if (!ecs || !component_type || entity_id == SPARK_INVALID) return SPARK_NULL;
-	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
-		ecs->components,
-		(SparkHandle)component_type,
-		strlen(component_type)
-	);
-	if (!component_array) return SPARK_NULL;
+SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id,
+	SparkConstString component_type,
+	SparkConstString component_name) {
+	if (!ecs || !component_type || entity_id == SPARK_INVALID)
+		return SPARK_NULL;
+	SparkComponentArray component_array =
+		(SparkComponentArray)SparkGetElementHashMap(
+			ecs->components, (SparkHandle)component_type, strlen(component_type));
+	if (!component_array)
+		return SPARK_NULL;
 	SparkComponent component = (SparkComponent)SparkGetElementHashMap(
-		component_array->entity_to_component,
-		(SparkHandle)(intptr_t)entity_id,
-		sizeof(SparkEntity)
-	);
+		component_array->entity_to_component, (SparkHandle)(intptr_t)entity_id,
+		sizeof(SparkEntity));
 	return component;
 }
 
 SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
-	if (!ecs || !system) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs || !system)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	SparkPushBackVector(ecs->systems, system);
 	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system) {
-	if (!ecs || !system) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs || !system)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
 		if (SparkGetElementVector(ecs->systems, i) == system) {
 			SparkRemoveVector(ecs->systems, i);
@@ -2622,7 +3360,8 @@ SPARKAPI SparkResult SparkRemoveSystem(SparkEcs ecs, SparkSystem system) {
 }
 
 SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs) {
-	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
 		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
 		if (system->start) {
@@ -2636,7 +3375,8 @@ SPARKAPI SparkResult SparkStartEcs(SparkEcs ecs) {
 }
 
 SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta) {
-	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
 		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
 		if (system->update) {
@@ -2650,7 +3390,8 @@ SPARKAPI SparkResult SparkUpdateEcs(SparkEcs ecs, SparkF32 delta) {
 }
 
 SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs) {
-	if (!ecs) return SPARK_ERROR_INVALID_ARGUMENT;
+	if (!ecs)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	for (SparkSize i = 0; i < ecs->systems->size; ++i) {
 		SparkSystem system = (SparkSystem)SparkGetElementVector(ecs->systems, i);
 		if (system->stop) {
@@ -2663,23 +3404,41 @@ SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs) {
 	return SPARK_SUCCESS;
 }
 
-SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id) {
-	if (!ecs || entity_id == SPARK_INVALID) return SPARK_ERROR_INVALID_ARGUMENT;
+SPARKAPI SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs,
+	SparkEntity entity_id) {
+	if (!ecs || entity_id == SPARK_INVALID)
+		return SPARK_ERROR_INVALID_ARGUMENT;
 	for (SparkSize i = 0; i < ecs->components->capacity; ++i) {
 		SparkHashMapNode node = ecs->components->buckets[i];
 		while (node) {
 			SparkComponentArray component_array = (SparkComponentArray)node->value;
-			SparkRemoveHashMap(
-				component_array->entity_to_component,
-				(SparkHandle)(intptr_t)entity_id,
-				sizeof(SparkEntity)
-			);
+			SparkRemoveHashMap(component_array->entity_to_component,
+				(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity));
 			node = node->next;
 		}
 	}
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SparkVector SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString component_type) {
+	if (!ecs || !component_type)
+		return SPARK_NULL;
+	SparkComponentArray component_array =
+		(SparkComponentArray)SparkGetElementHashMap(
+			ecs->components, (SparkHandle)component_type, strlen(component_type));
+	if (!component_array)
+		return SPARK_NULL;
+	SparkVector components = SparkCreateVector(component_array->entity_to_component->size, ecs->allocator, SPARK_NULL);
+	for (SparkSize i = 0; i < component_array->entity_to_component->capacity; ++i) {
+		SparkHashMapNode node = component_array->entity_to_component->buckets[i];
+		while (node) {
+			SparkComponent component = (SparkComponent)node->value;
+			SparkPushBackVector(components, component);
+			node = node->next;
+		}
+	}
+	return components;
+}
 
 #pragma endregion
 
@@ -2691,18 +3450,12 @@ const SparkBool ENABLE_VALIDATION_LAYERS = SPARK_FALSE;
 const SparkBool ENABLE_VALIDATION_LAYERS = SPARK_TRUE;
 #endif
 
-const SparkConstString VALIDATION_LAYERS[] = {
-	"VK_LAYER_KHRONOS_validation"
-};
+const SparkConstString VALIDATION_LAYERS[] = { "VK_LAYER_KHRONOS_validation" };
 
-const SparkConstString DEVICE_EXTENSIONS[] = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+const SparkConstString DEVICE_EXTENSIONS[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-const VkDynamicState DYNAMIC_STATES[] = {
-	VK_DYNAMIC_STATE_VIEWPORT,
-	VK_DYNAMIC_STATE_SCISSOR
-};
+const VkDynamicState DYNAMIC_STATES[] = { VK_DYNAMIC_STATE_VIEWPORT,
+										 VK_DYNAMIC_STATE_SCISSOR };
 
 struct VulkanExtensions {
 	SparkU32 count;
@@ -2724,7 +3477,8 @@ struct VulkanSwapChainSupportDetails {
 	SparkU32 present_modes_size;
 };
 
-SPARKAPI SPARKSTATIC SparkBool __SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
+SPARKAPI SPARKSTATIC SparkBool
+__SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
 	return indices->valid_graphics && indices->valid_present;
 }
 
@@ -2732,10 +3486,12 @@ SPARKAPI SPARKSTATIC SparkBool __SparkCheckValidationLayerSupport() {
 	SparkU32 layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, SPARK_NULL);
 
-	VkLayerProperties* available_layers = SparkAllocate(layer_count * sizeof(VkLayerProperties));
+	VkLayerProperties* available_layers =
+		SparkAllocate(layer_count * sizeof(VkLayerProperties));
 	vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
 
-	for (SparkU32 i = 0; i < sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString); i++) {
+	for (SparkU32 i = 0; i < sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
+		i++) {
 		SparkBool layer_found = SPARK_FALSE;
 		for (SparkU32 j = 0; j < layer_count; j++) {
 			if (strcmp(VALIDATION_LAYERS[i], available_layers[j].layerName) == 0) {
@@ -2747,7 +3503,6 @@ SPARKAPI SPARKSTATIC SparkBool __SparkCheckValidationLayerSupport() {
 			SparkFree(available_layers);
 			return SPARK_FALSE;
 		}
-
 	}
 
 	SparkFree(available_layers);
@@ -2757,14 +3512,16 @@ SPARKAPI SPARKSTATIC SparkBool __SparkCheckValidationLayerSupport() {
 
 SPARKAPI SPARKSTATIC struct VulkanExtensions __SparkGetRequiredExtensions() {
 	SparkU32 glfw_extension_count = 0;
-	SparkConstString* glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+	SparkConstString* glfw_extensions =
+		glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
 	SparkU32 extension_count = glfw_extension_count;
 	if (ENABLE_VALIDATION_LAYERS) {
 		extension_count++;
 	}
 
-	SparkConstString* extensions = SparkAllocate(extension_count * sizeof(SparkConstString));
+	SparkConstString* extensions =
+		SparkAllocate(extension_count * sizeof(SparkConstString));
 	for (SparkU32 i = 0; i < glfw_extension_count; i++) {
 		extensions[i] = glfw_extensions[i];
 	}
@@ -2776,14 +3533,18 @@ SPARKAPI SPARKSTATIC struct VulkanExtensions __SparkGetRequiredExtensions() {
 	return (struct VulkanExtensions) { extension_count, extensions };
 }
 
-SPARKAPI SPARKSTATIC struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC struct VulkanQueueFamilyIndices
+__SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
 	struct VulkanQueueFamilyIndices indices = { 0 };
 
 	SparkU32 queue_family_count = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, SPARK_NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+		SPARK_NULL);
 
-	VkQueueFamilyProperties* queue_families = SparkAllocate(queue_family_count * sizeof(VkQueueFamilyProperties));
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
+	VkQueueFamilyProperties* queue_families =
+		SparkAllocate(queue_family_count * sizeof(VkQueueFamilyProperties));
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+		queue_families);
 
 	for (SparkU32 i = 0; i < queue_family_count; i++) {
 		if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -2792,7 +3553,8 @@ SPARKAPI SPARKSTATIC struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(Sp
 		}
 
 		VkBool32 present_support = SPARK_FALSE;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface, &present_support);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface,
+			&present_support);
 		if (present_support) {
 			indices.present_family = i;
 			indices.valid_present = SPARK_TRUE;
@@ -2808,7 +3570,11 @@ SPARKAPI SPARKSTATIC struct VulkanQueueFamilyIndices __SparkFindQueueFamilies(Sp
 	return indices;
 }
 
-SPARKAPI SPARKSTATIC VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, SparkHandle user_data) {
+SPARKAPI SPARKSTATIC VKAPI_ATTR SparkBool VKAPI_CALL
+__SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+	VkDebugUtilsMessageTypeFlagsEXT message_type,
+	const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+	SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
 	}
@@ -2818,8 +3584,13 @@ SPARKAPI SPARKSTATIC VKAPI_ATTR SparkBool VKAPI_CALL __SparkDebugCallback(VkDebu
 	return VK_FALSE;
 }
 
-SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger) {
-	PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(
+	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info,
+	const VkAllocationCallbacks* allocator,
+	VkDebugUtilsMessengerEXT* debug_messenger) {
+	PFN_vkCreateDebugUtilsMessengerEXT func =
+		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+			instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		return func(instance, create_info, allocator, debug_messenger);
 	}
@@ -2828,38 +3599,55 @@ SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(VkInstance ins
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator) {
-	PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyDebugUtilsMessengerEXT(
+	VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger,
+	const VkAllocationCallbacks* allocator) {
+	PFN_vkDestroyDebugUtilsMessengerEXT func =
+		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+			instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != SPARK_NULL) {
 		func(instance, debug_messenger, allocator);
 	}
 }
 
-SPARKAPI SPARKSTATIC VkDebugUtilsMessengerCreateInfoEXT __SparkPopulateDebugMessengerCreateInfo() {
+SPARKAPI SPARKSTATIC VkDebugUtilsMessengerCreateInfoEXT
+__SparkPopulateDebugMessengerCreateInfo() {
 	VkDebugUtilsMessengerCreateInfoEXT create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	create_info.messageSeverity =
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	create_info.pfnUserCallback = __SparkDebugCallback;
 	return create_info;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkSetupDebugMessenger(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult
+__SparkSetupDebugMessenger(SparkWindow window) {
 	if (!ENABLE_VALIDATION_LAYERS) {
 		return SPARK_SUCCESS;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT create_info = __SparkPopulateDebugMessengerCreateInfo();
-	if (__SparkCreateDebugUtilsMessengerEXT(window->instance, &create_info, SPARK_NULL, &window->debug_messenger)) {
+	VkDebugUtilsMessengerCreateInfoEXT create_info =
+		__SparkPopulateDebugMessengerCreateInfo();
+	if (__SparkCreateDebugUtilsMessengerEXT(window->instance, &create_info,
+		SPARK_NULL,
+		&window->debug_messenger)) {
 		return SPARK_ERROR_INVALID;
 	}
 
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
+SPARKAPI SPARKSTATIC SparkResult
+__SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
 	if (ENABLE_VALIDATION_LAYERS && !__SparkCheckValidationLayerSupport()) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Validation layers requested, but not available!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Validation layers requested, but not available!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -2880,11 +3668,14 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateVulkanInstance(VkInstance* instanc
 	create_info.ppEnabledExtensionNames = extensions.names;
 
 	if (ENABLE_VALIDATION_LAYERS) {
-		create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
+		create_info.enabledLayerCount =
+			sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
 		create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
 
-		VkDebugUtilsMessengerCreateInfoEXT debug_create_info = __SparkPopulateDebugMessengerCreateInfo();
-		create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
+		VkDebugUtilsMessengerCreateInfoEXT debug_create_info =
+			__SparkPopulateDebugMessengerCreateInfo();
+		create_info.pNext =
+			(VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
 	}
 	else {
 		create_info.enabledLayerCount = 0;
@@ -2902,19 +3693,25 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateVulkanInstance(VkInstance* instanc
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC SparkBool __SparkCheckDeviceExtensionSupport(
+	SparkWindow window, VkPhysicalDevice device) {
 	SparkU32 extension_count;
-	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count, SPARK_NULL);
+	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count,
+		SPARK_NULL);
 
-	VkExtensionProperties* available_extensions = SparkAllocate(sizeof(VkExtensionProperties) * extension_count);
-	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count, available_extensions);
+	VkExtensionProperties* available_extensions =
+		SparkAllocate(sizeof(VkExtensionProperties) * extension_count);
+	vkEnumerateDeviceExtensionProperties(device, SPARK_NULL, &extension_count,
+		available_extensions);
 
 	SparkBool all_extensions = SPARK_TRUE;
 
-	for (SparkU32 i = 0; i < sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString); i++) {
+	for (SparkU32 i = 0; i < sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString);
+		i++) {
 		SparkBool extension_found = SPARK_FALSE;
 		for (SparkU32 j = 0; j < extension_count; j++) {
-			if (strcmp(DEVICE_EXTENSIONS[i], available_extensions[j].extensionName) == 0) {
+			if (strcmp(DEVICE_EXTENSIONS[i], available_extensions[j].extensionName) ==
+				0) {
 				extension_found = SPARK_TRUE;
 				break;
 			}
@@ -2930,23 +3727,30 @@ SPARKAPI SPARKSTATIC SparkBool __SparkCheckDeviceExtensionSupport(SparkWindow wi
 	return all_extensions;
 }
 
-SPARKAPI SPARKSTATIC struct VulkanSwapChainSupportDetails __SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC struct VulkanSwapChainSupportDetails
+__SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
 	struct VulkanSwapChainSupportDetails details = { 0 };
 
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, window->surface, &details.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, window->surface,
+		&details.capabilities);
 
 	SparkU32 format_count;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count, SPARK_NULL);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count,
+		SPARK_NULL);
 	if (format_count != 0) {
 		details.formats = SparkAllocate(format_count * sizeof(VkSurfaceFormatKHR));
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count, details.formats);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, window->surface, &format_count,
+			details.formats);
 	}
 
 	SparkU32 present_mode_count;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, window->surface, &present_mode_count, SPARK_NULL);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, window->surface,
+		&present_mode_count, SPARK_NULL);
 	if (present_mode_count != 0) {
-		details.present_modes = SparkAllocate(present_mode_count * sizeof(VkPresentModeKHR));
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, window->surface, &present_mode_count, details.present_modes);
+		details.present_modes =
+			SparkAllocate(present_mode_count * sizeof(VkPresentModeKHR));
+		vkGetPhysicalDeviceSurfacePresentModesKHR(
+			device, window->surface, &present_mode_count, details.present_modes);
 	}
 
 	details.formats_size = format_count;
@@ -2955,9 +3759,12 @@ SPARKAPI SPARKSTATIC struct VulkanSwapChainSupportDetails __SparkQuerySwapChainS
 	return details;
 }
 
-SPARKAPI SPARKSTATIC VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats, const SparkSize available_formats_size) {
+SPARKAPI SPARKSTATIC VkSurfaceFormatKHR
+__SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats,
+	const SparkSize available_formats_size) {
 	for (SparkSize i = 0; i < available_formats_size; i++) {
-		if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+		if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB &&
+			available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 			return available_formats[i];
 		}
 	}
@@ -2965,7 +3772,9 @@ SPARKAPI SPARKSTATIC VkSurfaceFormatKHR __SparkChooseSwapSurfaceFormat(const VkS
 	return available_formats[0];
 }
 
-SPARKAPI SPARKSTATIC VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes, const SparkSize available_present_modes_size) {
+SPARKAPI SPARKSTATIC VkPresentModeKHR
+__SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes,
+	const SparkSize available_present_modes_size) {
 	for (SparkSize i = 0; i < available_present_modes_size; i++) {
 		if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return available_present_modes[i];
@@ -2975,7 +3784,8 @@ SPARKAPI SPARKSTATIC VkPresentModeKHR __SparkChooseSwapPresentMode(const VkPrese
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
+SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(
+	const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
 	if (capabilities->currentExtent.width != UINT32_MAX) {
 		return capabilities->currentExtent;
 	}
@@ -2984,29 +3794,42 @@ SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(const SparkWindow window
 		glfwGetFramebufferSize(window->window, &width, &height);
 
 		VkExtent2D actual_extent = { width, height };
-		actual_extent.width = SparkClamp((SparkScalar)actual_extent.width, (SparkScalar)capabilities->minImageExtent.width, (SparkScalar)capabilities->maxImageExtent.width);
-		actual_extent.height = SparkClamp((SparkScalar)actual_extent.height, (SparkScalar)capabilities->minImageExtent.height, (SparkScalar)capabilities->maxImageExtent.height);
+		actual_extent.width =
+			SparkClamp((SparkScalar)actual_extent.width,
+				(SparkScalar)capabilities->minImageExtent.width,
+				(SparkScalar)capabilities->maxImageExtent.width);
+		actual_extent.height =
+			SparkClamp((SparkScalar)actual_extent.height,
+				(SparkScalar)capabilities->minImageExtent.height,
+				(SparkScalar)capabilities->maxImageExtent.height);
 		return actual_extent;
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkBool __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
-	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, device);
-	SparkBool extensions_supported = __SparkCheckDeviceExtensionSupport(window, device);
+SPARKAPI SPARKSTATIC SparkBool
+__SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
+	struct VulkanQueueFamilyIndices indices =
+		__SparkFindQueueFamilies(window, device);
+	SparkBool extensions_supported =
+		__SparkCheckDeviceExtensionSupport(window, device);
 
 	SparkBool swap_chain_adequete = SPARK_FALSE;
 	if (extensions_supported) {
-		struct VulkanSwapChainSupportDetails swap_chain_support = __SparkQuerySwapChainSupport(window, device);
-		swap_chain_adequete = swap_chain_support.formats && swap_chain_support.present_modes;
+		struct VulkanSwapChainSupportDetails swap_chain_support =
+			__SparkQuerySwapChainSupport(window, device);
+		swap_chain_adequete =
+			swap_chain_support.formats && swap_chain_support.present_modes;
 
 		SparkFree(swap_chain_support.formats);
 		SparkFree(swap_chain_support.present_modes);
 	}
 
-	return __SparkIndicesComplete(&indices) && extensions_supported && swap_chain_adequete;
+	return __SparkIndicesComplete(&indices) && extensions_supported &&
+		swap_chain_adequete;
 }
 
-SPARKAPI SPARKSTATIC SparkI32 __SparkRateDeviceSuitability(VkPhysicalDevice device) {
+SPARKAPI SPARKSTATIC SparkI32
+__SparkRateDeviceSuitability(VkPhysicalDevice device) {
 	SparkI32 score = 0;
 
 	VkPhysicalDeviceProperties device_properties;
@@ -3046,7 +3869,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	VkPhysicalDevice* devices = SparkAllocate(device_count * sizeof(VkPhysicalDevice));
+	VkPhysicalDevice* devices =
+		SparkAllocate(device_count * sizeof(VkPhysicalDevice));
 	vkEnumeratePhysicalDevices(window->instance, &device_count, devices);
 
 	for (SparkU32 i = 0; i < device_count; i++) {
@@ -3062,7 +3886,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	VkPhysicalDevice* candidates = SparkAllocate(device_count * sizeof(VkPhysicalDevice));
+	VkPhysicalDevice* candidates =
+		SparkAllocate(device_count * sizeof(VkPhysicalDevice));
 	SparkU32* scores = SparkAllocate(device_count * sizeof(SparkU32));
 
 	for (SparkU32 i = 0; i < device_count; i++) {
@@ -3096,19 +3921,24 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateSurface(SparkWindow window) {
-	if (glfwCreateWindowSurface(window->instance, window->window, SPARK_NULL, &window->surface) != VK_SUCCESS) {
+	if (glfwCreateWindowSurface(window->instance, window->window, SPARK_NULL,
+		&window->surface) != VK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
 
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateLogicalDevice(SparkWindow window) {
-	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, window->physical_device);
+SPARKAPI SPARKSTATIC SparkResult
+__SparkCreateLogicalDevice(SparkWindow window) {
+	struct VulkanQueueFamilyIndices indices =
+		__SparkFindQueueFamilies(window, window->physical_device);
 
 	const SparkU32 indices_size = 2;
-	VkDeviceQueueCreateInfo* queue_create_infos = SparkAllocate(sizeof(VkDeviceQueueCreateInfo) * indices_size);
-	SparkU32* unique_queue_families = SparkAllocate(sizeof(SparkU32) * indices_size);
+	VkDeviceQueueCreateInfo* queue_create_infos =
+		SparkAllocate(sizeof(VkDeviceQueueCreateInfo) * indices_size);
+	SparkU32* unique_queue_families =
+		SparkAllocate(sizeof(SparkU32) * indices_size);
 
 	unique_queue_families[0] = indices.graphics_family;
 	unique_queue_families[1] = indices.present_family;
@@ -3124,7 +3954,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateLogicalDevice(SparkWindow window) 
 		queue_create_infos[i] = queue_create_info;
 	}
 
-
 	VkDeviceQueueCreateInfo queue_create_info = { 0 };
 	VkPhysicalDeviceFeatures device_features = { 0 };
 	VkDeviceCreateInfo create_info = { 0 };
@@ -3138,26 +3967,31 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateLogicalDevice(SparkWindow window) 
 	create_info.pQueueCreateInfos = queue_create_infos;
 	create_info.queueCreateInfoCount = indices_size;
 	create_info.pEnabledFeatures = &device_features;
-	create_info.enabledExtensionCount = sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString);
+	create_info.enabledExtensionCount =
+		sizeof(DEVICE_EXTENSIONS) / sizeof(SparkConstString);
 	create_info.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
 
 	if (ENABLE_VALIDATION_LAYERS) {
-		create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
+		create_info.enabledLayerCount =
+			sizeof(VALIDATION_LAYERS) / sizeof(SparkConstString);
 		create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
 	}
 	else {
 		create_info.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(window->physical_device, &create_info, SPARK_NULL, &window->device) != VK_SUCCESS) {
+	if (vkCreateDevice(window->physical_device, &create_info, SPARK_NULL,
+		&window->device) != VK_SUCCESS) {
 		SparkFree(queue_create_infos);
 		SparkFree(unique_queue_families);
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create logical device!");
 		return SPARK_ERROR_INVALID;
 	}
 
-	vkGetDeviceQueue(window->device, indices.graphics_family, 0, &window->graphics_queue);
-	vkGetDeviceQueue(window->device, indices.present_family, 0, &window->present_queue);
+	vkGetDeviceQueue(window->device, indices.graphics_family, 0,
+		&window->graphics_queue);
+	vkGetDeviceQueue(window->device, indices.present_family, 0,
+		&window->present_queue);
 
 	SparkFree(queue_create_infos);
 	SparkFree(unique_queue_families);
@@ -3166,15 +4000,20 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateLogicalDevice(SparkWindow window) 
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
-	struct VulkanSwapChainSupportDetails swap_chain_support = __SparkQuerySwapChainSupport(window, window->physical_device);
+	struct VulkanSwapChainSupportDetails swap_chain_support =
+		__SparkQuerySwapChainSupport(window, window->physical_device);
 
-	VkSurfaceFormatKHR surface_format = __SparkChooseSwapSurfaceFormat(swap_chain_support.formats, swap_chain_support.formats_size);
-	VkPresentModeKHR present_mode = __SparkChooseSwapPresentMode(swap_chain_support.present_modes, swap_chain_support.present_modes_size);
-	VkExtent2D extent = __SparkChooseSwapExtent(window, &swap_chain_support.capabilities);
+	VkSurfaceFormatKHR surface_format = __SparkChooseSwapSurfaceFormat(
+		swap_chain_support.formats, swap_chain_support.formats_size);
+	VkPresentModeKHR present_mode = __SparkChooseSwapPresentMode(
+		swap_chain_support.present_modes, swap_chain_support.present_modes_size);
+	VkExtent2D extent =
+		__SparkChooseSwapExtent(window, &swap_chain_support.capabilities);
 
 	SparkU32 image_count = swap_chain_support.capabilities.minImageCount + 1;
 
-	if (swap_chain_support.capabilities.maxImageCount > 0 && image_count > swap_chain_support.capabilities.maxImageCount) {
+	if (swap_chain_support.capabilities.maxImageCount > 0 &&
+		image_count > swap_chain_support.capabilities.maxImageCount) {
 		image_count = swap_chain_support.capabilities.maxImageCount;
 	}
 
@@ -3188,8 +4027,10 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	create_info.imageArrayLayers = 1;
 	create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	struct VulkanQueueFamilyIndices indices = __SparkFindQueueFamilies(window, window->physical_device);
-	SparkU32 queue_family_indices[] = { indices.graphics_family, indices.present_family };
+	struct VulkanQueueFamilyIndices indices =
+		__SparkFindQueueFamilies(window, window->physical_device);
+	SparkU32 queue_family_indices[] = { indices.graphics_family,
+									   indices.present_family };
 
 	if (indices.graphics_family != indices.present_family) {
 		create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -3208,21 +4049,25 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	create_info.clipped = VK_TRUE;
 	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(window->device, &create_info, SPARK_NULL, &window->swap_chain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(window->device, &create_info, SPARK_NULL,
+		&window->swap_chain) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create swap chain!");
 		return SPARK_ERROR_INVALID;
 	}
 
-	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count, SPARK_NULL);
+	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count,
+		SPARK_NULL);
 	window->swap_chain_images = SparkAllocate(image_count * sizeof(VkImage));
-	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count, window->swap_chain_images);
+	vkGetSwapchainImagesKHR(window->device, window->swap_chain, &image_count,
+		window->swap_chain_images);
 
 	window->swap_chain_images_size = image_count;
 	window->swap_chain_image_format = surface_format.format;
 
 	window->swap_chain_extent = SparkAllocate(sizeof(VkExtent2D));
 	if (!window->swap_chain_extent) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for swap_chain_extent!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to allocate memory for swap_chain_extent!");
 		return SPARK_ERROR_NULL;
 	}
 
@@ -3235,7 +4080,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateImageViews(SparkWindow window) {
-	window->swap_chain_image_views = SparkAllocate(window->swap_chain_images_size * sizeof(VkImageView));
+	window->swap_chain_image_views =
+		SparkAllocate(window->swap_chain_images_size * sizeof(VkImageView));
 	window->swap_chain_image_views_size = window->swap_chain_images_size;
 
 	for (SparkSize i = 0; i < window->swap_chain_images_size; i++) {
@@ -3254,7 +4100,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImageViews(SparkWindow window) {
 		create_info.subresourceRange.baseArrayLayer = 0;
 		create_info.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(window->device, &create_info, SPARK_NULL, &window->swap_chain_image_views[i]) != VK_SUCCESS) {
+		if (vkCreateImageView(window->device, &create_info, SPARK_NULL,
+			&window->swap_chain_image_views[i]) != VK_SUCCESS) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image views!");
 			return SPARK_ERROR_INVALID;
 		}
@@ -3263,14 +4110,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImageViews(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC VkShaderModule __SparkCreateShaderModule(SparkWindow window, SparkConstBuffer code, SparkSize code_size) {
+SPARKAPI SPARKSTATIC VkShaderModule __SparkCreateShaderModule(
+	SparkWindow window, SparkConstBuffer code, SparkSize code_size) {
 	VkShaderModuleCreateInfo create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	create_info.codeSize = code_size;
 	create_info.pCode = (SparkU32*)code;
 
 	VkShaderModule shader_module;
-	if (vkCreateShaderModule(window->device, &create_info, SPARK_NULL, &shader_module) != VK_SUCCESS) {
+	if (vkCreateShaderModule(window->device, &create_info, SPARK_NULL,
+		&shader_module) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create shader module!");
 		return VK_NULL_HANDLE;
 	}
@@ -3314,7 +4163,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	render_pass_info.dependencyCount = 1;
 	render_pass_info.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(window->device, &render_pass_info, SPARK_NULL, &window->render_pass) != VK_SUCCESS) {
+	if (vkCreateRenderPass(window->device, &render_pass_info, SPARK_NULL,
+		&window->render_pass) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create render pass!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3322,37 +4172,47 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult
+__SparkCreateGraphicsPipeline(SparkWindow window) {
 	SparkBuffer vert_buf;
 	SparkBuffer frag_buf;
 	SparkSize vert_size;
 	SparkSize frag_size;
 
-	SparkCompileShaderToSpirv("src/shader.vert", SPARK_SHADER_STAGE_VERTEX, &vert_buf, &vert_size);
-	SparkCompileShaderToSpirv("src/shader.frag", SPARK_SHADER_STAGE_FRAGMENT, &frag_buf, &frag_size);
+	SparkCompileShaderToSpirv("src/shader.vert", SPARK_SHADER_STAGE_VERTEX,
+		&vert_buf, &vert_size);
+	SparkCompileShaderToSpirv("src/shader.frag", SPARK_SHADER_STAGE_FRAGMENT,
+		&frag_buf, &frag_size);
 
-	VkShaderModule vert_shader_module = __SparkCreateShaderModule(window, vert_buf, vert_size);
-	VkShaderModule frag_shader_module = __SparkCreateShaderModule(window, frag_buf, frag_size);
+	VkShaderModule vert_shader_module =
+		__SparkCreateShaderModule(window, vert_buf, vert_size);
+	VkShaderModule frag_shader_module =
+		__SparkCreateShaderModule(window, frag_buf, frag_size);
 
 	VkPipelineShaderStageCreateInfo vert_shader_stage_info = { 0 };
-	vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vert_shader_stage_info.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 	vert_shader_stage_info.module = vert_shader_module;
 	vert_shader_stage_info.pName = "main";
 
 	VkPipelineShaderStageCreateInfo frag_shader_stage_info = { 0 };
-	frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	frag_shader_stage_info.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	frag_shader_stage_info.module = frag_shader_module;
 	frag_shader_stage_info.pName = "main";
 
-	VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info, frag_shader_stage_info };
+	VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info,
+													   frag_shader_stage_info };
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = { 0 };
-	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_info.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
-	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	input_assembly.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
@@ -3370,7 +4230,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 
 	VkPipelineDynamicStateCreateInfo dynamic_state = { 0 };
 	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamic_state.dynamicStateCount = sizeof(DYNAMIC_STATES) / sizeof(DYNAMIC_STATES[0]);
+	dynamic_state.dynamicStateCount =
+		sizeof(DYNAMIC_STATES) / sizeof(DYNAMIC_STATES[0]);
 	dynamic_state.pDynamicStates = DYNAMIC_STATES;
 
 	VkPipelineViewportStateCreateInfo viewport_state = { 0 };
@@ -3389,12 +4250,15 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 	rasterizer.depthBiasEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisampling = { 0 };
-	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
 	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	VkPipelineColorBlendAttachmentState color_blend_attachment = { 0 };
-	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	color_blend_attachment.colorWriteMask =
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+		VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	color_blend_attachment.blendEnable = VK_FALSE;
 	color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 	color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -3404,7 +4268,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 	color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
 	VkPipelineColorBlendStateCreateInfo color_blending = { 0 };
-	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	color_blending.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	color_blending.logicOpEnable = VK_FALSE;
 	color_blending.logicOp = VK_LOGIC_OP_COPY;
 	color_blending.attachmentCount = 1;
@@ -3413,7 +4278,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 	VkPipelineLayoutCreateInfo pipeline_layout_info = { 0 };
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-	if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL, &window->pipeline_layout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL,
+		&window->pipeline_layout) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create pipeline layout!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3433,7 +4299,9 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 	pipeline_info.renderPass = window->render_pass;
 	pipeline_info.subpass = 0;
 
-	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, &window->graphics_pipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1,
+		&pipeline_info, SPARK_NULL,
+		&window->graphics_pipeline) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3448,7 +4316,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkWindow windo
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
-	window->swap_chain_framebuffers = SparkAllocate(window->swap_chain_image_views_size * sizeof(VkFramebuffer));
+	window->swap_chain_framebuffers = SparkAllocate(
+		window->swap_chain_image_views_size * sizeof(VkFramebuffer));
 
 	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
 		VkImageView attachments[] = { window->swap_chain_image_views[i] };
@@ -3462,7 +4331,9 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 		framebuffer_info.height = window->swap_chain_extent->height;
 		framebuffer_info.layers = 1;
 
-		if (vkCreateFramebuffer(window->device, &framebuffer_info, SPARK_NULL, &window->swap_chain_framebuffers[i]) != VK_SUCCESS) {
+		if (vkCreateFramebuffer(window->device, &framebuffer_info, SPARK_NULL,
+			&window->swap_chain_framebuffers[i]) !=
+			VK_SUCCESS) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffer!");
 			return SPARK_ERROR_INVALID;
 		}
@@ -3472,14 +4343,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
-	struct VulkanQueueFamilyIndices queue_family_indices = __SparkFindQueueFamilies(window, window->physical_device);
+	struct VulkanQueueFamilyIndices queue_family_indices =
+		__SparkFindQueueFamilies(window, window->physical_device);
 
 	VkCommandPoolCreateInfo pool_info = { 0 };
 	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	pool_info.queueFamilyIndex = queue_family_indices.graphics_family;
 
-	if (vkCreateCommandPool(window->device, &pool_info, SPARK_NULL, &window->command_pool) != VK_SUCCESS) {
+	if (vkCreateCommandPool(window->device, &pool_info, SPARK_NULL,
+		&window->command_pool) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command pool!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3487,12 +4360,14 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
+SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
+	SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to begin recording command buffer!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to begin recording command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -3507,9 +4382,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(SparkWindow window, 
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_color;
 
-	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(command_buffer, &render_pass_info,
+		VK_SUBPASS_CONTENTS_INLINE);
 
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, window->graphics_pipeline);
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		window->graphics_pipeline);
 
 	VkViewport viewport = { 0 };
 	viewport.width = (SparkScalar)window->swap_chain_extent->width;
@@ -3535,14 +4412,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(SparkWindow window, 
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandBuffer(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult
+__SparkCreateCommandBuffer(SparkWindow window) {
 	VkCommandBufferAllocateInfo alloc_info = { 0 };
 	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	alloc_info.commandPool = window->command_pool;
 	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	alloc_info.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(window->device, &alloc_info, &window->command_buffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(window->device, &alloc_info,
+		&window->command_buffer) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate command buffers!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3558,10 +4437,14 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	if (vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL, &window->image_available_semaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL, &window->render_finished_semaphore) != VK_SUCCESS ||
-		vkCreateFence(window->device, &fence_info, SPARK_NULL, &window->in_flight_fence) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create synchronization objects!");
+	if (vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
+		&window->image_available_semaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
+			&window->render_finished_semaphore) != VK_SUCCESS ||
+		vkCreateFence(window->device, &fence_info, SPARK_NULL,
+			&window->in_flight_fence) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR,
+			"Failed to create synchronization objects!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -3569,7 +4452,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
-	if (__SparkCreateVulkanInstance(&window->instance, window->window_data->title) != SPARK_SUCCESS) {
+	if (__SparkCreateVulkanInstance(
+		&window->instance, window->window_data->title) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3638,15 +4522,19 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
-	vkDestroySemaphore(window->device, window->image_available_semaphore, SPARK_NULL);
-	vkDestroySemaphore(window->device, window->render_finished_semaphore, SPARK_NULL);
+	vkDestroySemaphore(window->device, window->image_available_semaphore,
+		SPARK_NULL);
+	vkDestroySemaphore(window->device, window->render_finished_semaphore,
+		SPARK_NULL);
 	vkDestroyFence(window->device, window->in_flight_fence, SPARK_NULL);
 	vkDestroyCommandPool(window->device, window->command_pool, SPARK_NULL);
 
-	// Technically this is bad because the swap chain image views size could be different,
+	// Technically this is bad because the swap chain image views size could be
+	// different,
 	// TODO: Fix
 	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
-		vkDestroyFramebuffer(window->device, window->swap_chain_framebuffers[i], SPARK_NULL);
+		vkDestroyFramebuffer(window->device, window->swap_chain_framebuffers[i],
+			SPARK_NULL);
 	}
 
 	vkDestroyPipeline(window->device, window->graphics_pipeline, SPARK_NULL);
@@ -3654,7 +4542,8 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
 
 	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
-		vkDestroyImageView(window->device, window->swap_chain_image_views[i], SPARK_NULL);
+		vkDestroyImageView(window->device, window->swap_chain_image_views[i],
+			SPARK_NULL);
 	}
 
 	vkDestroySwapchainKHR(window->device, window->swap_chain, SPARK_NULL);
@@ -3666,7 +4555,8 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyDevice(window->device, SPARK_NULL);
 
 	if (ENABLE_VALIDATION_LAYERS) {
-		__SparkDestroyDebugUtilsMessengerEXT(window->instance, window->debug_messenger, SPARK_NULL);
+		__SparkDestroyDebugUtilsMessengerEXT(window->instance,
+			window->debug_messenger, SPARK_NULL);
 	}
 
 	vkDestroySurfaceKHR(window->instance, window->surface, SPARK_NULL);
@@ -3675,11 +4565,14 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
-	vkWaitForFences(window->device, 1, &window->in_flight_fence, VK_TRUE, UINT64_MAX);
+	vkWaitForFences(window->device, 1, &window->in_flight_fence, VK_TRUE,
+		UINT64_MAX);
 	vkResetFences(window->device, 1, &window->in_flight_fence);
 
 	SparkU32 image_index;
-	vkAcquireNextImageKHR(window->device, window->swap_chain, UINT64_MAX, window->image_available_semaphore, VK_NULL_HANDLE, &image_index);
+	vkAcquireNextImageKHR(window->device, window->swap_chain, UINT64_MAX,
+		window->image_available_semaphore, VK_NULL_HANDLE,
+		&image_index);
 
 	vkResetCommandBuffer(window->command_buffer, 0);
 
@@ -3687,7 +4580,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 
 	VkSemaphore wait_semaphores[] = { window->image_available_semaphore };
 	VkSemaphore signal_semaphores[] = { window->render_finished_semaphore };
-	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	VkPipelineStageFlags wait_stages[] = {
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	VkSubmitInfo submit_info = { 0 };
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -3699,7 +4593,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = signal_semaphores;
 
-	if (vkQueueSubmit(window->graphics_queue, 1, &submit_info, window->in_flight_fence) != VK_SUCCESS) {
+	if (vkQueueSubmit(window->graphics_queue, 1, &submit_info,
+		window->in_flight_fence) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to submit draw command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -3724,13 +4619,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 #pragma region EVENT
 
 SPARKAPI SparkEventHandler SparkDefaultEventHandler() {
-	SparkEventHandler event_handler = SparkAllocate(sizeof(struct SparkEventHandlerT));
+	SparkEventHandler event_handler =
+		SparkAllocate(sizeof(struct SparkEventHandlerT));
 	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 	return event_handler;
 }
 
-SPARKAPI SparkEventHandler SparkCreateEventHandler(SparkEventHandlerFunction functions[], SparkSize function_count) {
-	SparkEventHandler event_handler = SparkAllocate(sizeof(struct SparkEventHandlerT));
+SPARKAPI SparkEventHandler SparkCreateEventHandler(
+	SparkEventHandlerFunction functions[], SparkSize function_count) {
+	SparkEventHandler event_handler =
+		SparkAllocate(sizeof(struct SparkEventHandlerT));
 	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 
 	for (SparkSize i = 0; i < function_count; i++) {
@@ -3745,19 +4643,29 @@ SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler) {
 	SparkFree(event_handler);
 }
 
-SPARKAPI SparkResult SparkAddEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function) {
-	SparkEventHandlerFunction event_handler_function = SparkAllocate(sizeof(struct SparkEventHandlerFunctionT));
-	if (!event_handler_function) return SPARK_ERROR_INVALID_STATE;
+SPARKAPI SparkResult SparkAddEventListener(
+	SparkEventHandler event_handler, SparkEventType event_type,
+	SparkApplicationEventFunction function) {
+	SparkEventHandlerFunction event_handler_function =
+		SparkAllocate(sizeof(struct SparkEventHandlerFunctionT));
+	if (!event_handler_function)
+		return SPARK_ERROR_INVALID_STATE;
 	event_handler_function->type = event_type;
 	event_handler_function->function = function;
-	SparkPushBackVector(event_handler->functions, (SparkHandle)event_handler_function);
+	SparkPushBackVector(event_handler->functions,
+		(SparkHandle)event_handler_function);
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, SparkEventType event_type, SparkApplicationEventFunction function) {
+SPARKAPI SparkResult SparkRemoveEventListener(
+	SparkEventHandler event_handler, SparkEventType event_type,
+	SparkApplicationEventFunction function) {
 	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
-		SparkEventHandlerFunction event_handler_function = (SparkEventHandlerFunction)SparkGetElementVector(event_handler->functions, i);
-		if (event_handler_function->type == event_type && event_handler_function->function == function) {
+		SparkEventHandlerFunction event_handler_function =
+			(SparkEventHandlerFunction)SparkGetElementVector(
+				event_handler->functions, i);
+		if (event_handler_function->type == event_type &&
+			event_handler_function->function == function) {
 			SparkRemoveVector(event_handler->functions, i);
 			SparkFree(event_handler_function);
 			return SPARK_SUCCESS;
@@ -3766,9 +4674,11 @@ SPARKAPI SparkResult SparkRemoveEventListener(SparkEventHandler event_handler, S
 	return SPARK_ERROR_INVALID;
 }
 
-SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event) {
+SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
+	SparkEvent event) {
 	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
-		SparkEventHandlerFunction function = SparkGetElementVector(event_handler->functions, i);
+		SparkEventHandlerFunction function =
+			SparkGetElementVector(event_handler->functions, i);
 		if (function->type & event.type) {
 			function->function(event_handler->application, event);
 		}
@@ -3777,11 +4687,16 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler, SparkEv
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor) {
+SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
+	SparkHandle event_data,
+	SparkFreeFunction destructor) {
 	return (SparkEvent) { event_type, event_data, SparkGetTime(), destructor };
 }
 
-SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type, SparkHandle event_data, SparkFreeFunction destructor, SparkConstString time_stamp) {
+SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type,
+	SparkHandle event_data,
+	SparkFreeFunction destructor,
+	SparkConstString time_stamp) {
 	return (SparkEvent) { event_type, event_data, time_stamp, destructor };
 }
 
@@ -3795,7 +4710,9 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
 
 #pragma region WINDOW
 
-SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title, SparkI32 width, SparkI32 height, SparkBool vsync) {
+SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title,
+	SparkI32 width, SparkI32 height,
+	SparkBool vsync) {
 	SparkWindowData window_data = SparkAllocate(sizeof(struct SparkWindowDataT));
 	window_data->title = SparkAllocate(strlen(title) + 1);
 	strcpy(window_data->title, title);
@@ -3811,36 +4728,47 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 	SparkFree(window_data);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwErrorCallback(SparkI32 error, SparkConstString description) {
+SPARKAPI SPARKSTATIC SparkVoid
+__GlfwErrorCallback(SparkI32 error, SparkConstString description) {
 	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window, SparkI32 key, SparkI32 scancode, SparkI32 action, SparkI32 mods) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
+	SparkI32 key,
+	SparkI32 scancode,
+	SparkI32 action,
+	SparkI32 mods) {
 	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
 	switch (action) {
 	case GLFW_PRESS: {
-		SparkEventDataKeyPressed event_data = SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
+		SparkEventDataKeyPressed event_data =
+			SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
 		event_data->key = key;
 		event_data->repeat = SPARK_FALSE;
-		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
+			(SparkHandle)event_data, SPARK_NULL);
 		SparkDispatchEvent(data->event_handler, event);
 		SparkFree(event_data);
 		break;
 	}
 	case GLFW_RELEASE: {
-		SparkEventDataKeyReleased event_data = SparkAllocate(sizeof(struct SparkEventDataKeyReleasedT));
+		SparkEventDataKeyReleased event_data =
+			SparkAllocate(sizeof(struct SparkEventDataKeyReleasedT));
 		event_data->key = key;
-		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_RELEASED, (SparkHandle)event_data, SPARK_NULL);
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_RELEASED,
+			(SparkHandle)event_data, SPARK_NULL);
 		SparkDispatchEvent(data->event_handler, event);
 		SparkFree(event_data);
 		break;
 	}
 	case GLFW_REPEAT: {
-		SparkEventDataKeyPressed event_data = SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
+		SparkEventDataKeyPressed event_data =
+			SparkAllocate(sizeof(struct SparkEventDataKeyPressedT));
 		event_data->key = key;
 		event_data->repeat = SPARK_TRUE;
-		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
+			(SparkHandle)event_data, SPARK_NULL);
 		SparkDispatchEvent(data->event_handler, event);
 		SparkFree(event_data);
 		break;
@@ -3848,33 +4776,44 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window, SparkI32
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
+	double xpos,
+	double ypos) {
 	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
-	SparkEventDataMouseMoved event_data = SparkAllocate(sizeof(struct SparkEventDataMouseMovedT));
+	SparkEventDataMouseMoved event_data =
+		SparkAllocate(sizeof(struct SparkEventDataMouseMovedT));
 	event_data->xpos = xpos;
 	event_data->ypos = ypos;
-	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_MOVED, (SparkHandle)event_data, SPARK_NULL);
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_MOVED,
+		(SparkHandle)event_data, SPARK_NULL);
 	SparkDispatchEvent(data->event_handler, event);
 	SparkFree(event_data);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
+	int button,
+	int action,
+	int mods) {
 	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
 	switch (action) {
 	case GLFW_PRESS: {
-		SparkEventDataMouseButtonPressed event_data = SparkAllocate(sizeof(struct SparkEventDataMouseButtonPressedT));
+		SparkEventDataMouseButtonPressed event_data =
+			SparkAllocate(sizeof(struct SparkEventDataMouseButtonPressedT));
 		event_data->button = button;
-		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_PRESSED, (SparkHandle)event_data, SPARK_NULL);
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_PRESSED,
+			(SparkHandle)event_data, SPARK_NULL);
 		SparkDispatchEvent(data->event_handler, event);
 		SparkFree(event_data);
 		break;
 	}
 	case GLFW_RELEASE: {
-		SparkEventDataMouseButtonReleased event_data = SparkAllocate(sizeof(struct SparkEventDataMouseButtonReleasedT));
+		SparkEventDataMouseButtonReleased event_data =
+			SparkAllocate(sizeof(struct SparkEventDataMouseButtonReleasedT));
 		event_data->button = button;
-		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_RELEASED, (SparkHandle)event_data, SPARK_NULL);
+		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_RELEASED,
+			(SparkHandle)event_data, SPARK_NULL);
 		SparkDispatchEvent(data->event_handler, event);
 		SparkFree(event_data);
 		break;
@@ -3882,24 +4821,31 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window, 
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
+	double xoffset,
+	double yoffset) {
 	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
-	SparkEventDataMouseScrolled event_data = SparkAllocate(sizeof(struct SparkEventDataMouseScrolledT));
+	SparkEventDataMouseScrolled event_data =
+		SparkAllocate(sizeof(struct SparkEventDataMouseScrolledT));
 	event_data->x = xoffset;
 	event_data->y = yoffset;
-	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_SCROLLED, (SparkHandle)event_data, SPARK_NULL);
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_SCROLLED,
+		(SparkHandle)event_data, SPARK_NULL);
 	SparkDispatchEvent(data->event_handler, event);
 	SparkFree(event_data);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+SPARKAPI SPARKSTATIC SparkVoid
+__GlfwSetFramebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
-	SparkEventDataWindowResized event_data = SparkAllocate(sizeof(struct SparkEventDataWindowResizedT));
+	SparkEventDataWindowResized event_data =
+		SparkAllocate(sizeof(struct SparkEventDataWindowResizedT));
 	event_data->width = width;
 	event_data->height = height;
-	SparkEvent event = SparkCreateEvent(SPARK_EVENT_WINDOW_RESIZE, (SparkHandle)event_data, SPARK_NULL);
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_WINDOW_RESIZE,
+		(SparkHandle)event_data, SPARK_NULL);
 	SparkDispatchEvent(data->event_handler, event);
 	SparkFree(event_data);
 }
@@ -3920,7 +4866,8 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	window->window = glfwCreateWindow(window_data->width, window_data->height, window_data->title, SPARK_NULL, SPARK_NULL);
+	window->window = glfwCreateWindow(window_data->width, window_data->height,
+		window_data->title, SPARK_NULL, SPARK_NULL);
 
 	if (!window->window) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to create GLFW window!");
@@ -3937,7 +4884,8 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	glfwSetCursorPosCallback(window->window, __GlfwSetCursorPosCallback);
 	glfwSetMouseButtonCallback(window->window, __GlfwSetMouseButtonCallback);
 	glfwSetScrollCallback(window->window, __GlfwSetScrollCallback);
-	glfwSetFramebufferSizeCallback(window->window, __GlfwSetFramebufferSizeCallback);
+	glfwSetFramebufferSizeCallback(window->window,
+		__GlfwSetFramebufferSizeCallback);
 
 	if (__SparkInitializeVulkan(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
@@ -3951,7 +4899,6 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 
 	return window;
 }
-
 
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwDestroyWindow(window->window);
@@ -3992,7 +4939,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	app->start_functions = SparkDefaultVector();
 	app->stop_functions = SparkDefaultVector();
 	app->update_functions = SparkDefaultVector();
-	app->query_functions = SparkDefaultVector();
+	app->query_functions = SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, SparkDestroyVector);
 	app->event_functions = SparkDefaultVector();
 	app->query_event_functions = SparkDefaultVector();
 	app->event_handler->application = app;
@@ -4014,20 +4961,23 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 
 SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 	for (SparkSize i = 0; i < app->start_functions->size; i++) {
-		SparkApplicationStartFunction function = SparkGetElementVector(app->start_functions, i);
+		SparkApplicationStartFunction function =
+			SparkGetElementVector(app->start_functions, i);
 		function(app);
 	}
 
 	return SparkUpdateApplication(app);
 }
 
-SPARKAPI SPARKSTATIC SparkBool __SparkApplicationKeepOpen(SparkApplication app) {
+SPARKAPI SPARKSTATIC SparkBool
+__SparkApplicationKeepOpen(SparkApplication app) {
 	return !glfwWindowShouldClose(app->window) || SPARK_TRUE;
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	for (SparkSize i = 0; i < app->stop_functions->size; i++) {
-		SparkApplicationStopFunction function = SparkGetElementVector(app->stop_functions, i);
+		SparkApplicationStopFunction function =
+			SparkGetElementVector(app->stop_functions, i);
 		function(app);
 	}
 	SparkDestroyApplication(app);
@@ -4036,20 +4986,38 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	for (SparkSize i = 0; i < app->update_functions->size; i++) {
-		SparkApplicationUpdateFunction function = SparkGetElementVector(app->update_functions, i);
+		SparkApplicationUpdateFunction function =
+			SparkGetElementVector(app->update_functions, i);
 		function(app);
 	}
+	SparkSize query_functions_size;
+	SparkHandle* keys = SparkGetAllKeysHashMap(app->query_functions, &query_functions_size);
+
+	for (SparkSize i = 0; i < query_functions_size; i++) {
+		SparkVector functions = SparkGetElementHashMap(app->query_functions, keys[i], strlen(keys[i]));
+		SparkVector components = SparkGetAllComponentsByType(app->ecs, keys[i]);
+		for (SparkSize j = 0; j < functions->size; j++) {
+			SparkApplicationQueryFunction function = SparkGetElementVector(functions, j);
+			function(app, components);
+			SparkDestroyVector(components);
+		}
+	}
+
+	SparkFree(keys);
 }
 
-SPARKAPI SparkResult SparkAddStartFunctionApplication(SparkApplication app, SparkApplicationStartFunction function) {
+SPARKAPI SparkResult SparkAddStartFunctionApplication(
+	SparkApplication app, SparkApplicationStartFunction function) {
 	return SparkPushBackVector(app->start_functions, function);
 }
 
-SPARKAPI SparkResult SparkAddUpdateFunctionApplication(SparkApplication app, SparkApplicationUpdateFunction function) {
+SPARKAPI SparkResult SparkAddUpdateFunctionApplication(
+	SparkApplication app, SparkApplicationUpdateFunction function) {
 	return SparkPushBackVector(app->update_functions, function);
 }
 
-SPARKAPI SparkResult SparkAddStopFunctionApplication(SparkApplication app, SparkApplicationStopFunction function) {
+SPARKAPI SparkResult SparkAddStopFunctionApplication(
+	SparkApplication app, SparkApplicationStopFunction function) {
 	return SparkPushBackVector(app->stop_functions, function);
 }
 
@@ -4066,11 +5034,27 @@ SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkAddEventFunctionApplication(SparkApplication app, SparkEventType event_type, SparkApplicationEventFunction function) {
+SPARKAPI SparkResult SparkAddEventFunctionApplication(
+	SparkApplication app, SparkEventType event_type,
+	SparkApplicationEventFunction function) {
 	return SparkAddEventListener(app->event_handler, event_type, function);
 }
 
-SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app, SparkEvent event) {
+SPARKAPI SparkResult SparkAddQueryFunctionApplication(
+	SparkApplication app, SparkConstString component_type, SparkApplicationQueryFunction function) {
+	SparkVector functions = SparkGetElementHashMap(app->query_functions, component_type, strlen(component_type));
+	if (!functions) {
+		functions = SparkDefaultVector();
+		SparkPushBackVector(functions, function);
+		SparkInsertHashMap(app->query_functions, component_type, strlen(component_type), functions);
+	}
+	else {
+		SparkPushBackVector(functions, function);
+	}
+}
+
+SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app,
+	SparkEvent event) {
 	return SparkDispatchEvent(app->event_handler, event);
 }
 

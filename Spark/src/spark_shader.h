@@ -3,24 +3,23 @@
 
 #include "spark.h"
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum SparkShaderStage
-{
-	SPARK_SHADER_STAGE_VERTEX,
-	SPARK_SHADER_STAGE_FRAGMENT,
-	SPARK_SHADER_STAGE_COMPUTE,
-	SPARK_SHADER_STAGE_GEOMETRY,
-	SPARK_SHADER_STAGE_TESS_CONTROL,
-	SPARK_SHADER_STAGE_TESS_EVALUATION
+typedef enum SparkShaderStage {
+  SPARK_SHADER_STAGE_VERTEX,
+  SPARK_SHADER_STAGE_FRAGMENT,
+  SPARK_SHADER_STAGE_COMPUTE,
+  SPARK_SHADER_STAGE_GEOMETRY,
+  SPARK_SHADER_STAGE_TESS_CONTROL,
+  SPARK_SHADER_STAGE_TESS_EVALUATION
 } SparkShaderStage;
 
-SPARKAPI SparkResult SparkCompileShaderToSpirv(SparkConstString source, 
-											   SparkShaderStage shader_stage, 
-											   SparkBuffer* spirv_data, 
-											   SparkSize* spirv_size);
+SPARKAPI SparkResult SparkCompileShaderToSpirv(SparkConstString source,
+                                               SparkShaderStage shader_stage,
+                                               SparkBuffer *spirv_data,
+                                               SparkSize *spirv_size);
 
 #ifdef __cplusplus
 }
