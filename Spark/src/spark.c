@@ -1,4 +1,3 @@
-
 #define SPARK_IMPLEMENTATION
 #include "spark.h"
 #include "spark_shader.h"
@@ -1510,6 +1509,7 @@ SPARKAPI SparkVector SparkCreateVector(SparkSize capacity,
 }
 
 SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
+	if (!vector) { return; }
 	SparkAllocator allocator = vector->allocator;
 
 	// Call destructor on each element if destructor is not NULL
@@ -1719,6 +1719,7 @@ SPARKAPI SparkList SparkCreateList(SparkAllocator allocator,
 }
 
 SPARKAPI SparkVoid SparkDestroyList(SparkList list) {
+	if (!list) { return; }
 	SparkAllocator allocator = list->allocator;
 
 	// Call destructor on each element if destructor is not NULL
@@ -2326,11 +2327,11 @@ SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key,
 	return SPARK_ERROR_NOT_FOUND;
 }
 
-SPARKAPI SparkHandle* SparkGetAllKeysHashMap(SparkHashMap hashmap, SparkSize* out_count) {
-	if (!hashmap || !out_count)
+SPARKAPI SparkVector SparkGetAllKeysHashMap(SparkHashMap hashmap) {
+	if (!hashmap)
 		return SPARK_NULL;
 
-	SparkHandle* keys = (SparkHandle*)hashmap->allocator->allocate(sizeof(SparkHandle) * hashmap->size);
+	SparkVector keys = SparkDefaultVector();
 	if (!keys)
 		return SPARK_NULL;
 
@@ -2338,20 +2339,19 @@ SPARKAPI SparkHandle* SparkGetAllKeysHashMap(SparkHashMap hashmap, SparkSize* ou
 	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
 		SparkHashMapNode node = hashmap->buckets[i];
 		while (node) {
-			keys[index++] = node->key;
+			SparkPushBackVector(keys, node->key);
 			node = node->next;
 		}
 	}
-	*out_count = index;
 	return keys;
 }
 
 
-SPARKAPI SparkHandle* SparkGetAllValuesHashMap(SparkHashMap hashmap, SparkSize* out_count) {
-	if (!hashmap || !out_count)
+SPARKAPI SparkVector SparkGetAllValuesHashMap(SparkHashMap hashmap) {
+	if (!hashmap)
 		return SPARK_NULL;
 
-	SparkHandle* values = (SparkHandle*)hashmap->allocator->allocate(sizeof(SparkHandle) * hashmap->size);
+	SparkVector values = SparkDefaultVector();
 	if (!values)
 		return SPARK_NULL;
 
@@ -2359,11 +2359,11 @@ SPARKAPI SparkHandle* SparkGetAllValuesHashMap(SparkHashMap hashmap, SparkSize* 
 	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
 		SparkHashMapNode node = hashmap->buckets[i];
 		while (node) {
-			values[index++] = node->value;
+			SparkPushBackVector(values, node->value);
 			node = node->next;
 		}
 	}
-	*out_count = index;
+
 	return values;
 }
 
@@ -4621,7 +4621,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 SPARKAPI SparkEventHandler SparkDefaultEventHandler() {
 	SparkEventHandler event_handler =
 		SparkAllocate(sizeof(struct SparkEventHandlerT));
-	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	event_handler->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	event_handler->query_functions = SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL, SPARK_NULL, SparkDestroyHashMap);
 	return event_handler;
 }
 
@@ -4629,17 +4630,19 @@ SPARKAPI SparkEventHandler SparkCreateEventHandler(
 	SparkEventHandlerFunction functions[], SparkSize function_count) {
 	SparkEventHandler event_handler =
 		SparkAllocate(sizeof(struct SparkEventHandlerT));
-	event_handler->functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	event_handler->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	event_handler->query_functions = SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL, SPARK_NULL, SparkDestroyHashMap);
 
 	for (SparkSize i = 0; i < function_count; i++) {
-		SparkPushBackVector(event_handler->functions, functions[i]);
+		SparkPushBackVector(event_handler->event_functions, functions[i]);
 	}
 
 	return event_handler;
 }
 
 SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler) {
-	SparkDestroyVector(event_handler->functions);
+	SparkDestroyVector(event_handler->event_functions);
+	SparkDestroyHashMap(event_handler->query_functions);
 	SparkFree(event_handler);
 }
 
@@ -4650,9 +4653,9 @@ SPARKAPI SparkResult SparkAddEventListener(
 		SparkAllocate(sizeof(struct SparkEventHandlerFunctionT));
 	if (!event_handler_function)
 		return SPARK_ERROR_INVALID_STATE;
-	event_handler_function->type = event_type;
+	event_handler_function->event_type = event_type;
 	event_handler_function->function = function;
-	SparkPushBackVector(event_handler->functions,
+	SparkPushBackVector(event_handler->event_functions,
 		(SparkHandle)event_handler_function);
 	return SPARK_SUCCESS;
 }
@@ -4660,29 +4663,164 @@ SPARKAPI SparkResult SparkAddEventListener(
 SPARKAPI SparkResult SparkRemoveEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
 	SparkApplicationEventFunction function) {
-	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
+	for (SparkSize i = 0; i < event_handler->event_functions->size; i++) {
 		SparkEventHandlerFunction event_handler_function =
 			(SparkEventHandlerFunction)SparkGetElementVector(
-				event_handler->functions, i);
-		if (event_handler_function->type == event_type &&
+				event_handler->event_functions, i);
+		if (!event_handler_function) { return SPARK_ERROR_NULL; }
+		if (event_handler_function->event_type == event_type &&
 			event_handler_function->function == function) {
-			SparkRemoveVector(event_handler->functions, i);
+			SparkRemoveVector(event_handler->event_functions, i);
 			SparkFree(event_handler_function);
 			return SPARK_SUCCESS;
 		}
 	}
-	return SPARK_ERROR_INVALID;
+	return SPARK_ERROR_NOT_FOUND;
+}
+
+
+// Helper function to register the handler for a specific event type
+SPARKAPI SPARKSTATIC SparkResult __SparkAddQueryEventListenerForEventType(
+	SparkEventHandler event_handler,
+	SparkEventType single_event_type,
+	SparkConstString component_type,
+	SparkApplicationQueryEventFunction function) {
+
+	SparkQueryEventHandlerFunction query_event_handler = SparkAllocate(sizeof(struct SparkQueryEventHandlerFunctionT));
+	if (!query_event_handler)
+		return SPARK_ERROR_NULL;
+
+	query_event_handler->event_type = single_event_type;
+	query_event_handler->component_type = component_type;
+	query_event_handler->function = function;
+
+	// Use the integer value directly as the key
+	SparkHashMap component_map = SparkGetElementHashMap(
+		event_handler->query_functions, (SparkHandle)(uintptr_t)single_event_type, sizeof(SparkEventType));
+
+	if (!component_map) {
+		component_map = SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, SparkDestroyVector);
+		if (!component_map) {
+			SparkFree(query_event_handler);
+			return SPARK_ERROR_NULL;
+		}
+		SparkInsertHashMap(event_handler->query_functions, (SparkHandle)(uintptr_t)single_event_type, sizeof(SparkEventType), component_map);
+	}
+
+	SparkVector functions = SparkGetElementHashMap(component_map, (SparkHandle)component_type, strlen(component_type));
+
+	if (!functions) {
+		functions = SparkCreateVector(4, SPARK_NULL, SparkFree);
+		if (!functions) {
+			SparkFree(query_event_handler);
+			return SPARK_ERROR_NULL;
+		}
+		SparkPushBackVector(functions, query_event_handler);
+		SparkInsertHashMap(component_map, (SparkHandle)component_type, strlen(component_type), functions);
+	}
+	else {
+		SparkPushBackVector(functions, query_event_handler);
+	}
+
+	return SPARK_SUCCESS;
+}
+
+
+SPARKAPI SparkResult SparkAddQueryEventListener(
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkConstString component_type,
+	SparkApplicationQueryEventFunction function) {
+
+	if (!function || !component_type)
+		return SPARK_ERROR_INVALID_ARGUMENT;
+
+	// Iterate over all bits in event_type
+	SparkEventType bit = 1;
+	while (bit != 0) {
+		if (event_type & bit) {
+			SparkResult result = __SparkAddQueryEventListenerForEventType(
+				event_handler, bit, component_type, function);
+			if (result != SPARK_SUCCESS) {
+				return result;
+			}
+		}
+		// Shift to the next bit
+		bit <<= 1;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+
+
+SPARKAPI SparkResult SparkRemoveQueryEventListener(
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkConstString component_type,
+	SparkApplicationQueryEventFunction function) {
+	
+
+	SparkHashMap components_map = SparkGetElementHashMap(event_handler->query_functions, event_type, sizeof(event_type));
+	
+	if (!components_map) {
+		return SPARK_ERROR_NOT_FOUND;
+	}
+
+	SparkVector functions = SparkGetElementHashMap(components_map, component_type, strlen(component_type));
+
+	if (!functions) {
+		return SPARK_ERROR_NOT_FOUND;
+	}
+
+	for (SparkSize i = 0; i < functions->size; i++) {
+		SparkQueryEventHandlerFunction query_event_handler = SparkGetElementVector(functions, i);
+		if (query_event_handler->function == function) {
+			SparkRemoveVector(functions, i);
+			return SPARK_SUCCESS;
+		}
+	}
+
+	return SPARK_ERROR_NOT_FOUND;
 }
 
 SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 	SparkEvent event) {
-	for (SparkSize i = 0; i < event_handler->functions->size; i++) {
+	for (SparkSize i = 0; i < event_handler->event_functions->size; i++) {
 		SparkEventHandlerFunction function =
-			SparkGetElementVector(event_handler->functions, i);
-		if (function->type & event.type) {
+			SparkGetElementVector(event_handler->event_functions, i);
+		if (function->event_type & event.type) {
 			function->function(event_handler->application, event);
 		}
 	}
+
+	SparkHashMap component_map = SparkGetElementHashMap(event_handler->query_functions, event.type, sizeof(event.type));
+
+	if (!component_map) {
+		return SPARK_ERROR_NULL;
+	}
+
+	SparkVector component_keys = SparkGetAllKeysHashMap(component_map);
+
+	if (!component_keys) {
+		/* Unknown here because it could be empty, its ambigious */
+		return SPARK_UNKNOWN;
+	}
+
+	for (SparkSize i = 0; i < component_keys->size; i++) {
+		SparkConstString component_key = SparkGetElementVector(component_keys, i);
+		SparkVector functions = SparkGetElementHashMap(component_map, component_key, strlen(component_key));
+		SparkVector components = SparkGetAllComponentsByType(event_handler->ecs, component_key);
+
+		for (SparkSize j = 0; j < functions->size; j++) {
+			SparkQueryEventHandlerFunction query_event_handler = SparkGetElementVector(functions, j);
+			query_event_handler->function(event_handler->application, components, event);
+		}
+
+		SparkDestroyVector(components);
+	}
+
+	SparkDestroyVector(component_keys);
 
 	return SPARK_SUCCESS;
 }
@@ -4943,6 +5081,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window) {
 	app->event_functions = SparkDefaultVector();
 	app->query_event_functions = SparkDefaultVector();
 	app->event_handler->application = app;
+	app->event_handler->ecs = app->ecs;
 	return app;
 }
 
@@ -4990,12 +5129,12 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 			SparkGetElementVector(app->update_functions, i);
 		function(app);
 	}
-	SparkSize query_functions_size;
-	SparkHandle* keys = SparkGetAllKeysHashMap(app->query_functions, &query_functions_size);
 
-	for (SparkSize i = 0; i < query_functions_size; i++) {
-		SparkVector functions = SparkGetElementHashMap(app->query_functions, keys[i], strlen(keys[i]));
-		SparkVector components = SparkGetAllComponentsByType(app->ecs, keys[i]);
+	SparkVector keys = SparkGetAllKeysHashMap(app->query_functions);
+
+	for (SparkSize i = 0; i < keys->size; i++) {
+		SparkVector functions = SparkGetElementHashMap(app->query_functions, keys->elements[i], strlen(keys->elements[i]));
+		SparkVector components = SparkGetAllComponentsByType(app->ecs, keys->elements[i]);
 		for (SparkSize j = 0; j < functions->size; j++) {
 			SparkApplicationQueryFunction function = SparkGetElementVector(functions, j);
 			function(app, components);
@@ -5003,7 +5142,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 		}
 	}
 
-	SparkFree(keys);
+	SparkDestroyVector(keys);
 }
 
 SPARKAPI SparkResult SparkAddStartFunctionApplication(
@@ -5051,6 +5190,14 @@ SPARKAPI SparkResult SparkAddQueryFunctionApplication(
 	else {
 		SparkPushBackVector(functions, function);
 	}
+}
+
+SPARKAPI SparkResult SparkAddQueryEventFunctionApplication(
+	SparkApplication app,
+	SparkEventType event_type,
+	SparkConstString component_type,
+	SparkApplicationQueryEventFunction function) {
+	return SparkAddQueryEventListener(app->event_handler, event_type, component_type, function);
 }
 
 SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app,

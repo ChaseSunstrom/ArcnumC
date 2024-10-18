@@ -136,6 +136,14 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_EVENT_MOUSE_SCROLLED ((SparkEventType)0x1ULL << 11)
 #define SPARK_EVENT_MAX_BIT ((SparkEventType)0x1ULL << 12)
 
+#define SPARK_TRANSFORM_COMPONENT "__TRANSFORM_COMPONENT__"
+#define SPARK_MATERIAL_COMPONENT "__MATERIAL_COMPONENT__"
+#define SPARK_MESH_COMPONENT "__MESH_COMPONENT__"
+#define SPARK_MODEL_COMPONENT "__MODEL_COMPONENT__"
+#define SPARK_RIGID_BODY_COMPONENT "__RIGID_BODY_COMPONENT__"
+#define SPARK_COLLIDER_COMPONENT "__COLLIDER_COMPONENT__"
+#define SPARK_CAMERA_COMPONENT "__CAMERA_COMPONENT__"
+
 typedef enum SparkType {
   SPARK_FALSE = 0,
   SPARK_TRUE = 1,
@@ -767,14 +775,23 @@ typedef struct SparkEventT {
 } SparkEvent;
 
 typedef struct SparkEventHandlerFunctionT {
-  SparkEventType type;
+  SparkEventType event_type;
   SparkApplicationEventFunction function;
 } *SparkEventHandlerFunction;
 
+typedef struct SparkQueryEventHandlerFunctionT {
+    SparkEventType event_type;
+    SparkConstString component_type;
+    SparkApplicationQueryEventFunction function;
+} *SparkQueryEventHandlerFunction;
+
 typedef struct SparkEventHandlerT {
   /* Vector <SparkEventHandlerFunction> */
-  SparkVector functions;
+  SparkVector event_functions;
+  /* HashMap <SparkConstString, SparkVector <SparkQueryEventHandlerFunction>> */
+  SparkHashMap query_functions;
   struct SparkApplicationT *application;
+  struct SparkEcsT* ecs;
 } *SparkEventHandler;
 
 typedef SparkI32 SparkEntity;
@@ -1619,8 +1636,8 @@ SPARKAPI SparkHandle SparkGetElementHashMap(SparkHashMap hashmap,
 SPARKAPI SparkBool SparkContainsHashMap(SparkHashMap hashmap, SparkHandle key, SparkSize key_size);
 SPARKAPI SparkResult SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key,
                                         SparkSize key_size);
-SPARKAPI SparkHandle* SparkGetAllKeysHashMap(SparkHashMap hashmap, SparkSize* out_count);
-SPARKAPI SparkHandle* SparkGetAllValuesHashMap(SparkHashMap hashmap, SparkSize* out_count);
+SPARKAPI SparkVector SparkGetAllKeysHashMap(SparkHashMap hashmap);
+SPARKAPI SparkVector SparkGetAllValuesHashMap(SparkHashMap hashmap);
 
 SPARKAPI SparkSet SparkDefaultSet();
 SPARKAPI SparkSet SparkCreateSet(SparkSize capacity, SparkAllocator allocator,
@@ -1867,6 +1884,16 @@ SPARKAPI SparkResult SparkRemoveEventListener(
     SparkEventHandler event_handler, 
     SparkEventType event_type,
     SparkApplicationEventFunction function);
+SPARKAPI SparkResult SparkAddQueryEventListener(
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+    SparkConstString component_type,
+	SparkApplicationQueryEventFunction function);
+SPARKAPI SparkResult SparkRemoveQueryEventListener(
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkConstString component_type,
+	SparkApplicationQueryEventFunction function);
 SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
                                         SparkEvent event);
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
