@@ -1428,8 +1428,6 @@ SPARKAPI SparkConstString SparkGetTime() {
 
 #pragma region MATH
 
-#pragma region MATH
-
 #include <math.h>  // For standard math functions like sin, cos, sqrt, etc.
 
 /* Scalar functions */
@@ -2518,9 +2516,6 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScala
     result.z = a.z * ratioA + b.z * ratioB;
     return result;
 }
-
-#pragma endregion
-
 
 #pragma endregion
 

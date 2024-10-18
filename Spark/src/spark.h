@@ -1,3 +1,5 @@
+
+
 #ifndef __SPARK_H__
 #define __SPARK_H__
 
@@ -91,6 +93,8 @@ extern "C" {
 #endif
 */
 
+#pragma region TYPES
+
 typedef unsigned char SparkU8;
 typedef char SparkI8;
 typedef unsigned short SparkU16;
@@ -165,7 +169,6 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_COLLIDER_COMPONENT "__COLLIDER_COMPONENT__"
 #define SPARK_CAMERA_COMPONENT "__CAMERA_COMPONENT__"
 
-
 #define SPARK_PI        3.14159265358979323846
 #define SPARK_TWO_PI    6.28318530717958647692
 #define SPARK_HALF_PI   1.57079632679489661923
@@ -183,6 +186,10 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_TWO_OVER_SQRT_PI 1.12837916709551257390
 #define SPARK_DEG_TO_RAD (SPARK_PI / 180.0f)
 #define SPARK_RAD_TO_DEG (180.0f / SPARK_PI)
+
+#pragma endregion
+
+#pragma region ENUMS
 
 typedef enum SparkType {
 	SPARK_FALSE = 0,
@@ -515,6 +522,10 @@ typedef enum SparkShaderDataTypeT {
 	SPARK_SHADER_DATA_TYPE_MAT4,
 	SPARK_SHADER_DATA_TYPE_SAMPLER2D
 } SparkShaderDataType;
+
+#pragma endregion
+
+#pragma region STRUCTS
 
 typedef struct SparkEventDataKeyPressedT {
 	SparkKey key;
@@ -901,6 +912,80 @@ typedef struct SparkRendererT {
 	SparkI8 not_implemented;
 } *SparkRenderer;
 
+
+/* Physics-related declarations */
+typedef struct SparkRigidBodyT {
+	SparkVec3 position;
+	SparkVec3 velocity;
+	SparkVec3 acceleration;
+	SparkQuat rotation;
+	SparkScalar mass;
+	SparkScalar friction;
+	SparkScalar restitution; \
+} *SparkRigidBody;
+
+typedef struct SparkColliderT {
+	enum {
+		SPARK_COLLIDER_TYPE_BOX,
+		SPARK_COLLIDER_TYPE_SPHERE,
+		SPARK_COLLIDER_TYPE_CAPSULE,
+		SPARK_COLLIDER_TYPE_MESH,
+	} type;
+	// Collider-specific data
+	union {
+		struct {
+			SparkVec3 half_extents;
+		} box;
+		struct {
+			SparkScalar radius;
+		} sphere;
+		// Other collider-specific structures
+	} data;
+} *SparkCollider;
+/* Input handling declarations */
+typedef struct SparkInputT {
+	SparkBool keys[1024];
+	SparkBool mouseButtons[32];
+	SparkScalar mousex;
+	SparkScalar mousey;
+} *SparkInput;
+/* Audio-related declarations */
+typedef struct SparkAudioBufferT* SparkAudioBuffer;
+typedef struct SparkAudioSourceT* SparkAudioSource;
+/* Scene management declarations */
+typedef struct SparkSceneNodeT {
+	SparkEntity entity;
+	struct SparkSceneNodeT* parent;
+	SparkVector children; // Vector of SparkSceneNode
+} *SparkSceneNode;
+
+typedef struct SparkSceneT {
+	SparkSceneNode root;
+} *SparkScene;
+/* Animation declarations */
+typedef struct SparkAnimationT {
+	SparkI8 unimplemented;
+} *SparkAnimation;
+/* Network-related declarations */
+typedef struct SparkNetworkT* SparkNetwork;
+typedef struct SparkSocketT* SparkSocket;
+/* GUI declarations */
+typedef struct SparkGuiElementT* SparkGuiElement;
+typedef struct SparkGuiStyleT* SparkGuiStyle;
+/* AI-related declarations */
+typedef struct SparkAIBehaviorT* SparkAIBehavior;
+/* Particle system declarations */
+typedef struct SparkParticleEmitterT* SparkParticleEmitter;
+/* Font and text rendering declarations */
+typedef struct SparkFontT* SparkFont;
+typedef struct SparkTextT {
+	SparkConstString content;
+	SparkFont font;
+	SparkScalar size;
+	SparkColor color;
+	SparkVec2 position;
+} SparkText;
+
 typedef struct SparkWindowT {
 	SparkWindowData window_data;
 	SparkRenderer renderer;
@@ -951,6 +1036,10 @@ typedef struct SparkApplicationT {
 	SparkVector query_event_functions;
 	SparkF32 delta_time;
 } *SparkApplication;
+
+#pragma endregion
+
+#pragma region FUNCTIONS
 
 SPARKAPI SparkConstString SPARKCALL SparkTypeToString(SparkType type);
 SPARKAPI SparkType SPARKCALL SparkStringToType(SparkConstString string);
@@ -1580,6 +1669,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge
 
 #pragma endregion
 
+
 /* Returns either a success or failure depending on the error code */
 SPARKAPI SparkResult SPARKCALL SparkCheckSuccess(SparkResult result);
 
@@ -1878,6 +1968,74 @@ SPARKAPI SparkResult SPARKCALL SparkBlendFunc(SparkBlendMode sfactor,
 SPARKAPI SparkError SPARKCALL SparkGetError();
 SPARKAPI SparkConstString SPARKCALL SparkGetErrorString(SparkError error);
 
+
+
+SPARKAPI SparkResult SPARKCALL SparkAddRigidBody(SparkEcs ecs, SparkEntity entity, SparkRigidBody rigidBody);
+SPARKAPI SparkResult SPARKCALL SparkAddCollider(SparkEcs ecs, SparkEntity entity, SparkCollider collider);
+
+SPARKAPI SparkInput SPARKCALL SparkCreateInput();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyInput(SparkInput input);
+SPARKAPI SparkVoid SPARKCALL SparkUpdateInput(SparkInput input);
+
+
+SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString filePath);
+SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioBuffer(SparkAudioBuffer buffer);
+SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource();
+SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source);
+SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source, SparkAudioBuffer buffer);
+SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioSourcePosition(SparkAudioSource source, SparkVec3 position);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerPosition(SparkVec3 position);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerOrientation(SparkVec3 forward, SparkVec3 up);
+
+
+SPARKAPI SparkScene SPARKCALL SparkCreateScene();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene);
+SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene, SparkEntity entity, SparkSceneNode parent);
+SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene, SparkEntity entity);
+
+/* Resource management declarations */
+SPARKAPI SparkResource SPARKCALL SparkLoadResource(SparkResourceRegistry registry, SparkConstString type, SparkConstString filePath);
+SPARKAPI SparkVoid SPARKCALL SparkUnloadResource(SparkResourceRegistry registry, SparkResource resource);
+SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceRegistry registry, SparkConstString name);
+
+
+SPARKAPI SparkAnimation SPARKCALL SparkCreateAnimation(SparkConstString filePath);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAnimation(SparkAnimation animation);
+SPARKAPI SparkResult SPARKCALL SparkPlayAnimation(SparkEntity entity, SparkAnimation animation);
+
+
+SPARKAPI SparkNetwork SPARKCALL SparkCreateNetwork();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyNetwork(SparkNetwork network);
+SPARKAPI SparkSocket SPARKCALL SparkCreateSocket(SparkNetwork network);
+SPARKAPI SparkVoid SPARKCALL SparkDestroySocket(SparkSocket socket);
+SPARKAPI SparkResult SPARKCALL SparkConnectSocket(SparkSocket socket, SparkConstString address, SparkU16 port);
+SPARKAPI SparkResult SPARKCALL SparkSendData(SparkSocket socket, SparkConstBuffer data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkReceiveData(SparkSocket socket, SparkBuffer buffer, SparkSize size);
+
+SPARKAPI SparkGuiElement SPARKCALL SparkCreateGuiElement(SparkConstString type);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyGuiElement(SparkGuiElement element);
+SPARKAPI SparkResult SPARKCALL SparkSetGuiElementProperty(SparkGuiElement element, SparkConstString property, SparkHandle value);
+SPARKAPI SparkVoid SPARKCALL SparkRenderGui(SparkGuiElement root);
+
+SPARKAPI SparkAIBehavior SPARKCALL SparkCreateAIBehavior(SparkConstString type);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAIBehavior(SparkAIBehavior behavior);
+SPARKAPI SparkResult SPARKCALL SparkSetAIBehavior(SparkEntity entity, SparkAIBehavior behavior);
+
+SPARKAPI SparkParticleEmitter SPARKCALL SparkCreateParticleEmitter();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyParticleEmitter(SparkParticleEmitter emitter);
+SPARKAPI SparkResult SPARKCALL SparkSetParticleEmitterProperties(SparkParticleEmitter emitter /* properties */);
+SPARKAPI SparkVoid SPARKCALL SparkEmitParticles(SparkParticleEmitter emitter, SparkSize count);
+
+SPARKAPI SparkFont SPARKCALL SparkLoadFont(SparkConstString filePath, SparkScalar size);
+SPARKAPI SparkVoid SPARKCALL SparkUnloadFont(SparkFont font);
+SPARKAPI SparkVoid SPARKCALL SparkRenderText(SparkText* text);
+
+/* Miscellaneous utility functions */
+SPARKAPI SparkVoid SPARKCALL SparkSetWindowTitle(SparkWindow window, SparkConstString title);
+SPARKAPI SparkVoid SPARKCALL SparkSetWindowSize(SparkWindow window, SparkI32 width, SparkI32 height);
+SPARKAPI SparkVoid SPARKCALL SparkGetWindowSize(SparkWindow window, SparkI32* width, SparkI32* height);
+
 SPARKAPI SparkEcs SPARKCALL SparkCreateEcs();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SPARKCALL SparkCreateEntity(SparkEcs ecs);
@@ -1975,6 +2133,10 @@ SPARKAPI SparkResult SPARKCALL SparkAddQueryEventFunctionApplication(
 	SparkConstString component_type,
 	SparkApplicationQueryEventFunction function);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
+
+#pragma endregion
+
+#pragma region ASSERTS
 
 #define SPARK_ASSERT(condition, message)                                       \
   if (!(condition)) {                                                          \
@@ -2074,6 +2236,10 @@ SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
   SPARK_ASSERT(SPARK_FALSE, "Program was forcibly closed for: " #reason)
 
 #define SPARK_UNIMPLIMENTED SPARK_CRASH_PROGRAM("Unimplemented function!");
+
+#pragma endregion
+
+#pragma region ALIASES
 
 #if defined(SPARK_DEFINE_BASIC_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
@@ -2341,6 +2507,8 @@ typedef SparkApplication Application;
 #define AddQueryEventFunctionApplication SparkAddQueryEventFunctionApplication
 
 #endif
+
+#pragma endregion
 
 /*
 #ifdef __cplusplus
