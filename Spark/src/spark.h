@@ -1217,6 +1217,22 @@ typedef struct SparkServerT* SparkServer;
 typedef struct SparkClientT* SparkClient;
 typedef struct SparkClientConnectionT* SparkClientConnection;
 
+typedef struct SparkFileDeserializerT {
+	SparkU8* data;
+	SparkU64 size;
+	SparkU64 capacity;
+	SparkConstString path; 
+	FILE* file;
+} *SparkFileDeserializer;
+
+typedef struct SparkFileSerializerT {
+	SparkU8* data;
+	SparkU64 size;
+	SparkU64 capacity;
+	SparkConstString path;
+	FILE* file;
+} *SparkFileSerializer;
+
 typedef struct SparkWindowT {
 	SparkWindowData window_data;
 	SparkRenderer renderer;
@@ -2219,6 +2235,15 @@ SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkSetAudioSourcePosition(SparkAudioSource source, SparkVec3 position);
 SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerPosition(SparkVec3 position);
 SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerOrientation(SparkVec3 forward, SparkVec3 up);
+
+SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer);
+SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
+
+SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer); 
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* out_data, SparkSize* out_size);
 
 
 SPARKAPI SparkScene SPARKCALL SparkCreateScene();

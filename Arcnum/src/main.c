@@ -6,7 +6,7 @@
 void server_receive_callback(Server server, ClientConnection client, Envelope* envelope) {
     printf("Server received data from client.\n");
     /* Echo the data back to the client */
-    SparkSendToClient(server, client, envelope);
+    SparkBroadcast(server, envelope);
 }
 
 /* Client receive callback */
@@ -25,7 +25,7 @@ void update_send(Application app) {
 	}
 }
 
-int main() {
+i32 main() {
     /* Create server */ 
     Application app = CreateApplication(
         CreateWindow(
@@ -33,7 +33,6 @@ int main() {
         ),
         8
     );
-
 
     SparkServer server = SparkCreateServer(app->thread_pool, 12345, server_receive_callback);
     if (!server) {
@@ -64,7 +63,7 @@ int main() {
     }
 
     envelope.type = SPARK_ENVELOPE_TYPE_DATA;
-    const char* message = "Hello, Server!";
+    const_string_t message = "Hello, Server!";
     envelope.packet.size = strlen(message) + 1;
     envelope.packet.data = (SparkBuffer)message;
 

@@ -4090,11 +4090,11 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #define SparkConditionBroadcast(cond) pthread_cond_broadcast(&(cond))
 #endif
 
-static SparkVoid *SparkThreadPoolWorker(SparkHandle arg) {
+SPARKAPI SPARKSTATIC SparkVoid *__SparkThreadPoolWorker(SparkHandle arg) {
   SparkThreadPool pool = (SparkThreadPool)arg;
   SparkTaskHandle task;
 
-  while (1) {
+  while (SPARK_TRUE) {
     SparkMutexLock(pool->mutex);
 
     while (pool->task_queue_head == NULL && !pool->stop) {
@@ -4149,7 +4149,7 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
   for (SparkSize i = 0; i < thread_count; ++i) {
 #ifdef _WIN32
     pool->threads[i] = CreateThread(
-        NULL, 0, (LPTHREAD_START_ROUTINE)SparkThreadPoolWorker, pool, 0, NULL);
+        NULL, 0, (LPTHREAD_START_ROUTINE)__SparkThreadPoolWorker, pool, 0, NULL);
 #else
     pthread_create(&pool->threads[i], NULL, SparkThreadPoolWorker, pool);
 #endif
@@ -4647,7 +4647,6 @@ SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstS
 
     return client;
 }
-
 
 SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
     if (!client) {
@@ -6376,6 +6375,205 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
     event.destructor(event.data);
   return SPARK_SUCCESS;
 }
+
+#pragma endregion
+
+#pragma region FILE
+
+SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer* buffer, SparkSize* capacity) {
+    *capacity = 1024; // Starting with 1KB
+    *buffer = (SparkBuffer)SparkAllocate(*capacity);
+    if (!*buffer) {
+        return SPARK_ERROR_INVALID;
+    }
+    return SPARK_SUCCESS;
+}
+
+// Ensure the buffer has enough capacity to hold additional data
+SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, SparkSize* capacity, SparkSize current_size, SparkSize additional_size) {
+    if (current_size + additional_size > *capacity) {
+        SparkSize new_capacity = *capacity * 2;
+        while (current_size + additional_size > new_capacity) {
+            new_capacity *= 2;
+        }
+        SparkBuffer temp = (SparkBuffer)SparkReallocate(*buffer, new_capacity);
+        if (!temp) {
+            return SPARK_ERROR_INVALID;
+        }
+        *buffer = temp;
+        *capacity = new_capacity;
+    }
+    return SPARK_SUCCESS;
+}
+
+// Create File Serializer
+SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path) {
+    if (!path) return NULL;
+
+    SparkFileSerializer serializer = (SparkFileSerializer)SparkAllocate(sizeof(struct SparkFileSerializerT));
+    if (!serializer) return NULL;
+
+    serializer->path = path;
+    serializer->size = 0;
+    serializer->capacity = 0;
+    serializer->data = NULL;
+
+    // Initialize buffer
+    SparkResult res = __SparkInitializeBuffer(&serializer->data, &serializer->capacity);
+    if (res != SPARK_SUCCESS) {
+        SparkFree(serializer);
+        return NULL;
+    }
+
+    // Open file for writing in binary mode
+    serializer->file = fopen(path, "wb");
+    if (!serializer->file) {
+        SparkFree(serializer->data);
+        SparkFree(serializer);
+        return NULL;
+    }
+
+    return serializer;
+}
+
+// Destroy File Serializer
+SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer) {
+    if (!serializer) return;
+
+    if (serializer->file) {
+        fclose(serializer->file);
+    }
+
+    if (serializer->data) {
+        SparkFree(serializer->data);
+    }
+
+    SparkFree(serializer);
+}
+
+// Serialize Data
+SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+    if (!serializer || !data || size == 0) {
+        return SPARK_INVALID_ARGUMENT;
+    }
+
+    // Ensure buffer capacity
+    SparkResult res = __SparkEnsureCapacity(&serializer->data, &serializer->capacity, serializer->size, size);
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Copy data to buffer
+    memcpy(serializer->data + serializer->size, data, size);
+    serializer->size += size;
+
+    // Write to file
+    SparkSize written = fwrite(data, 1, size, serializer->file);
+    if (written != size) {
+        return SPARK_ERROR_INVALID;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path) {
+    if (!path) return NULL;
+
+    SparkFileDeserializer deserializer = (SparkFileDeserializer)SparkAllocate(sizeof(struct SparkFileDeserializerT));
+    if (!deserializer) return NULL;
+
+    deserializer->path = path;
+    deserializer->size = 0;
+    deserializer->capacity = 0;
+    deserializer->data = NULL;
+
+    // Open file for reading in binary mode
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        free(deserializer);
+        return NULL;
+    }
+
+    // Determine file size
+    fseek(file, 0, SEEK_END);
+    SparkI32 file_size = ftell(file);
+    if (file_size < 0) {
+        fclose(file);
+        free(deserializer);
+        return NULL;
+    }
+    fseek(file, 0, SEEK_SET);
+
+    deserializer->size = (SparkU64)file_size;
+
+    // Initialize buffer with file size
+    deserializer->capacity = deserializer->size;
+    deserializer->data = (SparkBuffer)malloc(deserializer->capacity);
+    if (!deserializer->data) {
+        fclose(file);
+        free(deserializer);
+        return NULL;
+    }
+
+    SparkSize read_bytes = fread(deserializer->data, 1, deserializer->size, file);
+    if (read_bytes != deserializer->size) {
+        fclose(file);
+        SparkFree(deserializer->data);
+        SparkFree(deserializer);
+        return NULL;
+    }
+
+    fclose(file);
+    deserializer->file = NULL; // Not used in deserializer
+
+    return deserializer;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer) {
+    if (!deserializer) return;
+
+    if (deserializer->file) {
+        fclose(deserializer->file);
+    }
+
+    if (deserializer->data) {
+        SparkFree(deserializer->data);
+    }
+
+    SparkFree(deserializer);
+}
+
+// Deserialize Data
+SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer) {
+    if (!deserializer || !deserializer->data || deserializer->size == 0) {
+        return SPARK_INVALID_ARGUMENT;
+    }
+
+    // Ensure that data is null-terminated
+    if (deserializer->data[deserializer->size - 1] != '\0') {
+        // Reallocate buffer to add null terminator
+        SparkResult res = __SparkEnsureCapacity(&deserializer->data, &deserializer->capacity, deserializer->size, 1);
+        if (res != SPARK_SUCCESS) {
+            return res;
+        }
+        deserializer->data[deserializer->size] = '\0';
+        deserializer->size += 1;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* out_data, SparkSize* out_size) {
+    if (!deserializer || !out_data || !out_size) {
+        return SPARK_INVALID_ARGUMENT;
+    }
+
+    *out_data = (SparkHandle)deserializer->data;
+    *out_size = deserializer->size;
+
+    return SPARK_SUCCESS;
+}
+
 
 #pragma endregion
 
