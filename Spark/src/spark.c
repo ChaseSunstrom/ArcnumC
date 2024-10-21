@@ -4308,7 +4308,7 @@ struct SparkClientT {
 };
 
 /* Utility functions for networking */
-static SparkResult SparkInitNetworking() {
+SPARKAPI SPARKSTATIC SparkResult __SparkInitNetworking() {
 #ifdef _WIN32
     WSADATA wsa_data;
     int result;
@@ -4320,7 +4320,7 @@ static SparkResult SparkInitNetworking() {
     return SPARK_SUCCESS;
 }
 
-static SparkVoid SparkCleanupNetworking() {
+SPARKAPI SPARKSTATIC SparkVoid __SparkCleanupNetworking() {
 #ifdef _WIN32
     WSACleanup();
 #endif
@@ -4376,7 +4376,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(SparkBuffer buffer, Spar
 }
 
 /* Client Handler Function */
-static SparkHandle SparkClientHandler(SparkHandle arg) {
+SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
     SparkClientConnection client = (SparkClientConnection)arg;
     SparkServer server = client->server;
     SparkI8 recv_buffer[SPARK_PACKET_MAX_SIZE];
@@ -4410,7 +4410,7 @@ static SparkHandle SparkClientHandler(SparkHandle arg) {
 
 /* Server Functions */
 SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback) {
-    if (SparkInitNetworking() != SPARK_SUCCESS) {
+    if (__SparkInitNetworking() != SPARK_SUCCESS) {
         return NULL;
     }
 
@@ -4422,7 +4422,7 @@ SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 po
     server->port = port;
     server->running = SPARK_FALSE;
     server->receive_callback = callback;
-    server->clients = SparkCreateVector(10, SparkDefaultAllocator(), SparkFree);
+    server->clients = SparkCreateVector(10, SparkDefaultAllocator(), SPARK_NULL);
 
     SparkMutexInit(server->mutex);
 
@@ -4442,7 +4442,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyServer(SparkServer server) {
     SparkMutexDestroy(server->mutex);
     SparkFree(server);
 
-    SparkCleanupNetworking();
+    __SparkCleanupNetworking();
 }
 
 SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
@@ -4470,7 +4470,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
         SparkMutexUnlock(srv->mutex);
 
         /* Handle client in a separate thread */
-        SparkAddTaskThreadPool(srv->thread_pool, SparkClientHandler, client);
+        SparkAddTaskThreadPool(srv->thread_pool, __SparkClientHandler, client);
     }
     return NULL;
 }
@@ -4608,7 +4608,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientReceiveHandler(SparkHandle arg) {
 
 /* Client Functions */
 SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
-    if (SparkInitNetworking() != SPARK_SUCCESS) {
+    if (__SparkInitNetworking() != SPARK_SUCCESS) {
         return NULL;
     }
 
@@ -4620,19 +4620,23 @@ SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstS
     client->connected = SPARK_FALSE;
     client->receive_callback = callback;
 
-    /* Set up server address */
+    memset(&client->server_address, 0, sizeof(client->server_address));
     client->server_address.sin_family = AF_INET;
     client->server_address.sin_port = htons(port);
 
+    printf("Attempting to connect to address: %s\n", address); // Debug statement
+
 #ifdef _WIN32
-    if (InetPton(AF_INET, address, &client->server_address.sin_addr.s_addr) <= 0) {
+    // Use InetPtonA to handle ANSI strings explicitly
+    if (InetPtonA(AF_INET, address, &client->server_address.sin_addr) <= 0) {
         printf("Invalid address / Address not supported\n");
+        printf("InetPtonA failed with error: %d\n", WSAGetLastError()); // Detailed error
         SparkFree(client);
         return NULL;
     }
 #else
     if (inet_pton(AF_INET, address, &client->server_address.sin_addr) <= 0) {
-        perror("Invalid address / Address not supported");
+        perror("inet_pton failed");
         SparkFree(client);
         return NULL;
     }
@@ -4644,6 +4648,7 @@ SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstS
     return client;
 }
 
+
 SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
     if (!client) {
         return;
@@ -4652,7 +4657,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
     SparkDisconnectClient(client);
     SparkFree(client);
 
-    SparkCleanupNetworking();
+    __SparkCleanupNetworking();
 }
 
 SPARKAPI SparkResult SPARKCALL SparkConnectClient(SparkClient client) {
@@ -4703,7 +4708,7 @@ SPARKAPI SparkResult SPARKCALL SparkSendToServer(SparkClient client, SparkEnvelo
         return SPARK_FAILURE;
     }
 
-    int bytes_sent = send(client->socket, buffer, size, 0);
+    SparkI32 bytes_sent = send(client->socket, buffer, size, 0);
     SparkFree(buffer);
     if (bytes_sent < 0) {
         perror("Send to server failed");

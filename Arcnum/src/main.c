@@ -15,6 +15,20 @@ void client_receive_callback(SparkClient client, SparkEnvelope* envelope) {
     /* Process the data */
 }
 
+static SparkClient client = NULL;
+
+void update_send(Application app) {
+	SparkEnvelope envelope;
+	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
+	const char* message = "Hello, Server!";
+	envelope.packet.size = strlen(message) + 1;
+	envelope.packet.data = (SparkBuffer)message;
+
+	if (SparkSendToServer(client, &envelope) != SPARK_SUCCESS) {
+		printf("Failed to send data to server.\n");
+	}
+}
+
 int main() {
     /* Create server */ 
     Application app = CreateApplication(
@@ -38,7 +52,8 @@ int main() {
     }
 
     /* Create client */
-    SparkClient client = SparkCreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
+    client = SparkCreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
+
     if (!client) {
         printf("Failed to create client.\n");
         SparkDestroyServer(server);
@@ -52,23 +67,9 @@ int main() {
         return 1;
     }
 
-    /* Send data from client to server */
-    SparkEnvelope envelope;
-    envelope.type = SPARK_ENVELOPE_TYPE_DATA;
-    const char* message = "Hello, Server!";
-    envelope.packet.size = strlen(message) + 1;
-    envelope.packet.data = (SparkBuffer)message;
+    AddUpdateFunctionApplication(app, update_send);
 
-    if (SparkSendToServer(client, &envelope) != SPARK_SUCCESS) {
-        printf("Failed to send data to server.\n");
-    }
-
-    /* Wait for a while to receive data */
-#ifdef _WIN32
-    Sleep(2000);
-#else
-    sleep(2);
-#endif
+    StartApplication(app);
 
     /* Clean up */
     SparkDisconnectClient(client);
