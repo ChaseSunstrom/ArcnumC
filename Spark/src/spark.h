@@ -2570,6 +2570,12 @@ typedef SparkWindow Window;
 typedef SparkRenderer Renderer;
 typedef SparkEvent Event;
 typedef SparkEventHandler EventHandler;
+typedef SparkClientConnection ClientConnection;
+typedef SparkEnvelope Envelope;
+typedef SparkThreadPool ThreadPool;
+typedef SparkTaskHandle TaskHandle;
+typedef SparkServer Server;
+typedef SparkClient Client;
 typedef SparkApplication Application;
 
 #define Vector(type) SparkVector

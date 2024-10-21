@@ -3,27 +3,23 @@
 #include "spark.h"
 
 /* Server receive callback */
-void server_receive_callback(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
+void server_receive_callback(Server server, ClientConnection client, Envelope* envelope) {
     printf("Server received data from client.\n");
     /* Echo the data back to the client */
     SparkSendToClient(server, client, envelope);
 }
 
 /* Client receive callback */
-void client_receive_callback(SparkClient client, SparkEnvelope* envelope) {
+void client_receive_callback(Client  client, Envelope* envelope) {
     printf("Client received data from server.\n");
     /* Process the data */
 }
 
-static SparkClient client = NULL;
+static Client client = NULL;
+
+static Envelope envelope;
 
 void update_send(Application app) {
-	SparkEnvelope envelope;
-	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
-	const char* message = "Hello, Server!";
-	envelope.packet.size = strlen(message) + 1;
-	envelope.packet.data = (SparkBuffer)message;
-
 	if (SparkSendToServer(client, &envelope) != SPARK_SUCCESS) {
 		printf("Failed to send data to server.\n");
 	}
@@ -67,14 +63,16 @@ int main() {
         return 1;
     }
 
+    envelope.type = SPARK_ENVELOPE_TYPE_DATA;
+    const char* message = "Hello, Server!";
+    envelope.packet.size = strlen(message) + 1;
+    envelope.packet.data = (SparkBuffer)message;
+
     AddUpdateFunctionApplication(app, update_send);
 
     StartApplication(app);
 
-    /* Clean up */
-    SparkDisconnectClient(client);
     SparkDestroyClient(client);
-    SparkStopServer(server);
     SparkDestroyServer(server);
 
     return 0;
