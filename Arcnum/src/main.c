@@ -36,6 +36,13 @@ void TestSerialization(Application app) {
 
     FileSerializer serializer = CreateFileSerializer("test.bin");
 
+    Vector vec = DefaultVector();
+
+    for (size_t i = 0; i < 100; i++) {
+        PushBackVector(vec, i);
+    }
+
+	Serialize(serializer, vec);
     Serialize(serializer, "Hello, World!");
     Serialize(serializer, "Test, string!");
     Serialize(serializer, test.name);
@@ -55,11 +62,13 @@ void TestDeserialization(Application app) {
 
     size_t hellos;
     size_t tests;
-
     size_t names;
     size_t ages;
     size_t ids;
 
+    Vector vec = NULL;
+
+    Deserialize(deserializer, vec);
     Deserialize(deserializer, hello, hellos);
     Deserialize(deserializer, test, tests);
     Deserialize(deserializer, testt.name, names);
@@ -69,9 +78,13 @@ void TestDeserialization(Application app) {
     SPARK_LOG_DEBUG("First string: %s, Size: %d", hello, hellos);
     SPARK_LOG_DEBUG("Second string: %s, Size: %d", test, tests);
 
-	SPARK_LOG_DEBUG("Name: %s, Size: %d", testt.name, names);
-	SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, sizeof(testt.age));
-	SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, sizeof(testt.id));
+    SPARK_LOG_DEBUG("Name: %s, Size: %d", testt.name, names);
+    SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, sizeof(testt.age));
+    SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, sizeof(testt.id));
+
+    for (size_t i = 0; i < 100; i++) {
+        SPARK_LOG_ERROR("%d", i);
+    }
 
     DestroyFileDeserializer(deserializer);
 
@@ -103,7 +116,7 @@ i32 main() {
 
     AddStartFunctionApplication(app, TestSerialization);
     AddStartFunctionApplication(app, TestDeserialization);
-    AddUpdateFunctionApplication(app, update_send);
+   // AddUpdateFunctionApplication(app, update_send);
 
     StartApplication(app);
 

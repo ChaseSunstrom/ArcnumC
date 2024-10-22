@@ -2766,6 +2766,28 @@ SPARKAPI SparkResult SparkClearVector(SparkVector vector) {
   return SPARK_SUCCESS;
 }
 
+SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size) {
+    if (!vector) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (vector->size + buffer_size >= vector->capacity) {
+        vector->capacity = (vector->size + buffer_size) * 2;
+        vector->elements = vector->allocator->reallocate(vector->elements, vector->capacity * sizeof(SparkHandle));
+        if (vector->elements == SPARK_NULL) {
+            SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
+            return SPARK_ERROR_INVALID_STATE;
+        }
+
+    }
+
+    memcpy(vector->elements + vector->size, buffer, buffer_size);
+
+    vector->size += buffer_size;
+
+    return SPARK_SUCCESS;
+}
+
 #pragma endregion
 
 #pragma region LIST
@@ -6535,6 +6557,32 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializ
     return SPARK_SUCCESS;
 }
 
+SPARKAPI SparkResult SPARKCALL SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector) {
+	if (!serializer || !vector) {
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	// Serialize the size of the vector
+	SparkSize size = vector->size;
+
+	SparkResult res = SparkSerializeTrivial(serializer, &size, sizeof(SparkSize));
+
+	if (res != SPARK_SUCCESS) {
+		return res;
+	}
+
+	// Serialize the elements of the vector
+	for (SparkSize i = 0; i < size; i++) {
+		SparkHandle element = SparkGetElementVector(vector, i);
+		res = SparkSerializeData(serializer, element, sizeof(SparkHandle));
+		if (res != SPARK_SUCCESS) {
+			return res;
+		}
+	}
+
+	return SPARK_SUCCESS;
+}
+
 // Create File Deserializer
 SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path) {
     if (!path) return NULL;
@@ -6731,6 +6779,33 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer dese
 	(*data)[*size] = '\0';
 
     return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector) {
+    if (!deserializer || !deserializer->data || !vector) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (!*vector) {
+        *vector = SparkDefaultVector();
+    }
+
+    SparkSize vec_size;
+    SparkResult res = SparkDeserializeTrivial(deserializer, &vec_size, sizeof(vec_size));
+
+	if (res != SPARK_SUCCESS) {
+		return res;
+	}
+
+    for (SparkSize i = 0; i < vec_size; i++) {
+        SparkHandle element = SPARK_NULL;
+		res = SparkDeserializeRawData(deserializer, element, sizeof(SparkHandle));
+        if (res != SPARK_SUCCESS) {
+            return res;
+        }
+    }
+
+	return SPARK_SUCCESS;
 }
 
 #pragma endregion

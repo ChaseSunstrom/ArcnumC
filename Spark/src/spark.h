@@ -290,6 +290,7 @@
     _Generic((data), \
         const char* : SparkSerializeString(serializer, data), \
 		char* : SparkSerializeString(serializer, data), \
+		SparkVector: SparkSerializeVector(serializer, (const char*)(unsigned long long)data), \
         default: SparkSerializeTrivialType(serializer, data) \
     )
 
@@ -305,7 +306,10 @@
     GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize, SparkSerializeDefault)(__VA_ARGS__)
 
 #define SparkDeserializeDefault(deserializer, data) \
-	SparkDeserializeTrivial(deserializer, &(data), sizeof(data))
+	_Generic((data), \
+	SparkVector: SparkDeserializeVector(deserializer, &(data)),	\
+	default: SparkDeserializeTrivial(deserializer, &(data), sizeof(data)) \
+	)
 
 #define SparkDeserializeWithSize(deserializer, data, size) \
 	_Generic((data), \
@@ -2009,6 +2013,7 @@ SPARKAPI SparkResult SPARKCALL SparkEraseVector(SparkVector vector, SparkIndex s
 SPARKAPI SparkResult SPARKCALL SparkSetVector(SparkVector vector, SparkIndex index,
 	SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkResizeVector(SparkVector vector, SparkSize capacity);
+SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
 SPARKAPI SparkResult SPARKCALL SparkClearVector(SparkVector vector);
 
 SPARKAPI SparkList SPARKCALL SparkDefaultList();
@@ -2287,11 +2292,13 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer seri
 SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer);
+SPARKAPI SparkResult SPARKCALL SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector);
 SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
@@ -2720,6 +2727,7 @@ typedef SparkApplication Application;
 #define SetVector SparkSetVector
 #define ResizeVector SparkResizeVector
 #define ClearVector SparkClearVector
+#define PushBackBufferVector SparkPushBackBufferVector
 
 #define DefaultList SparkDefaultList
 #define CreateList SparkCreateList
@@ -2747,8 +2755,6 @@ typedef SparkApplication Application;
 #define GetElementHashMap SparkGetElementHashMap
 #define InsertHashMap SparkInsertHashMap
 #define RemoveHashMap SparkRemoveHashMap
-#define SetHashMap SparkSetHashMap
-#define ClearHashMap SparkClearHashMap
 
 #define DefaultSet SparkDefaultSet
 #define CreateSet SparkCreateSet
@@ -2819,6 +2825,7 @@ typedef SparkApplication Application;
 #define SerializeRawData SparkSerializeRawData
 #define SerializeData SparkSerializeData
 #define SerializeHeader SparkSerializeHeader
+#define SerializeVector SparkSerializeVector
 #define CreateFileDeserializer SparkCreateFileDeserializer
 #define DestroyFileDeserializer SparkDestroyFileDeserializer
 #define DeserializeRawData SparkDeserializeRawData
@@ -2826,6 +2833,7 @@ typedef SparkApplication Application;
 #define DeserializeHeader SparkDeserializeHeader
 #define DeserializeString SparkDeserializeString
 #define DeserializeTrivial SparkDeserializeTrivial
+#define DserializeVector SparkDeserializeVector
 #define Serialize SparkSerialize
 #define Deserialize SparkDeserialize
 
