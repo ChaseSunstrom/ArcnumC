@@ -6676,8 +6676,15 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer des
 
 // Deserialize Data with Size Prefix
 SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
-    if (!deserializer || !deserializer->data || !data || !size) {
+    if (!deserializer || !deserializer->data || !data) {
         return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
+    }
+
+
+    SparkSize temps;
+
+    if (!size) {
+        size = &temps;
     }
 
     // Deserialize the size first
@@ -6753,8 +6760,14 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer des
 }
 
 SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
-    if (!deserializer || !deserializer->data || !size || !data) {
+    if (!deserializer || !deserializer->data || !data) {
         return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
+    }
+
+    SparkSize temps;
+
+    if (!size) {
+        size = &temps;
     }
 
     // Deserialize the size first
