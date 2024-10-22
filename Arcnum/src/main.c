@@ -26,7 +26,7 @@ typedef struct {
 } TestThing;
 
 void update_send(Application app) {
-	if (SparkSendToServer(client, &envelope) != SPARK_SUCCESS) {
+	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
 		printf("Failed to send data to server.\n");
 	}
 }
@@ -34,19 +34,19 @@ void update_send(Application app) {
 void TestSerialization(Application app) {
 	TestThing test = { "Hello, hehehe", 20.0f, 1234567890 };
 
-    SparkFileSerializer serializer = SparkCreateFileSerializer("test.bin");
+    FileSerializer serializer = CreateFileSerializer("test.bin");
 
-    SparkSerialize(serializer, "Hello, World!");
-    SparkSerialize(serializer, "Test, string!");
-    SparkSerialize(serializer, test.name);
-    SparkSerialize(serializer, test.age);
-	SparkSerialize(serializer, test.id);
+    Serialize(serializer, "Hello, World!");
+    Serialize(serializer, "Test, string!");
+    Serialize(serializer, test.name);
+    Serialize(serializer, test.age);
+	Serialize(serializer, test.id);
 
-    SparkDestroyFileSerializer(serializer);
+    DestroyFileSerializer(serializer);
 }
 
 void TestDeserialization(Application app) {
-    SparkFileDeserializer deserializer = SparkCreateFileDeserializer("test.bin");
+    FileDeserializer deserializer = CreateFileDeserializer("test.bin");
 
     const_string_t hello;
     const_string_t test;
@@ -60,12 +60,11 @@ void TestDeserialization(Application app) {
     size_t ages;
     size_t ids;
 
-    SparkDeserializeString(deserializer, &hello, &hellos);
-    SparkDeserializeString(deserializer, &test, &tests);
-    SparkDeserializeString(deserializer, &testt.name, &names);
-
-    SparkDeserialize(deserializer, testt.age);
-    SparkDeserialize(deserializer, testt.id);
+    Deserialize(deserializer, hello, hellos);
+    Deserialize(deserializer, test, tests);
+    Deserialize(deserializer, testt.name, names);
+    Deserialize(deserializer, testt.age);
+    Deserialize(deserializer, testt.id);
 
     SPARK_LOG_DEBUG("First string: %s, Size: %d", hello, hellos);
     SPARK_LOG_DEBUG("Second string: %s, Size: %d", test, tests);
@@ -74,11 +73,11 @@ void TestDeserialization(Application app) {
 	SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, sizeof(testt.age));
 	SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, sizeof(testt.id));
 
-    SparkDestroyFileDeserializer(deserializer);
+    DestroyFileDeserializer(deserializer);
 
-    SparkFree(hello);
-    SparkFree(test);
-    SparkFree(testt.name);
+    Free(hello);
+    Free(test);
+    Free(testt.name);
 }
 
 i32 main() {
@@ -90,33 +89,12 @@ i32 main() {
         8
     );
 
-    SparkServer server = SparkCreateServer(app->thread_pool, 12345, server_receive_callback);
-    if (!server) {
-        printf("Failed to create server.\n");
-        return 1;
-    }
+    Server server = CreateServer(app->thread_pool, 12345, server_receive_callback);
 
-    if (SparkStartServer(server) != SPARK_SUCCESS) {
-        printf("Failed to start server.\n");
-        SparkDestroyServer(server);
-        return 1;
-    }
+    client = CreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
 
-    /* Create client */
-    client = SparkCreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
-
-    if (!client) {
-        printf("Failed to create client.\n");
-        SparkDestroyServer(server);
-        return 1;
-    }
-
-    if (SparkConnectClient(client) != SPARK_SUCCESS) {
-        printf("Failed to connect client.\n");
-        SparkDestroyClient(client);
-        SparkDestroyServer(server);
-        return 1;
-    }
+    StartServer(server);    
+    ConnectClient(client);
 
     envelope.type = SPARK_ENVELOPE_TYPE_DATA;
     const_string_t message = "Hello, Server!";
@@ -129,8 +107,8 @@ i32 main() {
 
     StartApplication(app);
 
-    SparkDestroyClient(client);
-    SparkDestroyServer(server);
+    DestroyClient(client);
+    DestroyServer(server);
 
     return 0;
 }

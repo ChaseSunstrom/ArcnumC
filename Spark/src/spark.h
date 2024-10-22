@@ -308,8 +308,11 @@
 	SparkDeserializeTrivial(deserializer, &(data), sizeof(data))
 
 #define SparkDeserializeWithSize(deserializer, data, size) \
-	SparkDeserializeData(deserializer, &(data), &(size))
-
+	_Generic((data), \
+		char* : SparkDeserializeString(deserializer, &(data), &(size)), \
+		const char* : SparkDeserializeString(deserializer, &(data), &(size)), \
+		default: SparkDeserializeData(deserializer, &(data), &(size)) \
+	)
 #define GET_SPARKDESERIALIZE(_1, _2, _3, NAME, ...) NAME
 
 #define SparkDeserialize(...) \
@@ -2647,6 +2650,8 @@ typedef SparkThreadPool ThreadPool;
 typedef SparkTaskHandle TaskHandle;
 typedef SparkServer Server;
 typedef SparkClient Client;
+typedef SparkFileSerializer FileSerializer;
+typedef SparkFileDeserializer FileDeserializer;
 typedef SparkApplication Application;
 
 #define Vector(type) SparkVector
@@ -2819,8 +2824,22 @@ typedef SparkApplication Application;
 #define DeserializeRawData SparkDeserializeRawData
 #define DeserializeData SparkDeserializeData
 #define DeserializeHeader SparkDeserializeHeader
-#define DeserializeStringA SparkDeserializeString
+#define DeserializeString SparkDeserializeString
 #define DeserializeTrivial SparkDeserializeTrivial
+#define Serialize SparkSerialize
+#define Deserialize SparkDeserialize
+
+#define CreateClient SparkCreateClient
+#define DestroyClient SparkDestroyClient
+#define ConnectClient SparkConnectClient
+#define DisconnectClient SparkDisconnectClient
+#define SendToServer SparkSendToServer
+#define CreateServer SparkCreateServer
+#define DestroyServer SparkDestroyServer
+#define StartServer SparkStartServer
+#define StopServer SparkStopServer
+#define SendToClient SparkSendToClient
+#define Broadcast SparkBroadcast
 
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication
