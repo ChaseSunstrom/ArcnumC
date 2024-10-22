@@ -3,12 +3,27 @@
 #include "spark.h"
 
 
+typedef struct {
+    char* name;
+    f32 age;
+    i64 id;
+} TestThing;
+
 
 /* Server receive callback */
 void server_receive_callback(Server server, ClientConnection client, Envelope* envelope) {
     printf("Server received data from client.\n");
+
+    TestThing* test = envelope->packet.data;
+
+	printf("Name: %s\n", test->name);
+	printf("Age: %f\n", test->age);
+	printf("ID: %lld\n", test->id);
+
     /* Echo the data back to the client */
     SparkBroadcast(server, envelope);
+
+    Free(test->name);
 }
 
 /* Client receive callback */
@@ -21,12 +36,6 @@ static Client client = NULL;
 
 static Envelope envelope;
 
-typedef struct {
-	char* name;
-    f32 age;
-    i64 id;
-} TestThing;
-
 void update_send(Application app) {
 	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
 		printf("Failed to send data to server.\n");
@@ -34,67 +43,43 @@ void update_send(Application app) {
 }
 
 void TestSerialization(Application app) {
-	TestThing test = { "Hello, hehehe", 20.0f, 1234567890 };
+}
 
-    FileSerializer serializer = CreateFileSerializer("test.bin");
-
-    Vector vec = DefaultVector();
-
-    for (size_t i = 0; i < 100; i++) {
-        PushBackVector(vec, i);
-    }
-
-	Serialize(serializer, vec);
-    Serialize(serializer, "Hello, World!");
-    Serialize(serializer, "Test, string!");
+void SerializeTestThing(FileSerializer serializer, TestThing test) {
     Serialize(serializer, test.name);
     Serialize(serializer, test.age);
-	Serialize(serializer, test.id);
+    Serialize(serializer, test.id);
+}
 
-    DestroyFileSerializer(serializer);
-    DestroyVector(vec);
+TestThing DeserializeTestThing(FileDeserializer deserializer) {
+    TestThing test = { 0 };
+    size_t name_l;
+
+    Deserialize(deserializer, test.name, name_l);
+    Deserialize(deserializer, test.age);
+    Deserialize(deserializer, test.id);
+
+    return test;
+
 }
 
 void TestDeserialization(Application app) {
+    TestThing test = { "Hello, hehehe", 20.0f, 1234567890 };
+    FileSerializer serializer = CreateFileSerializer("test.bin");
+    SerializeTestThing(serializer, test);
+    
+    DestroyFileSerializer(serializer);
     FileDeserializer deserializer = CreateFileDeserializer("test.bin");
-
-    const_string_t hello;
-    const_string_t test;
-
-    TestThing testt = { 0 };
-
-    size_t hellos;
-    size_t tests;
-    size_t names;
-    size_t ages;
-    size_t ids;
-
-    Vector vec = NULL;
-
-    Deserialize(deserializer, vec);
-    Deserialize(deserializer, hello, hellos);
-    Deserialize(deserializer, test, tests);
-    Deserialize(deserializer, testt.name, names);
-    Deserialize(deserializer, testt.age);
-    Deserialize(deserializer, testt.id);
-
-    SPARK_LOG_DEBUG("First string: %s, Size: %d", hello, hellos);
-    SPARK_LOG_DEBUG("Second string: %s, Size: %d", test, tests);
-
-    SPARK_LOG_DEBUG("Name: %s, Size: %d", testt.name, names);
-    SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, sizeof(testt.age));
-    SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, sizeof(testt.id));
-
-    for (size_t i = 0; i < 100; i++) {
-        SPARK_LOG_ERROR("%d", i);
-    }
-
+    TestThing test2 = DeserializeTestThing(deserializer);
     DestroyFileDeserializer(deserializer);
 
-    Free(hello);
-    Free(test);
-    Free(testt.name);
-	DestroyVector(vec);
+	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
+	envelope.packet.size = sizeof(TestThing);
+	envelope.packet.data = (SparkBuffer)&test2;
+
+	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
+		printf("Failed to send data to server.\n");
+	}
 }
 
 i32 main() {
@@ -112,11 +97,6 @@ i32 main() {
 
     StartServer(server);    
     ConnectClient(client);
-
-    envelope.type = SPARK_ENVELOPE_TYPE_DATA;
-    const_string_t message = "Hello, Server!";
-    envelope.packet.size = strlen(message) + 1;
-    envelope.packet.data = (SparkBuffer)message;
 
     AddStartFunctionApplication(app, TestSerialization);
     AddStartFunctionApplication(app, TestDeserialization);
