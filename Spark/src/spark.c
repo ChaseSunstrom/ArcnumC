@@ -6894,9 +6894,9 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow *window,
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow *window,
-                                                            int button,
-                                                            int action,
-                                                            int mods) {
+    SparkI32 button,
+    SparkI32 action,
+    SparkI32 mods) {
   SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
   switch (action) {
@@ -6924,8 +6924,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow *window,
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow *window,
-                                                       double xoffset,
-                                                       double yoffset) {
+                                                       SparkF64 xoffset,
+    SparkF64 yoffset) {
   SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
   SparkEventDataMouseScrolled event_data =
@@ -6939,7 +6939,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow *window,
 }
 
 SPARKAPI SPARKSTATIC SparkVoid
-__GlfwSetFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
+__GlfwSetFramebufferSizeCallback(GLFWwindow *window, SparkI32 width, SparkI32 height) {
   SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
 
   SparkEventDataWindowResized event_data =
@@ -7043,8 +7043,13 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize t
   app->update_functions = SparkDefaultVector();
   app->thread_pool = SparkCreateThreadPool(thread_count);
   app->query_functions =
-      SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL,
-                         SPARK_NULL, SparkDestroyVector);
+      SparkCreateHashMap(
+          4, 
+          SparkStringHash, 
+          SparkStringCompare, 
+          SPARK_NULL,
+          SPARK_NULL, 
+          SparkDestroyVector);
   app->event_functions = SparkDefaultVector();
   app->query_event_functions = SparkDefaultVector();
   app->event_handler->application = app;

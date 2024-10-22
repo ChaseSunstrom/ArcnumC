@@ -2,6 +2,8 @@
 #define SPARK_DEFINE_ALL_ALIASES
 #include "spark.h"
 
+
+
 /* Server receive callback */
 void server_receive_callback(Server server, ClientConnection client, Envelope* envelope) {
     printf("Server received data from client.\n");
@@ -50,6 +52,7 @@ void TestSerialization(Application app) {
 	Serialize(serializer, test.id);
 
     DestroyFileSerializer(serializer);
+    DestroyVector(vec);
 }
 
 void TestDeserialization(Application app) {
@@ -91,6 +94,7 @@ void TestDeserialization(Application app) {
     Free(hello);
     Free(test);
     Free(testt.name);
+	DestroyVector(vec);
 }
 
 i32 main() {
