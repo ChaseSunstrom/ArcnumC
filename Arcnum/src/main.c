@@ -16,9 +16,9 @@ void server_receive_callback(Server server, ClientConnection client, Envelope* e
 
     TestThing* test = envelope->packet.data;
 
-	printf("Name: %s\n", test->name);
-	printf("Age: %f\n", test->age);
-	printf("ID: %lld\n", test->id);
+    SPARK_LOG_WARN("Name: %s", test->name);
+    SPARK_LOG_WARN("Age: %f", test->age);
+    SPARK_LOG_WARN("ID: %lld", test->id);
 
     /* Echo the data back to the client */
     SparkBroadcast(server, envelope);
@@ -42,9 +42,6 @@ void update_send(Application app) {
 	}
 }
 
-void TestSerialization(Application app) {
-}
-
 void SerializeTestThing(FileSerializer serializer, TestThing test) {
     Serialize(serializer, test.name);
     Serialize(serializer, test.age);
@@ -60,22 +57,24 @@ TestThing DeserializeTestThing(FileDeserializer deserializer) {
     Deserialize(deserializer, test.id);
 
     return test;
-
 }
 
-void TestDeserialization(Application app) {
+void TestSerialization(Application app) {
     TestThing test = { "Hello, hehehe", 20.0f, 1234567890 };
     FileSerializer serializer = CreateFileSerializer("test.bin");
     SerializeTestThing(serializer, test);
-    
     DestroyFileSerializer(serializer);
+}
+
+
+void TestDeserialization(Application app) {
     FileDeserializer deserializer = CreateFileDeserializer("test.bin");
-    TestThing test2 = DeserializeTestThing(deserializer);
+    TestThing test = DeserializeTestThing(deserializer);
     DestroyFileDeserializer(deserializer);
 
 	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
 	envelope.packet.size = sizeof(TestThing);
-	envelope.packet.data = (SparkBuffer)&test2;
+	envelope.packet.data = (SparkBuffer)&test;
 
 	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
 		printf("Failed to send data to server.\n");
