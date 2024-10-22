@@ -65,8 +65,8 @@ void TestDeserialization(Application app) {
     SparkGetDeserializedStringA(deserializer, &test, &tests);
 
     SparkGetDeserializedStringA(deserializer, &testt.name, &names);
-    SparkDeserializeTrivial(deserializer, &testt.age, sizeof(f32));
-	SparkDeserializeTrivial(deserializer, &testt.id, sizeof(i64));
+    SparkDeserialize(deserializer, testt.age);
+	SparkDeserialize(deserializer, testt.id);
 
     SPARK_LOG_DEBUG("First string: %s, Size: %d", hello, hellos);
     SPARK_LOG_DEBUG("Second string: %s, Size: %d", test, tests);

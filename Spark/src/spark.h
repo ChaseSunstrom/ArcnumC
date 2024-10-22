@@ -293,6 +293,18 @@
 #define SparkSerialize(...) \
     GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize, SparkSerializeDefault)(__VA_ARGS__)
 
+#define SparkDeserializeDefault(deserializer, data) \
+	SparkDeserializeTrivial(deserializer, &(data), sizeof(data))
+
+#define SparkDeserializeWithSize(deserializer, data, size) \
+	SparkDeserializeDataA(deserializer, data, size)
+
+#define GET_SPARKDESERIALIZE(_1, _2, _3, NAME, ...) NAME
+
+#define SparkDeserialize(...) \
+	GET_SPARKDESERIALIZE(__VA_ARGS__, SparkDeserializeWithSize, SparkDeserializeDefault)(__VA_ARGS__)
+	
+
 /* Capabilities */
 #define SPARK_DEPTH_TEST 0x0B71
 #define SPARK_BLEND 0x0BE2
