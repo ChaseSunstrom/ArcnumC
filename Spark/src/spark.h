@@ -231,6 +231,9 @@
 #define SPARK_VERSION_MINOR 0
 #define SPARK_VERSION_PATCH 0
 
+#define SPARK_SERIALIZER_MAGIC 0x53504152 // 'SPAR' in hexadecimal
+#define SPARK_SERIALIZER_VERSION 1
+
 #define SPARK_MAKE_VERSION(major, minor, patch)                                \
   ((major << 22) | (minor << 12) | patch)
 
@@ -273,6 +276,22 @@
 #else
 #define SPARK_LOG_ERROR(message, ...)
 #endif
+
+// Default serialization function when size is not provided
+#define SparkSerializeDefault(serializer, data) \
+    SparkSerializeTrivial(serializer, &(data), sizeof(data))
+
+
+// Serialization function when size is provided
+#define SparkSerializeWithSize(serializer, data, size) \
+    SparkSerializeData(serializer, data, size)
+
+// Helper macro to select the appropriate function based on the number of arguments
+#define GET_SPARKSERIALIZE(_1, _2, _3, NAME, ...) NAME
+
+// Main SparkSerialize macro
+#define SparkSerialize(...) \
+    GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize, SparkSerializeDefault)(__VA_ARGS__)
 
 /* Capabilities */
 #define SPARK_DEPTH_TEST 0x0B71
@@ -1222,6 +1241,7 @@ typedef struct SparkFileDeserializerT {
 	SparkU64 size;
 	SparkU64 capacity;
 	SparkConstString path; 
+	SparkU64 curr_off;
 	FILE* file;
 } *SparkFileDeserializer;
 
@@ -2238,13 +2258,18 @@ SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerOrientation(SparkVec3 forward,
 
 SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer);
+SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
-
+SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer);
 SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer); 
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* out_data, SparkSize* out_size);
-
+SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer);
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedDataA(SparkFileDeserializer deserializer, SparkConstBuffer* buffer, SparkSize* size);
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedStringA(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 
 SPARKAPI SparkScene SPARKCALL SparkCreateScene();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene);
@@ -2255,7 +2280,6 @@ SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene, Spar
 SPARKAPI SparkResource SPARKCALL SparkLoadResource(SparkResourceRegistry registry, SparkConstString type, SparkConstString filePath);
 SPARKAPI SparkVoid SPARKCALL SparkUnloadResource(SparkResourceRegistry registry, SparkResource resource);
 SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceRegistry registry, SparkConstString name);
-
 
 SPARKAPI SparkAnimation SPARKCALL SparkCreateAnimation(SparkConstString filePath);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAnimation(SparkAnimation animation);

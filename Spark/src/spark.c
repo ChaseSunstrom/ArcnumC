@@ -6381,16 +6381,24 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
 #pragma region FILE
 
 SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer* buffer, SparkSize* capacity) {
+    if (!buffer || !capacity) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
     *capacity = 1024; // Starting with 1KB
     *buffer = (SparkBuffer)SparkAllocate(*capacity);
     if (!*buffer) {
-        return SPARK_ERROR_INVALID;
+        return SPARK_ERROR_OUT_OF_MEMORY;
     }
     return SPARK_SUCCESS;
 }
 
 // Ensure the buffer has enough capacity to hold additional data
 SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, SparkSize* capacity, SparkSize current_size, SparkSize additional_size) {
+    if (!buffer || !capacity) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
     if (current_size + additional_size > *capacity) {
         SparkSize new_capacity = *capacity * 2;
         while (current_size + additional_size > new_capacity) {
@@ -6398,7 +6406,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, Spar
         }
         SparkBuffer temp = (SparkBuffer)SparkReallocate(*buffer, new_capacity);
         if (!temp) {
-            return SPARK_ERROR_INVALID;
+            return SPARK_ERROR_OUT_OF_MEMORY;
         }
         *buffer = temp;
         *capacity = new_capacity;
@@ -6451,10 +6459,10 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer seri
     SparkFree(serializer);
 }
 
-// Serialize Data
-SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+// Helper Function to Serialize Raw Data Without Size Prefix
+SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
     if (!serializer || !data || size == 0) {
-        return SPARK_INVALID_ARGUMENT;
+        return SPARK_ERROR_INVALID_ARGUMENT;
     }
 
     // Ensure buffer capacity
@@ -6476,6 +6484,59 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer
     return SPARK_SUCCESS;
 }
 
+// Serialize Data with Size Prefix
+SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+    if (!serializer || !data || size == 0) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Serialize the size first
+    SparkResult res = SparkSerializeRawData(serializer, &size, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Serialize the actual data
+    res = SparkSerializeRawData(serializer, data, size);
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkSerializeTrivial(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+    if (!serializer || !data || size == 0) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Write the data directly without size prefix
+    return SparkSerializeRawData(serializer, data, size);
+}
+
+
+// Serialize Header (Magic Number and Version)
+SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer) {
+    if (!serializer) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Serialize Magic Number
+    SparkResult res = SparkSerializeData(serializer, SPARK_SERIALIZER_MAGIC, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Serialize Version
+    res = SparkSerializeData(serializer, SPARK_SERIALIZER_VERSION, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+// Create File Deserializer
 SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path) {
     if (!path) return NULL;
 
@@ -6485,33 +6546,39 @@ SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstS
     deserializer->path = path;
     deserializer->size = 0;
     deserializer->capacity = 0;
+    deserializer->curr_off = 0;
     deserializer->data = NULL;
 
     // Open file for reading in binary mode
     FILE* file = fopen(path, "rb");
     if (!file) {
-        free(deserializer);
+        SparkFree(deserializer);
         return NULL;
     }
 
     // Determine file size
-    fseek(file, 0, SEEK_END);
+    if (fseek(file, 0, SEEK_END) != 0) {
+        fclose(file);
+        SparkFree(deserializer);
+        return NULL;
+    }
+
     SparkI32 file_size = ftell(file);
     if (file_size < 0) {
         fclose(file);
-        free(deserializer);
+        SparkFree(deserializer);
         return NULL;
     }
-    fseek(file, 0, SEEK_SET);
+    rewind(file); // Equivalent to fseek(file, 0, SEEK_SET);
 
     deserializer->size = (SparkU64)file_size;
 
     // Initialize buffer with file size
     deserializer->capacity = deserializer->size;
-    deserializer->data = (SparkBuffer)malloc(deserializer->capacity);
+    deserializer->data = (SparkBuffer)SparkAllocate(deserializer->capacity);
     if (!deserializer->data) {
         fclose(file);
-        free(deserializer);
+        SparkFree(deserializer);
         return NULL;
     }
 
@@ -6529,6 +6596,7 @@ SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstS
     return deserializer;
 }
 
+// Destroy File Deserializer
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer) {
     if (!deserializer) return;
 
@@ -6543,37 +6611,173 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer 
     SparkFree(deserializer);
 }
 
-// Deserialize Data
-SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer) {
-    if (!deserializer || !deserializer->data || deserializer->size == 0) {
-        return SPARK_INVALID_ARGUMENT;
+// Helper Function to Deserialize Raw Data Without Size Prefix
+SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
+    if (!deserializer || !deserializer->data || !data) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
     }
 
-    // Ensure that data is null-terminated
-    if (deserializer->data[deserializer->size - 1] != '\0') {
-        // Reallocate buffer to add null terminator
-        SparkResult res = __SparkEnsureCapacity(&deserializer->data, &deserializer->capacity, deserializer->size, 1);
-        if (res != SPARK_SUCCESS) {
-            return res;
-        }
-        deserializer->data[deserializer->size] = '\0';
-        deserializer->size += 1;
+    if (deserializer->curr_off + size > deserializer->size) {
+        return SPARK_ERROR_OVERFLOW;
+    }
+
+    memcpy(data, deserializer->data + deserializer->curr_off, size);
+    deserializer->curr_off += size;
+
+    return SPARK_SUCCESS;
+}
+
+// Deserialize Data with Size Prefix
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
+    if (!deserializer || !deserializer->data || !data || !size) {
+        return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
+    }
+
+    // Deserialize the size first
+    SparkResult res = SparkDeserializeRawData(deserializer, size, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Allocate memory for the actual data
+    *data = SparkAllocate(*size);
+    if (!*data) {
+        return SPARK_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Deserialize the actual data
+    res = SparkDeserializeRawData(deserializer, *data, *size);
+    if (res != SPARK_SUCCESS) {
+        SparkFree(*data);
+        return res;
     }
 
     return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* out_data, SparkSize* out_size) {
-    if (!deserializer || !out_data || !out_size) {
-        return SPARK_INVALID_ARGUMENT;
+// Deserialize Data Without Size Prefix (Returns Pointer to Data)
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size) {
+    if (!deserializer || !deserializer->data || !data) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
     }
 
-    *out_data = (SparkHandle)deserializer->data;
-    *out_size = deserializer->size;
+    if (deserializer->curr_off + size > deserializer->size) {
+        return SPARK_ERROR_OVERFLOW;
+    }
+
+    *data = (SparkHandle)(deserializer->data + deserializer->curr_off);
+    deserializer->curr_off += size;
 
     return SPARK_SUCCESS;
 }
 
+// Deserialize Header (Magic Number and Version)
+SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer) {
+    if (!deserializer) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Deserialize Magic Number
+    SparkSize magic;
+    SparkResult res = SparkGetDeserializedData(deserializer, &magic, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    if (magic != SPARK_SERIALIZER_MAGIC) {
+        SparkFree(magic);
+        return SPARK_ERROR_INVALID;
+    }
+    SparkFree(magic);
+
+    // Deserialize Version
+    SparkSize version;
+    res = SparkGetDeserializedData(deserializer, &version, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    if (version != SPARK_SERIALIZER_VERSION) {
+        SparkFree(version);
+        return SPARK_ERROR_INVALID;
+    }
+    SparkFree(version);
+
+    return SPARK_SUCCESS;
+}
+
+// Deserialize Data with Allocation
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedDataA(SparkFileDeserializer deserializer, SparkConstBuffer* data, SparkSize* size) {
+    if (!deserializer || !deserializer->data  || !size || !data) {
+        return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
+    }
+
+    // Deserialize the size first
+    SparkResult res = SparkDeserializeRawData(deserializer, size, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Allocate memory for the actual data
+    *data = SparkAllocate(*size);
+    if (!*data) {
+        return SPARK_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Deserialize the actual data
+    res = SparkDeserializeRawData(deserializer, *data, *size);
+    if (res != SPARK_SUCCESS) {
+        SparkFree(*data);
+        return res;
+    }
+
+    return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
+    if (!deserializer || !deserializer->data || !data) {
+        return SPARK_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (deserializer->curr_off + size > deserializer->size) {
+        return SPARK_ERROR_OVERFLOW;
+    }
+
+    memcpy(data, deserializer->data + deserializer->curr_off, size);
+    deserializer->curr_off += size;
+
+    return SPARK_SUCCESS;
+}
+
+
+SPARKAPI SparkResult SPARKCALL SparkGetDeserializedStringA(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
+    if (!deserializer || !deserializer->data || !size || !data) {
+        return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
+    }
+
+    // Deserialize the size first
+    SparkResult res = SparkDeserializeRawData(deserializer, size, sizeof(SparkSize));
+    if (res != SPARK_SUCCESS) {
+        return res;
+    }
+
+    // Allocate memory for the actual data
+    *data = SparkAllocate(*size + 1);
+    if (!*data) {
+        return SPARK_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Deserialize the actual data
+    res = SparkDeserializeRawData(deserializer, *data, *size);
+    if (res != SPARK_SUCCESS) {
+        SparkFree(*data);
+        return res;
+    }
+
+	(*data)[*size] = '\0';
+
+    return SPARK_SUCCESS;
+}
 
 #pragma endregion
 
