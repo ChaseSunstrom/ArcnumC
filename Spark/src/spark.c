@@ -6514,7 +6514,6 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeTrivial(SparkFileSerializer seriali
     return SparkSerializeRawData(serializer, data, size);
 }
 
-
 // Serialize Header (Magic Number and Version)
 SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer) {
     if (!serializer) {
@@ -6628,7 +6627,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer des
 }
 
 // Deserialize Data with Size Prefix
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
+SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
     if (!deserializer || !deserializer->data || !data || !size) {
         return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
     }
@@ -6655,22 +6654,6 @@ SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer de
     return SPARK_SUCCESS;
 }
 
-// Deserialize Data Without Size Prefix (Returns Pointer to Data)
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size) {
-    if (!deserializer || !deserializer->data || !data) {
-        return SPARK_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (deserializer->curr_off + size > deserializer->size) {
-        return SPARK_ERROR_OVERFLOW;
-    }
-
-    *data = (SparkHandle)(deserializer->data + deserializer->curr_off);
-    deserializer->curr_off += size;
-
-    return SPARK_SUCCESS;
-}
-
 // Deserialize Header (Magic Number and Version)
 SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer) {
     if (!deserializer) {
@@ -6679,7 +6662,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer dese
 
     // Deserialize Magic Number
     SparkSize magic;
-    SparkResult res = SparkGetDeserializedData(deserializer, &magic, sizeof(SparkSize));
+    SparkResult res = SparkDeserializeData(deserializer, &magic, sizeof(SparkSize));
     if (res != SPARK_SUCCESS) {
         return res;
     }
@@ -6692,7 +6675,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer dese
 
     // Deserialize Version
     SparkSize version;
-    res = SparkGetDeserializedData(deserializer, &version, sizeof(SparkSize));
+    res = SparkDeserializeData(deserializer, &version, sizeof(SparkSize));
     if (res != SPARK_SUCCESS) {
         return res;
     }
@@ -6702,34 +6685,6 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer dese
         return SPARK_ERROR_INVALID;
     }
     SparkFree(version);
-
-    return SPARK_SUCCESS;
-}
-
-// Deserialize Data with Allocation
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedDataA(SparkFileDeserializer deserializer, SparkConstBuffer* data, SparkSize* size) {
-    if (!deserializer || !deserializer->data  || !size || !data) {
-        return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
-    }
-
-    // Deserialize the size first
-    SparkResult res = SparkDeserializeRawData(deserializer, size, sizeof(SparkSize));
-    if (res != SPARK_SUCCESS) {
-        return res;
-    }
-
-    // Allocate memory for the actual data
-    *data = SparkAllocate(*size);
-    if (!*data) {
-        return SPARK_ERROR_OUT_OF_MEMORY;
-    }
-
-    // Deserialize the actual data
-    res = SparkDeserializeRawData(deserializer, *data, *size);
-    if (res != SPARK_SUCCESS) {
-        SparkFree(*data);
-        return res;
-    }
 
     return SPARK_SUCCESS;
 }
@@ -6749,8 +6704,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer des
     return SPARK_SUCCESS;
 }
 
-
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedStringA(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
+SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
     if (!deserializer || !deserializer->data || !size || !data) {
         return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
     }

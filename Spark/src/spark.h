@@ -278,18 +278,29 @@
 #endif
 
 // Default serialization function when size is not provided
-#define SparkSerializeDefault(serializer, data) \
+// Helper Macros
+#define SparkSerializeString(serializer, data) \
+    SparkSerializeData(serializer, (const char*)(unsigned long long)data, strlen((const char*)(unsigned long long)data))
+
+#define SparkSerializeTrivialType(serializer, data) \
     SparkSerializeTrivial(serializer, &(data), sizeof(data))
 
+// SparkSerializeDefault Macro Using _Generic
+#define SparkSerializeDefault(serializer, data) \
+    _Generic((data), \
+        const char* : SparkSerializeString(serializer, data), \
+		char* : SparkSerializeString(serializer, data), \
+        default: SparkSerializeTrivialType(serializer, data) \
+    )
 
-// Serialization function when size is provided
+// Serialization Function When Size is Provided
 #define SparkSerializeWithSize(serializer, data, size) \
     SparkSerializeData(serializer, data, size)
 
-// Helper macro to select the appropriate function based on the number of arguments
+// Helper Macro to Select the Appropriate Serialization Function Based on Argument Count
 #define GET_SPARKSERIALIZE(_1, _2, _3, NAME, ...) NAME
 
-// Main SparkSerialize macro
+// Main SparkSerialize Macro
 #define SparkSerialize(...) \
     GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize, SparkSerializeDefault)(__VA_ARGS__)
 
@@ -297,7 +308,7 @@
 	SparkDeserializeTrivial(deserializer, &(data), sizeof(data))
 
 #define SparkDeserializeWithSize(deserializer, data, size) \
-	SparkDeserializeDataA(deserializer, data, size)
+	SparkDeserializeData(deserializer, &(data), &(size))
 
 #define GET_SPARKDESERIALIZE(_1, _2, _3, NAME, ...) NAME
 
@@ -2276,11 +2287,10 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializ
 SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer);
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedDataA(SparkFileDeserializer deserializer, SparkConstBuffer* buffer, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkGetDeserializedStringA(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 
 SPARKAPI SparkScene SPARKCALL SparkCreateScene();
@@ -2798,6 +2808,19 @@ typedef SparkApplication Application;
 
 #define CreateRenderer SparkCreateRenderer
 #define DestroyRenderer SparkDestroyRenderer
+
+#define CreateFileSerializer SparkCreateFileSerializer
+#define DestroyFileSerializer SparkDestroyFileSerializer
+#define SerializeRawData SparkSerializeRawData
+#define SerializeData SparkSerializeData
+#define SerializeHeader SparkSerializeHeader
+#define CreateFileDeserializer SparkCreateFileDeserializer
+#define DestroyFileDeserializer SparkDestroyFileDeserializer
+#define DeserializeRawData SparkDeserializeRawData
+#define DeserializeData SparkDeserializeData
+#define DeserializeHeader SparkDeserializeHeader
+#define DeserializeStringA SparkDeserializeString
+#define DeserializeTrivial SparkDeserializeTrivial
 
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication

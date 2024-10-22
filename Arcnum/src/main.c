@@ -36,10 +36,9 @@ void TestSerialization(Application app) {
 
     SparkFileSerializer serializer = SparkCreateFileSerializer("test.bin");
 
-    SparkSerialize(serializer, "Hello, World!", strlen("Hello, World!"));
-    SparkSerialize(serializer, "Test, string!", strlen("Test, string!"));
-
-    SparkSerialize(serializer, test.name, strlen(test.name));
+    SparkSerialize(serializer, "Hello, World!");
+    SparkSerialize(serializer, "Test, string!");
+    SparkSerialize(serializer, test.name);
     SparkSerialize(serializer, test.age);
 	SparkSerialize(serializer, test.id);
 
@@ -61,19 +60,19 @@ void TestDeserialization(Application app) {
     size_t ages;
     size_t ids;
 
-    SparkGetDeserializedStringA(deserializer, &hello, &hellos);
-    SparkGetDeserializedStringA(deserializer, &test, &tests);
+    SparkDeserializeString(deserializer, &hello, &hellos);
+    SparkDeserializeString(deserializer, &test, &tests);
+    SparkDeserializeString(deserializer, &testt.name, &names);
 
-    SparkGetDeserializedStringA(deserializer, &testt.name, &names);
     SparkDeserialize(deserializer, testt.age);
-	SparkDeserialize(deserializer, testt.id);
+    SparkDeserialize(deserializer, testt.id);
 
     SPARK_LOG_DEBUG("First string: %s, Size: %d", hello, hellos);
     SPARK_LOG_DEBUG("Second string: %s, Size: %d", test, tests);
 
 	SPARK_LOG_DEBUG("Name: %s, Size: %d", testt.name, names);
-	SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, 4);
-	SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, 8);
+	SPARK_LOG_DEBUG("Age: %lf, Size: %d", testt.age, sizeof(testt.age));
+	SPARK_LOG_DEBUG("ID: %d, Size: %d", testt.id, sizeof(testt.id));
 
     SparkDestroyFileDeserializer(deserializer);
 
@@ -90,8 +89,6 @@ i32 main() {
         ),
         8
     );
-
-
 
     SparkServer server = SparkCreateServer(app->thread_pool, 12345, server_receive_callback);
     if (!server) {
