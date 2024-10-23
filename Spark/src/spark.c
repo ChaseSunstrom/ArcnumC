@@ -10,6 +10,16 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#define SparkAtomicIncrement(data) InterlockedIncrement((LONG volatile*)(data))
+#define SparkAtomicDecrement(data) InterlockedDecrement((LONG volatile*)(data))
+#elif defined(__clang__) || defined(__GNUC__)
+#define SparkAtomicIncrement(data) __sync_add_and_fetch((data), 1)
+#define SparkAtomicDecrement(data) __sync_sub_and_fetch((data), 1)
+#endif
+
+
 #pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
@@ -4348,7 +4358,6 @@ SPARKAPI SparkVoid SparkWaitThreadPool(SparkThreadPool pool) {
 	SparkUnlockMutex(pool->pending_task_mutex);
 }
 
-
 SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 	SparkThreadFunction function,
 	SparkHandle arg,
@@ -6342,6 +6351,7 @@ SPARKAPI SparkResult SparkAddEventListener(
 		return SPARK_ERROR_INVALID_STATE;
 	event_handler_function->event_type = event_type;
 	event_handler_function->function = function;
+	event_handler_function->thread_settings = thread_settings;
 	SparkPushBackVector(event_handler->event_functions,
 		(SparkHandle)event_handler_function);
 	return SPARK_SUCCESS;
@@ -6477,13 +6487,49 @@ SPARKAPI SparkResult SparkRemoveQueryEventListener(
 	return SPARK_ERROR_NOT_FOUND;
 }
 
+typedef struct SparkEventTaskT {
+	SparkApplication app;
+	SparkApplicationEventFunction function;
+	SparkEvent event;
+} *SparkEventTask;
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkEventTask(SparkHandle task) {
+	SparkEventTask task_arg = task;
+
+	SparkLockMutex(task_arg->app->mutex);
+	task_arg->function(task_arg->app, task_arg->event);
+	SparkUnlockMutex(task_arg->app->mutex);
+
+	if (SparkAtomicDecrement(task_arg->event.ref_count) == 0) {
+		SparkDestroyEvent(task_arg->event);
+	}
+
+
+	SparkFree(task_arg);
+}
+
 SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 	SparkEvent event) {
 	for (SparkSize i = 0; i < event_handler->event_functions->size; i++) {
 		SparkEventHandlerFunction function =
 			SparkGetElementVector(event_handler->event_functions, i);
 		if (function->event_type & event.type) {
-			function->function(event_handler->application, event);
+			if (function->thread_settings.first) {
+				// Increment ref_count for the asynchronous handler
+				SparkAtomicIncrement(event.ref_count);
+				SparkEventTask task = SparkAllocate(sizeof(struct SparkEventTaskT));
+				task->app = event_handler->application;
+				task->function = function->function;
+				task->event = event;
+				SparkAddTaskThreadPool(task->app->thread_pool,
+					(SparkThreadFunction)__SparkEventTask,
+					task,
+					function->thread_settings.second);
+			}
+			else {
+				// Synchronous handler; no need to adjust ref_count
+				function->function(event_handler->application, event);
+			}
 		}
 	}
 
@@ -6520,27 +6566,50 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 
 	SparkDestroyVector(component_keys);
 
+	if (SparkAtomicDecrement(event.ref_count) == 0) {
+		SparkDestroyEvent(event);
+	}
+
 	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
 	SparkHandle event_data,
 	SparkFreeFunction destructor) {
-	return (SparkEvent) { event_type, event_data, SparkGetTime(), destructor };
+	SparkEvent event;
+	event.type = event_type;
+	event.data = event_data;
+	event.timestamp = SparkGetTime();
+	event.destructor = destructor;
+	event.ref_count = SparkAllocate(sizeof(SparkSize));
+	*event.ref_count = 1;
+	return event;
 }
 
 SPARKAPI SparkEvent SparkCreateEventT(SparkEventType event_type,
 	SparkHandle event_data,
 	SparkFreeFunction destructor,
 	SparkConstString time_stamp) {
-	return (SparkEvent) { event_type, event_data, time_stamp, destructor };
+	SparkEvent event;
+	event.type = event_type;
+	event.data = event_data;
+	event.timestamp = time_stamp;
+	event.destructor = destructor;
+	event.ref_count = SparkAllocate(sizeof(SparkSize));
+	*event.ref_count = 1;
+	return event;
 }
 
 SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
-	if (event.destructor)
+	if (event.destructor && event.data) {
 		event.destructor(event.data);
+	}
+	if (event.ref_count) {
+		SparkFree(event.ref_count);
+	}
 	return SPARK_SUCCESS;
 }
+
 
 #pragma endregion
 
@@ -7006,9 +7075,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 		event_data->key = key;
 		event_data->repeat = SPARK_FALSE;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
-			(SparkHandle)event_data, SPARK_NULL);
+			(SparkHandle)event_data, SparkFree);
 		SparkDispatchEvent(data->event_handler, event);
-		SparkFree(event_data);
 		break;
 	}
 	case GLFW_RELEASE: {
@@ -7016,9 +7084,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 			SparkAllocate(sizeof(struct SparkEventDataKeyReleasedT));
 		event_data->key = key;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_RELEASED,
-			(SparkHandle)event_data, SPARK_NULL);
+			(SparkHandle)event_data, SparkFree);
 		SparkDispatchEvent(data->event_handler, event);
-		SparkFree(event_data);
 		break;
 	}
 	case GLFW_REPEAT: {
@@ -7027,9 +7094,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 		event_data->key = key;
 		event_data->repeat = SPARK_TRUE;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
-			(SparkHandle)event_data, SPARK_NULL);
+			(SparkHandle)event_data, SparkFree);
 		SparkDispatchEvent(data->event_handler, event);
-		SparkFree(event_data);
 		break;
 	}
 	}
@@ -7045,9 +7111,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
 	event_data->xpos = xpos;
 	event_data->ypos = ypos;
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_MOVED,
-		(SparkHandle)event_data, SPARK_NULL);
+		(SparkHandle)event_data, SparkFree);
 	SparkDispatchEvent(data->event_handler, event);
-	SparkFree(event_data);
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
@@ -7062,9 +7127,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 			SparkAllocate(sizeof(struct SparkEventDataMouseButtonPressedT));
 		event_data->button = button;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_PRESSED,
-			(SparkHandle)event_data, SPARK_NULL);
+			(SparkHandle)event_data, SparkFree);
 		SparkDispatchEvent(data->event_handler, event);
-		SparkFree(event_data);
 		break;
 	}
 	case GLFW_RELEASE: {
@@ -7072,9 +7136,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 			SparkAllocate(sizeof(struct SparkEventDataMouseButtonReleasedT));
 		event_data->button = button;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_RELEASED,
-			(SparkHandle)event_data, SPARK_NULL);
+			(SparkHandle)event_data, SparkFree);
 		SparkDispatchEvent(data->event_handler, event);
-		SparkFree(event_data);
 		break;
 	}
 	}
@@ -7090,9 +7153,8 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
 	event_data->x = xoffset;
 	event_data->y = yoffset;
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_SCROLLED,
-		(SparkHandle)event_data, SPARK_NULL);
+		(SparkHandle)event_data, SparkFree);
 	SparkDispatchEvent(data->event_handler, event);
-	SparkFree(event_data);
 }
 
 SPARKAPI SPARKSTATIC SparkVoid
@@ -7104,9 +7166,8 @@ __GlfwSetFramebufferSizeCallback(GLFWwindow* window, SparkI32 width, SparkI32 he
 	event_data->width = width;
 	event_data->height = height;
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_WINDOW_RESIZE,
-		(SparkHandle)event_data, SPARK_NULL);
+		(SparkHandle)event_data, SparkFree);
 	SparkDispatchEvent(data->event_handler, event);
-	SparkFree(event_data);
 }
 
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
@@ -7230,13 +7291,57 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkFree(app);
 }
 
+
+typedef struct SparkQueryTaskArgT {
+	SparkApplication app;
+	SparkVector components;
+	SparkApplicationQueryFunction function;
+} *SparkQueryTaskArg;
+
+typedef struct SparkApplicationTaskArgT {
+	SparkApplication app;
+	SparkApplicationUpdateFunction function;
+} *SparkApplicationTaskArg;
+
+SPARKAPI SPARKSTATIC SparkHandle __SparkQueryTaskFunction(SparkHandle arg) {
+	SparkQueryTaskArg task_arg = (SparkQueryTaskArg)arg;
+
+	// Execute the query function
+	task_arg->function(task_arg->app, task_arg->components);
+
+	SparkDestroyVector(task_arg->components);
+	SparkFree(task_arg);
+
+	return NULL;
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateTaskFunction(SparkHandle task) {
+	SparkApplicationTaskArg task_arg = task;
+
+	SparkLockMutex(task_arg->app->mutex);
+
+	task_arg->function(task_arg->app);
+
+	SparkUnlockMutex(task_arg->app->mutex);
+
+	SparkFree(task_arg);
+}
+
 SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 	for (SparkSize i = 0; i < app->start_functions->size; i++) {
 		SparkStartHandlerFunction function =
 			SparkGetElementVector(app->start_functions, i);
 
 		if (function->thread_settings.first) {
-			SparkAddTaskThreadPool(app->thread_pool, function->function, app, function->thread_settings.second);
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			task_arg->app = app;
+			task_arg->function = function->function;
+
+			SparkAddTaskThreadPool(
+				app->thread_pool,
+				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				task_arg,
+				function->thread_settings.second);
 		}
 		else {
 			function->function(app);
@@ -7256,7 +7361,15 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 		SparkStopHandlerFunction function =
 			SparkGetElementVector(app->stop_functions, i);		
 		if (function->thread_settings.first) {
-			SparkAddTaskThreadPool(app->thread_pool, function->function, app, function->thread_settings.second);
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			task_arg->app = app;
+			task_arg->function = function->function;
+
+			SparkAddTaskThreadPool(
+				app->thread_pool,
+				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				task_arg,
+				function->thread_settings.second);
 		}
 		else {
 			function->function(app);
@@ -7266,37 +7379,22 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	return SPARK_SUCCESS;
 }
 
-typedef struct SparkQueryTaskArgT {
-	SparkApplication app;
-	SparkVector components;
-	SparkApplicationQueryFunction function;
-	SparkMutex mutex;
-} *SparkQueryTaskArg;
-
-SPARKAPI SPARKSTATIC SparkHandle __SparkQueryTaskFunction(SparkHandle arg) {
-	SparkQueryTaskArg task_arg = (SparkQueryTaskArg)arg;
-
-	// Execute the query function
-	task_arg->function(task_arg->app, task_arg->components);
-
-	SparkDestroyVector(task_arg->components);
-	SparkFree(task_arg);
-
-	return NULL;
-}
-
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	// Run update functions
 	for (SparkSize i = 0; i < app->update_functions->size; i++) {
 		SparkUpdateHandlerFunction function =
 			SparkGetElementVector(app->update_functions, i);
-		if (function->thread_settings.first == SPARK_TRUE) {
+		if (function->thread_settings.first) {
 			// Add to thread pool
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			task_arg->app = app;
+			task_arg->function = function->function;
+
 			SparkAddTaskThreadPool(
 				app->thread_pool,
-				(SparkThreadFunction)function->function,
-				app,
+				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				task_arg,
 				function->thread_settings.second);
 		}
 		else {

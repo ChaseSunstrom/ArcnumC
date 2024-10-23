@@ -1096,6 +1096,8 @@ typedef struct SparkEventT {
 	SparkHandle data;
 	SparkConstString timestamp;
 	SparkFreeFunction destructor;
+	/* Atomic counter */
+	volatile SparkSize* ref_count;
 } SparkEvent;
 
 typedef struct SparkEventHandlerFunctionT {
@@ -1131,8 +1133,6 @@ typedef struct SparkStopHandlerFunctionT {
 	SparkApplicationStopFunction function;
 	SparkPair thread_settings;
 } *SparkStopHandlerFunction;
-
-
 
 typedef struct SparkEventHandlerT {
 	/* Vector <SparkEventHandlerFunction> */
@@ -1286,7 +1286,6 @@ typedef struct SparkTextT {
 	SparkColor color;
 	SparkVec2 position;
 } SparkText;
-
 
 /* Packet Structure */
 typedef struct SparkPacketT {

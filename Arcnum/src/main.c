@@ -99,7 +99,7 @@ void TestGetPairs(Application app) {
 
 void EventHandlerThing(Application app, Event event) {
 	EventDataKeyPressed key = event.data;
-	SPARK_LOG_DEBUG("Key pressed: %s", KeyToString(key->key));
+	//SPARK_LOG_DEBUG("Key pressed: %s", KeyToString(key->key));
 }
 
 void CreateEntities(Application app) {
@@ -145,8 +145,9 @@ i32 main() {
     AddStartFunctionApplication(app, TestSerialization, (Pair) { false, true });
     AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });
 	AddStartFunctionApplication(app, CreateEntities, (Pair) { false, true });
-    AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing, (Pair) { true, false });
-    AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
+    for (size_t i = 0; i < 100000; i++) 
+        AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing, (Pair) { true, false });
+    //AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 
     StartApplication(app);
 
