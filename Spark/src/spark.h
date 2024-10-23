@@ -279,6 +279,9 @@
 
 // Default serialization function when size is not provided
 // Helper Macros
+
+#ifdef __STDC_VERSION__ >= 201112L
+
 #define SparkSerializeString(serializer, data) \
     SparkSerializeData(serializer, (const char*)(unsigned long long)data, strlen((const char*)(unsigned long long)data))
 
@@ -321,6 +324,8 @@
 
 #define SparkDeserialize(...) \
 	GET_SPARKDESERIALIZE(__VA_ARGS__, SparkDeserializeWithSize, SparkDeserializeDefault)(__VA_ARGS__)
+
+#endif
 	
 
 /* Capabilities */
@@ -963,6 +968,11 @@ typedef struct SparkAllocatorT {
 	SparkFreeFunction free;
 } *SparkAllocator;
 
+typedef struct SparkPairT {
+	SparkHandle first;
+	SparkHandle second;
+} SparkPair;
+
 typedef struct SparkVectorT {
 	SparkSize size;
 	SparkSize capacity;
@@ -1055,6 +1065,7 @@ typedef struct SparkStackT {
 	SparkBool external_allocator;
 } *SparkStack;
 
+
 typedef struct SparkTaskT {
 	SparkThreadFunction function;
 	SparkHandle arg;
@@ -1062,6 +1073,8 @@ typedef struct SparkTaskT {
 	struct SparkTaskT* next;
 	SparkMutex mutex;
 	SparkCondition cond;
+	/* Wait for this task to finish before continuing the next update frame */
+	SparkBool wait_on_update;
 	SparkI32 is_done;
 } *SparkTaskHandle;
 
@@ -1072,6 +1085,9 @@ typedef struct SparkThreadPoolT {
 	SparkTaskHandle task_queue_tail;
 	SparkMutex mutex;
 	SparkCondition condition;
+	SparkSize pending_task_count;
+	SparkMutex pending_task_mutex;
+	SparkCondition pending_task_cond;
 	SparkI32 stop;
 } *SparkThreadPool;
 
@@ -1085,13 +1101,38 @@ typedef struct SparkEventT {
 typedef struct SparkEventHandlerFunctionT {
 	SparkEventType event_type;
 	SparkApplicationEventFunction function;
+	SparkPair thread_settings;
 } *SparkEventHandlerFunction;
 
 typedef struct SparkQueryEventHandlerFunctionT {
 	SparkEventType event_type;
 	SparkConstString component_type;
 	SparkApplicationQueryEventFunction function;
+	SparkPair thread_settings;
 } *SparkQueryEventHandlerFunction;
+
+typedef struct SparkQueryHandlerFunctionT {
+	SparkConstString component_type;
+	SparkApplicationQueryFunction function;
+	SparkPair thread_settings;
+} *SparkQueryHandlerFunction;
+
+typedef struct SparkUpdateHandlerFunctionT {
+	SparkApplicationUpdateFunction function;
+	SparkPair thread_settings;
+} *SparkUpdateHandlerFunction;
+
+typedef struct SparkStartHandlerFunctionT {
+	SparkApplicationStartFunction function;
+	SparkPair thread_settings;
+} *SparkStartHandlerFunction;
+
+typedef struct SparkStopHandlerFunctionT {
+	SparkApplicationStopFunction function;
+	SparkPair thread_settings;
+} *SparkStopHandlerFunction;
+
+
 
 typedef struct SparkEventHandlerT {
 	/* Vector <SparkEventHandlerFunction> */
@@ -1169,7 +1210,6 @@ typedef struct SparkRendererT {
 	SparkI8 not_implemented;
 } *SparkRenderer;
 
-
 /* Physics-related declarations */
 typedef struct SparkRigidBodyT {
 	SparkVec3 position;
@@ -1196,7 +1236,6 @@ typedef struct SparkColliderT {
 		struct {
 			SparkScalar radius;
 		} sphere;
-		// Other collider-specific structures
 	} data;
 } *SparkCollider;
 
@@ -1690,6 +1729,8 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Step(SparkVec4 edge, SparkVec4 x);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge1,
 	SparkVec4 x);
 
+#ifdef __STDC_VERSION__ >= 201112L
+
 /* Vector addition */
 #define SparkVecAdd(a, b)                                                      \
   _Generic((a),                                                                \
@@ -1965,8 +2006,9 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge
       SparkVec3: SparkVec3SmoothStep,                                          \
       SparkVec4: SparkVec4SmoothStep)(edge0, edge1, x)
 
-#pragma endregion
+#endif
 
+#pragma endregion
 
 /* Returns either a success or failure depending on the error code */
 SPARKAPI SparkResult SPARKCALL SparkCheckSuccess(SparkResult result);
@@ -1995,11 +2037,15 @@ SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(SparkAllocateFunction all
 	SparkFreeFunction free);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocator(SparkAllocator allocator);
 
+SPARKAPI SparkPair* SPARKCALL SparkCreatePair(SparkHandle first, SparkHandle second);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyPair(SparkPair* pair);
+
 SPARKAPI SparkVector SPARKCALL SparkDefaultVector();
 SPARKAPI SparkVector SPARKCALL SparkCreateVector(SparkSize capacity,
 	SparkAllocator allocator,
 	SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyVector(SparkVector vector);
+SPARKAPI SparkVector SPARKCALL SparkCopyVector(SparkVector vector);
 SPARKAPI SparkHandle SPARKCALL SparkGetElementVector(SparkVector vector,
 	SparkIndex index);
 SPARKAPI SparkResult SPARKCALL SparkPushBackVector(SparkVector vector,
@@ -2008,6 +2054,8 @@ SPARKAPI SparkResult SPARKCALL SparkPopBackVector(SparkVector vector);
 SPARKAPI SparkResult SPARKCALL SparkInsertVector(SparkVector vector, SparkIndex index,
 	SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkRemoveVector(SparkVector vector, SparkIndex index);
+SPARKAPI SparkResult SPARKCALL SparkRemoveNoShiftVector(SparkVector vector, SparkSize index);
+SPARKAPI SparkResult SPARKCALL SparkCompressVector(SparkVector vector);
 SPARKAPI SparkResult SPARKCALL SparkEraseVector(SparkVector vector, SparkIndex start,
 	SparkIndex end);
 SPARKAPI SparkResult SPARKCALL SparkSetVector(SparkVector vector, SparkIndex index,
@@ -2060,6 +2108,7 @@ SPARKAPI SparkResult SPARKCALL SparkRemoveHashMap(SparkHashMap hashmap, SparkHan
 	SparkSize key_size);
 SPARKAPI SparkVector SPARKCALL SparkGetAllKeysHashMap(SparkHashMap hashmap);
 SPARKAPI SparkVector SPARKCALL SparkGetAllValuesHashMap(SparkHashMap hashmap);
+SPARKAPI SparkVector SPARKCALL SparkGetAllPairsHashMap(SparkHashMap hasmap);
 
 SPARKAPI SparkSet SPARKCALL SparkDefaultSet();
 SPARKAPI SparkSet SPARKCALL SparkCreateSet(SparkSize capacity, SparkAllocator allocator,
@@ -2267,8 +2316,6 @@ SPARKAPI SparkResult SPARKCALL SparkBlendFunc(SparkBlendMode sfactor,
 SPARKAPI SparkError SPARKCALL SparkGetError();
 SPARKAPI SparkConstString SPARKCALL SparkGetErrorString(SparkError error);
 
-
-
 SPARKAPI SparkResult SPARKCALL SparkAddRigidBody(SparkEcs ecs, SparkEntity entity, SparkRigidBody rigidBody);
 SPARKAPI SparkResult SPARKCALL SparkAddCollider(SparkEcs ecs, SparkEntity entity, SparkCollider collider);
 
@@ -2373,14 +2420,14 @@ SPARKAPI SparkEventHandler SPARKCALL SparkCreateEventHandler(
 SPARKAPI SparkResult SPARKCALL SparkDestroyEventHandler(SparkEventHandler event_handler);
 SPARKAPI SparkResult SPARKCALL SparkAddEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkApplicationEventFunction function);
+	SparkApplicationEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkRemoveEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
 	SparkApplicationEventFunction function);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
 	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function);
+	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkRemoveQueryEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
 	SparkConstString component_type,
@@ -2408,6 +2455,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyRenderer(SparkRenderer renderer);
 
 SPARKAPI SparkThreadPool SPARKCALL SparkCreateThreadPool(SparkSize thread_count);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyThreadPool(SparkThreadPool pool);
+SPARKAPI SparkVoid SPARKCALL SparkWaitThreadPool(SparkThreadPool pool);
 SPARKAPI SparkTaskHandle SPARKCALL SparkAddTaskThreadPool(SparkThreadPool pool,
 	SparkThreadFunction function,
 	SparkHandle arg);
@@ -2437,21 +2485,21 @@ SPARKAPI SparkResult SPARKCALL SparkUpdateApplication(SparkApplication app);
 SPARKAPI SparkResult SPARKCALL SparkDispatchEventApplication(SparkApplication app,
 	SparkEvent event);
 SPARKAPI SparkResult SPARKCALL SparkAddStartFunctionApplication(
-	SparkApplication app, SparkApplicationStartFunction function);
+	SparkApplication app, SparkApplicationStartFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddUpdateFunctionApplication(
-	SparkApplication app, SparkApplicationUpdateFunction function);
+	SparkApplication app, SparkApplicationUpdateFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddStopFunctionApplication(
-	SparkApplication app, SparkApplicationStopFunction function);
+	SparkApplication app, SparkApplicationStopFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddEventFunctionApplication(
 	SparkApplication app, SparkEventType event_type,
-	SparkApplicationEventFunction function);
+	SparkApplicationEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryFunctionApplication(
 	SparkApplication app, SparkConstString component_type,
-	SparkApplicationQueryFunction function);
+	SparkApplicationQueryFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventFunctionApplication(
 	SparkApplication app, SparkEventType event_type,
 	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function);
+	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
 
 #pragma endregion
@@ -2636,6 +2684,7 @@ typedef SparkSet Set;
 typedef SparkHashSet HashSet;
 typedef SparkQueue Queue;
 typedef SparkStack Stack;
+typedef SparkPair Pair;
 
 typedef SparkEntity Entity;
 typedef SparkComponentArray ComponentArray;
@@ -2725,6 +2774,7 @@ typedef SparkApplication Application;
 #define RemoveVector SparkRemoveVector
 #define EraseVector SparkEraseVector
 #define SetVector SparkSetVector
+#define CopyVector SparkCopyVector
 #define ResizeVector SparkResizeVector
 #define ClearVector SparkClearVector
 #define PushBackBufferVector SparkPushBackBufferVector
@@ -2755,6 +2805,9 @@ typedef SparkApplication Application;
 #define GetElementHashMap SparkGetElementHashMap
 #define InsertHashMap SparkInsertHashMap
 #define RemoveHashMap SparkRemoveHashMap
+#define GetAllKeysHashMap SparkGetAllKeysHashMap
+#define GetAllValuesHashMap SparkGetAllValuesHashMap
+#define GetAllPairsHashMap SparkGetAllPairsHashMap
 
 #define DefaultSet SparkDefaultSet
 #define CreateSet SparkCreateSet

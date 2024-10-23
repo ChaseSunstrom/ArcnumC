@@ -1,14 +1,13 @@
 /* main.c */
 #define SPARK_DEFINE_ALL_ALIASES
 #include "spark.h"
-
+#include <stdbool.h>
 
 typedef struct {
     char* name;
     f32 age;
     i64 id;
 } TestThing;
-
 
 /* Server receive callback */
 void server_receive_callback(Server server, ClientConnection client, Envelope* envelope) {
@@ -66,7 +65,6 @@ void TestSerialization(Application app) {
     DestroyFileSerializer(serializer);
 }
 
-
 void TestDeserialization(Application app) {
     FileDeserializer deserializer = CreateFileDeserializer("test.bin");
     TestThing test = DeserializeTestThing(deserializer);
@@ -79,6 +77,53 @@ void TestDeserialization(Application app) {
 	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
 		printf("Failed to send data to server.\n");
 	}
+}
+
+void TestGetPairs(Application app) {
+    HashMap hmap = DefaultHashMap();
+
+	InsertHashMap(hmap, "Hello", strlen("Hello"), "World");
+	InsertHashMap(hmap, "Goodbye", strlen("Goodbye"), "World");
+    InsertHashMap(hmap, "Test", strlen("Test"), "World");
+
+    
+    Vector pairs = GetAllPairsHashMap(hmap);
+     
+	for (u32 i = 0; i < pairs->size; i++) {
+		Pair* pair = pairs->elements[i];
+		printf("Key: %s, Value: %s\n", pair->first, pair->second);
+	}
+
+	DestroyHashMap(hmap);
+	DestroyVector(pairs);
+}
+
+void EventHandlerThing(Application app, Event event) {
+	EventDataKeyPressed key = event.data;
+	SPARK_LOG_DEBUG("Key pressed: %s", KeyToString(key->key));
+}
+
+void CreateEntities(Application app) {
+    for (size_t i = 0; i < 10000; i++) {
+        Entity e = CreateEntity(app->ecs);
+        TestThing* data = SparkAllocate(sizeof(TestThing));
+		data->name = "Hello";
+		data->age = 20.0f;
+		data->id = 1234567890;
+        AddComponent(app->ecs, e, CreateComponent(SPARK_TRANSFORM_COMPONENT, "Transform", data, SparkFree));
+    }
+}
+
+void QueryThing(Application app) {
+    SparkVector components = SparkGetAllComponentsByType(app->ecs, SPARK_TRANSFORM_COMPONENT);
+    for (u32 i = 0; i < components->size; i++) {
+        Component component = components->elements[i];
+        TestThing* test = component->data;
+        SPARK_LOG_DEBUG("Name: %s", test->name);
+        SPARK_LOG_DEBUG("Age: %f", test->age);
+        SPARK_LOG_DEBUG("ID: %lld", test->id);
+    }
+    SparkDestroyVector(components);
 }
 
 i32 main() {
@@ -94,12 +139,19 @@ i32 main() {
 
     client = CreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
 
-    StartServer(server);    
+    StartServer(server);
     ConnectClient(client);
 
-    AddStartFunctionApplication(app, TestSerialization);
-    AddStartFunctionApplication(app, TestDeserialization);
-   // AddUpdateFunctionApplication(app, update_send);
+    AddStartFunctionApplication(app, TestGetPairs, (Pair){true, false});
+    AddStartFunctionApplication(app, TestSerialization, (Pair) { false, true });
+    AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });
+	AddStartFunctionApplication(app, CreateEntities, (Pair) { false, true });
+    AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing, (Pair) { true, false });
+
+    for (SparkSize i = 0; i < 10000; i++)
+        AddStartFunctionApplication(app, QueryThing, (SparkPair) { true, false });
+
+    //AddUpdateFunctionApplication(app, update_send);
 
     StartApplication(app);
 
