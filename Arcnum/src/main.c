@@ -22,7 +22,7 @@ void server_receive_callback(Server server, ClientConnection client, Envelope* e
     /* Echo the data back to the client */
     SparkBroadcast(server, envelope);
 
-    Free(test->name);
+    //Free(test->name);
 }
 
 /* Client receive callback */
@@ -35,11 +35,6 @@ static Client client = NULL;
 
 static Envelope envelope;
 
-void update_send(Application app) {
-	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
-		printf("Failed to send data to server.\n");
-	}
-}
 
 void SerializeTestThing(FileSerializer serializer, TestThing test) {
     Serialize(serializer, test.name);
@@ -65,18 +60,22 @@ void TestSerialization(Application app) {
     DestroyFileSerializer(serializer);
 }
 
+static TestThing test;
+
 void TestDeserialization(Application app) {
     FileDeserializer deserializer = CreateFileDeserializer("test.bin");
-    TestThing test = DeserializeTestThing(deserializer);
+    test = DeserializeTestThing(deserializer);
     DestroyFileDeserializer(deserializer);
+}
 
-	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
-	envelope.packet.size = sizeof(TestThing);
-	envelope.packet.data = (SparkBuffer)&test;
 
-	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
-		printf("Failed to send data to server.\n");
-	}
+void update_send(Application app) {
+    envelope.type = SPARK_ENVELOPE_TYPE_DATA;
+    envelope.packet.size = sizeof(TestThing);
+    envelope.packet.data = (SparkBuffer)&test;
+    if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
+        printf("Failed to send data to server.\n");
+    }
 }
 
 void TestGetPairs(Application app) {
@@ -147,11 +146,7 @@ i32 main() {
     AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });
 	AddStartFunctionApplication(app, CreateEntities, (Pair) { false, true });
     AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing, (Pair) { true, false });
-
-    for (SparkSize i = 0; i < 10000; i++)
-        AddStartFunctionApplication(app, QueryThing, (SparkPair) { true, false });
-
-    //AddUpdateFunctionApplication(app, update_send);
+    AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 
     StartApplication(app);
 
