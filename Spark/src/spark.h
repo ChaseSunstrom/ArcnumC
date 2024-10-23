@@ -1371,6 +1371,7 @@ typedef struct SparkApplicationT {
 	/* Vector <SparkApplicationQueryEventFunction> */
 	SparkVector query_event_functions;
 	SparkThreadPool thread_pool;
+	SparkMutex mutex;
 	SparkF32 delta_time;
 } *SparkApplication;
 

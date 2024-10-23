@@ -4202,26 +4202,26 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #pragma region THREAD
 
 #ifdef _WIN32
-#define SparkMutexInit(mutex) InitializeCriticalSection(&(mutex))
-#define SparkMutexLock(mutex) EnterCriticalSection(&(mutex))
-#define SparkMutexUnlock(mutex) LeaveCriticalSection(&(mutex))
-#define SparkMutexDestroy(mutex) DeleteCriticalSection(&(mutex))
-#define SparkConditionInit(cond) InitializeConditionVariable(&(cond))
-#define SparkConditionWait(cond, mutex)                                        \
+#define SparkInitMutex(mutex) InitializeCriticalSection(&(mutex))
+#define SparkLockMutex(mutex) EnterCriticalSection(&(mutex))
+#define SparkUnlockMutex(mutex) LeaveCriticalSection(&(mutex))
+#define SparkDestroyMutex(mutex) DeleteCriticalSection(&(mutex))
+#define SparkInitCondition(cond) InitializeConditionVariable(&(cond))
+#define SparkWaitCondition(cond, mutex)                                        \
   SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
-#define SparkConditionSignal(cond) WakeConditionVariable(&(cond))
-#define SparkConditionDestroy(cond) /* No-op */
-#define SparkConditionBroadcast(cond) WakeAllConditionVariable(&(cond))
+#define SparkSignalCondition(cond) WakeConditionVariable(&(cond))
+#define SparkDestroyCondition(cond) /* No-op */
+#define SparkBroadcastCondition(cond) WakeAllConditionVariable(&(cond))
 #else
-#define SparkMutexInit(mutex) pthread_mutex_init(&(mutex), NULL)
-#define SparkMutexLock(mutex) pthread_mutex_lock(&(mutex))
-#define SparkMutexUnlock(mutex) pthread_mutex_unlock(&(mutex))
-#define SparkMutexDestroy(mutex) pthread_mutex_destroy(&(mutex))
-#define SparkConditionInit(cond) pthread_cond_init(&(cond), NULL)
-#define SparkConditionWait(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
-#define SparkConditionSignal(cond) pthread_cond_signal(&(cond))
-#define SparkConditionDestroy(cond) pthread_cond_destroy(&(cond))
-#define SparkConditionBroadcast(cond) pthread_cond_broadcast(&(cond))
+#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), NULL)
+#define SparkLockMutex(mutex) pthread_mutex_lock(&(mutex))
+#define SparkUnlockMutex(mutex) pthread_mutex_unlock(&(mutex))
+#define SparkDestroyMutex(mutex) pthread_mutex_destroy(&(mutex))
+#define SparkInitCondition(cond) pthread_cond_init(&(cond), NULL)
+#define SparkWaitCondition(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
+#define SparkSignalCondition(cond) pthread_cond_signal(&(cond))
+#define SparkDestroyCondition(cond) pthread_cond_destroy(&(cond))
+#define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
 #endif
 
 SPARKAPI SPARKSTATIC void* __SparkThreadPoolWorker(void* arg) {
@@ -4229,14 +4229,14 @@ SPARKAPI SPARKSTATIC void* __SparkThreadPoolWorker(void* arg) {
 	SparkTaskHandle task;
 
 	while (SPARK_TRUE) {
-		SparkMutexLock(pool->mutex);
+		SparkLockMutex(pool->mutex);
 
 		while (pool->task_queue_head == NULL && !pool->stop) {
-			SparkConditionWait(pool->condition, pool->mutex);
+			SparkWaitCondition(pool->condition, pool->mutex);
 		}
 
 		if (pool->stop && pool->task_queue_head == NULL) {
-			SparkMutexUnlock(pool->mutex);
+			SparkUnlockMutex(pool->mutex);
 			break;
 		}
 
@@ -4248,7 +4248,7 @@ SPARKAPI SPARKSTATIC void* __SparkThreadPoolWorker(void* arg) {
 			}
 		}
 
-		SparkMutexUnlock(pool->mutex);
+		SparkUnlockMutex(pool->mutex);
 
 		if (task != NULL) {
 			// Perform the task
@@ -4256,12 +4256,12 @@ SPARKAPI SPARKSTATIC void* __SparkThreadPoolWorker(void* arg) {
 
 			if (task->wait_on_update) {
 				// Decrement pending task count and signal if zero
-				SparkMutexLock(pool->pending_task_mutex);
+				SparkLockMutex(pool->pending_task_mutex);
 				pool->pending_task_count--;
 				if (pool->pending_task_count == 0) {
-					SparkConditionSignal(pool->pending_task_cond);
+					SparkSignalCondition(pool->pending_task_cond);
 				}
-				SparkMutexUnlock(pool->pending_task_mutex);
+				SparkUnlockMutex(pool->pending_task_mutex);
 
 				// Destroy the task
 				SparkTaskDestroy(task);
@@ -4292,11 +4292,11 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 	pool->pending_task_count = 0;
 	
 
-	SparkMutexInit(pool->mutex);
-	SparkConditionInit(pool->condition);
+	SparkInitMutex(pool->mutex);
+	SparkInitCondition(pool->condition);
 
-	SparkMutexInit(pool->pending_task_mutex);
-	SparkConditionInit(pool->pending_task_cond);
+	SparkInitMutex(pool->pending_task_mutex);
+	SparkInitCondition(pool->pending_task_cond);
 
 
 	for (SparkSize i = 0; i < thread_count; ++i) {
@@ -4316,10 +4316,10 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 		return;
 
 	/* Stop all threads */
-	SparkMutexLock(pool->mutex);
+	SparkLockMutex(pool->mutex);
 	pool->stop = 1;
-	SparkConditionBroadcast(pool->condition);
-	SparkMutexUnlock(pool->mutex);
+	SparkBroadcastCondition(pool->condition);
+	SparkUnlockMutex(pool->mutex);
 
 	/* Join all threads */
 	for (SparkSize i = 0; i < pool->thread_count; ++i) {
@@ -4332,20 +4332,20 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 	}
 
 	/* Clean up */
-	SparkMutexDestroy(pool->mutex);
-	SparkMutexDestroy(pool->pending_task_mutex);
-	SparkConditionDestroy(pool->condition);
-	SparkConditionDestroy(pool->pending_task_cond);
+	SparkDestroyMutex(pool->mutex);
+	SparkDestroyMutex(pool->pending_task_mutex);
+	SparkDestroyCondition(pool->condition);
+	SparkDestroyCondition(pool->pending_task_cond);
 	SparkFree(pool->threads);
 	SparkFree(pool);
 }
 
 SPARKAPI SparkVoid SparkWaitThreadPool(SparkThreadPool pool) {
-	SparkMutexLock(pool->pending_task_mutex);
+	SparkLockMutex(pool->pending_task_mutex);
 	while (pool->pending_task_count > 0) {
-		SparkConditionWait(pool->pending_task_cond, pool->pending_task_mutex);
+		SparkWaitCondition(pool->pending_task_cond, pool->pending_task_mutex);
 	}
-	SparkMutexUnlock(pool->pending_task_mutex);
+	SparkUnlockMutex(pool->pending_task_mutex);
 }
 
 
@@ -4366,16 +4366,16 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 	task->next = NULL;
 	task->wait_on_update = wait_on_update;
 
-	SparkMutexInit(task->mutex);
-	SparkConditionInit(task->cond);
+	SparkInitMutex(task->mutex);
+	SparkInitCondition(task->cond);
 
 	if (wait_on_update) {
-		SparkMutexLock(pool->pending_task_mutex);
+		SparkLockMutex(pool->pending_task_mutex);
 		pool->pending_task_count++;
-		SparkMutexUnlock(pool->pending_task_mutex);
+		SparkUnlockMutex(pool->pending_task_mutex);
 	}
 
-	SparkMutexLock(pool->mutex);
+	SparkLockMutex(pool->mutex);
 
 	// Add the task to the queue
 	if (pool->task_queue_tail == NULL) {
@@ -4386,8 +4386,8 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 		pool->task_queue_tail = task;
 	}
 
-	SparkConditionSignal(pool->condition);
-	SparkMutexUnlock(pool->mutex);
+	SparkSignalCondition(pool->condition);
+	SparkUnlockMutex(pool->mutex);
 
 	return task;
 }
@@ -4397,11 +4397,11 @@ SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
 	if (task == NULL)
 		return SPARK_FAILURE;
 
-	SparkMutexLock(task->mutex);
+	SparkLockMutex(task->mutex);
 	while (!task->is_done) {
-		SparkConditionWait(task->cond, task->mutex);
+		SparkWaitCondition(task->cond, task->mutex);
 	}
-	SparkMutexUnlock(task->mutex);
+	SparkUnlockMutex(task->mutex);
 
 	SparkTaskDestroy(task);
 
@@ -4412,9 +4412,9 @@ SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
 	if (task == NULL)
 		return SPARK_FALSE;
 
-	SparkMutexLock(task->mutex);
+	SparkLockMutex(task->mutex);
 	SparkBool is_done = task->is_done;
-	SparkMutexUnlock(task->mutex);
+	SparkUnlockMutex(task->mutex);
 
 	return is_done;
 }
@@ -4422,8 +4422,8 @@ SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
 SPARKAPI SparkVoid SparkTaskDestroy(SparkTaskHandle task) {
 	if (!task)
 		return;
-	SparkMutexDestroy(task->mutex);
-	SparkConditionDestroy(task->cond);
+	SparkDestroyMutex(task->mutex);
+	SparkDestroyCondition(task->cond);
 	SparkFree(task);
 }
 
@@ -4550,7 +4550,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
 	}
 
 	/* Remove client from server's client list */
-	SparkMutexLock(server->mutex);
+	SparkLockMutex(server->mutex);
 	for (SparkSize i = 0; i < server->clients->size; ++i) {
 		SparkClientConnection conn = (SparkClientConnection)SparkGetElementVector(server->clients, i);
 		if (conn == client) {
@@ -4558,7 +4558,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
 			break;
 		}
 	}
-	SparkMutexUnlock(server->mutex);
+	SparkUnlockMutex(server->mutex);
 
 	close(client->socket);
 	SparkFree(client);
@@ -4581,7 +4581,7 @@ SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 po
 	server->receive_callback = callback;
 	server->clients = SparkCreateVector(10, SparkDefaultAllocator(), SPARK_NULL);
 
-	SparkMutexInit(server->mutex);
+	SparkInitMutex(server->mutex);
 
 	/* Create ThreadPool */
 	server->thread_pool = tp;
@@ -4596,7 +4596,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyServer(SparkServer server) {
 
 	SparkStopServer(server);
 	SparkDestroyVector(server->clients);
-	SparkMutexDestroy(server->mutex);
+	SparkDestroyMutex(server->mutex);
 	SparkFree(server);
 
 	__SparkCleanupNetworking();
@@ -4622,9 +4622,9 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 		client->server = srv;
 
 		/* Add client to server's client list */
-		SparkMutexLock(srv->mutex);
+		SparkLockMutex(srv->mutex);
 		SparkPushBackVector(srv->clients, client);
-		SparkMutexUnlock(srv->mutex);
+		SparkUnlockMutex(srv->mutex);
 
 		/* Handle client in a separate thread */
 		SparkAddTaskThreadPool(srv->thread_pool, __SparkClientHandler, client, SPARK_FALSE);
@@ -4694,14 +4694,14 @@ SPARKAPI SparkResult SPARKCALL SparkStopServer(SparkServer server) {
 	close(server->listen_socket);
 
 	/* Close all client connections */
-	SparkMutexLock(server->mutex);
+	SparkLockMutex(server->mutex);
 	for (SparkSize i = 0; i < server->clients->size; ++i) {
 		SparkClientConnection client = (SparkClientConnection)SparkGetElementVector(server->clients, i);
 		close(client->socket);
 		SparkFree(client);
 	}
 	SparkClearVector(server->clients);
-	SparkMutexUnlock(server->mutex);
+	SparkUnlockMutex(server->mutex);
 
 	return SPARK_SUCCESS;
 }
@@ -4732,12 +4732,12 @@ SPARKAPI SparkResult SPARKCALL SparkBroadcast(SparkServer server, SparkEnvelope*
 		return SPARK_FAILURE;
 	}
 
-	SparkMutexLock(server->mutex);
+	SparkLockMutex(server->mutex);
 	for (SparkSize i = 0; i < server->clients->size; ++i) {
 		SparkClientConnection client = (SparkClientConnection)SparkGetElementVector(server->clients, i);
 		SparkSendToClient(server, client, envelope);
 	}
-	SparkMutexUnlock(server->mutex);
+	SparkUnlockMutex(server->mutex);
 
 	return SPARK_SUCCESS;
 }
@@ -7211,6 +7211,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize t
 	app->query_event_functions = SparkDefaultVector();
 	app->event_handler->application = app;
 	app->event_handler->ecs = app->ecs;
+	SparkInitMutex(app->mutex);
 	return app;
 }
 
@@ -7225,6 +7226,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyVector(app->event_functions);
 	SparkDestroyVector(app->query_event_functions);
 	SparkDestroyThreadPool(app->thread_pool);
+	SparkDestroyMutex(app->mutex);
 	SparkFree(app);
 }
 
@@ -7233,7 +7235,7 @@ SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 		SparkStartHandlerFunction function =
 			SparkGetElementVector(app->start_functions, i);
 
-		if (function->thread_settings.first == SPARK_TRUE) {
+		if (function->thread_settings.first) {
 			SparkAddTaskThreadPool(app->thread_pool, function->function, app, function->thread_settings.second);
 		}
 		else {
@@ -7251,9 +7253,14 @@ __SparkApplicationKeepOpen(SparkApplication app) {
 
 SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	for (SparkSize i = 0; i < app->stop_functions->size; i++) {
-		SparkApplicationStopFunction function =
-			SparkGetElementVector(app->stop_functions, i);
-		function(app);
+		SparkStopHandlerFunction function =
+			SparkGetElementVector(app->stop_functions, i);		
+		if (function->thread_settings.first) {
+			SparkAddTaskThreadPool(app->thread_pool, function->function, app, function->thread_settings.second);
+		}
+		else {
+			function->function(app);
+		}
 	}
 	SparkDestroyApplication(app);
 	return SPARK_SUCCESS;
@@ -7344,8 +7351,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	// Wait for tasks that need to be waited upon
 	SparkWaitThreadPool(app->thread_pool);
 }
-
-
 
 SPARKAPI SparkResult SparkAddStartFunctionApplication(
 	SparkApplication app, SparkApplicationStartFunction function, SparkPair thread_settings) {
