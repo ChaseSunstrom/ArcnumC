@@ -68,7 +68,6 @@ void TestDeserialization(Application app) {
 	DestroyFileDeserializer(deserializer);
 }
 
-
 void update_send(Application app) {
 	envelope.type = SPARK_ENVELOPE_TYPE_DATA;
 	envelope.packet.size = sizeof(TestThing);
@@ -146,7 +145,8 @@ void ResourceCreater(Application app) {
 
 	for (size_t i = 0; i < mesh->vertex_count; i++) {
 		Vertex curr_vertex = mesh->vertices[i];
-		SPARK_LOG_DEBUG("Vertex %d: %f, %f, %f, %f, %f, %f, %f, %f", i, 
+		SPARK_LOG_DEBUG("Vertex %d: %f, %f, %f, %f, %f, %f, %f, %f", 
+			i, 
 			curr_vertex.position.x, 
 			curr_vertex.position.y, 
 			curr_vertex.position.z, 
@@ -176,7 +176,7 @@ i32 main() {
 	StartServer(server);
 	ConnectClient(client);
 
-	AddStartFunctionApplication(app, ResourceCreater, (Pair) { false, false });
+	AddStartFunctionApplication(app, ResourceCreater, (Pair) { true, false });
 	AddStartFunctionApplication(app, TestGetPairs, (Pair) { true, false });
 	AddStartFunctionApplication(app, TestSerialization, (Pair) { false, true });
 	AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });

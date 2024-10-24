@@ -416,6 +416,8 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_RIGID_BODY_COMPONENT "__RIGID_BODY_COMPONENT__"
 #define SPARK_COLLIDER_COMPONENT "__COLLIDER_COMPONENT__"
 #define SPARK_CAMERA_COMPONENT "__CAMERA_COMPONENT__"
+#define SPARK_ANIMATION_COMPONENT "__ANIMATION_COMPONENT__"
+#define SPARK_AI_BEHAVIOR_COMPONENT "__AI_BEHAVIOR_COMPONENT__"
 
 #define SPARK_RESOURCE_TYPE_STATIC_MESH "__STATIC_MESH_RESOURCE__"
 #define SPARK_RESOURCE_TYPE_DYNAMIC_MESH "__DYNAMIC_MESH_RESOURCE__"
@@ -427,6 +429,8 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_RESOURCE_TYPE_AUDIO "__AUDIO_RESOURCE__"
 #define SPARK_RESOURCE_TYPE_FONT "__FONT_RESOURCE__"
 #define SPARK_RESOURCE_TYPE_ANIMATION "__ANIMATION_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_SCENE "__SCENE_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_AI_BEHAVIOR "__AI_BEHAVIOR_RESOURCE__"
 
 #define SPARK_PI        3.14159265358979323846
 #define SPARK_TWO_PI    6.28318530717958647692
@@ -1338,8 +1342,9 @@ typedef struct SparkAnimationT {
 typedef struct SparkGuiElementT* SparkGuiElement;
 typedef struct SparkGuiStyleT* SparkGuiStyle;
 
-/* AI-related declarations */
-typedef struct SparkAIBehaviorT* SparkAIBehavior;
+typedef struct SparkAIBehaviorT {
+	SparkU8 not_implemented;
+}*SparkAIBehavior;
 
 /* Particle system declarations */
 typedef struct SparkParticleEmitterT* SparkParticleEmitter;
@@ -3060,6 +3065,8 @@ typedef SparkApplication Application;
 #define DynamicModelComponent SPARK_DYNAMIC_MODEL_COMPONENT
 #define RigidBodyComponent SPARK_RIGID_BODY_COMPONENT
 #define ColliderComponent SPARK_COLLIDER_COMPONENT
+#define AnimationComponent SPARK_ANIMATION_COMPONENT
+#define AIBehaviorComponent SPARK_AI_BEHAVIOR_COMPONENT
 
 #define StaticMeshResourceType SPARK_RESOURCE_TYPE_STATIC_MESH
 #define DynamicMeshResourceType SPARK_RESOURCE_TYPE_DYNAMIC_MESH
@@ -3071,6 +3078,8 @@ typedef SparkApplication Application;
 #define StaticModelResourceType SPARK_RESOURCE_TYPE_STATIC_MODEL
 #define DynamicModelResourceType SPARK_RESOURCE_TYPE_DYNAMIC_MODEL
 #define MaterialResourceType SPARK_RESOURCE_TYPE_MATERIAL
+#define SceneResourceType SPARK_RESOURCE_TYPE_SCENE
+#define AIBehaviorResourceType SPARK_RESOURCE_TYPE_AI_BEHAVIOR
 
 #define ArrayArg SPARK_ARRAY_ARG
 #define NoIndices SPARK_NULL, 0

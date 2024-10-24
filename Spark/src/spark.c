@@ -29,7 +29,6 @@
 #define SparkAtomicDecrement(data) __sync_sub_and_fetch((data), 1)
 #endif
 
-
 #pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
@@ -7794,6 +7793,38 @@ SPARKAPI SparkVoid SparkDestroyFont(SparkFont font) {
 
 #pragma endregion
 
+#pragma region SCENE
+
+SPARKAPI SparkScene SPARKCALL SparkCreateScene() {
+	return SparkAllocate(sizeof(struct SparkSceneT));
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene) {
+	SparkFree(scene);
+}
+
+SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene, SparkEntity entity, SparkSceneNode parent) {
+
+}
+
+SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene, SparkEntity entity) {
+
+}
+
+#pragma endregion
+
+#pragma region AI
+
+SPARKAPI SparkAIBehavior SPARKCALL SparkCreateAIBehavior(SparkConstString type) {
+	return SparkAllocate(sizeof(struct SparkAIBehaviorT));
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAIBehavior(SparkAIBehavior behavior) {
+	SparkFree(behavior);
+}
+
+#pragma endregion
+
 #pragma region APPLICATION
 
 typedef struct SparkQueryTaskArgT {
@@ -7939,6 +7970,8 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkInitializeResourceManagerApplication(Spark
 	SparkResourceManager audio_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_AUDIO, SparkDestroyAudio);
 	SparkResourceManager smodel_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_STATIC_MODEL, SparkDestroyStaticModel);
 	SparkResourceManager dmodel_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, SparkDestroyDynamicModel);
+	SparkResourceManager scene_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_SCENE, SparkDestroyScene);
+	SparkResourceManager ai_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_AI_BEHAVIOR, SparkDestroyAIBehavior);
 
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH), smesh_manager);
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MESH, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MESH), dmesh_manager);
@@ -7949,6 +7982,8 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkInitializeResourceManagerApplication(Spark
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_AUDIO, strlen(SPARK_RESOURCE_TYPE_AUDIO), audio_manager);
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MODEL, strlen(SPARK_RESOURCE_TYPE_STATIC_MODEL), smodel_manager);
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL), dmodel_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SCENE, strlen(SPARK_RESOURCE_TYPE_SCENE), scene_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_AI_BEHAVIOR, strlen(SPARK_RESOURCE_TYPE_AI_BEHAVIOR), ai_manager);
 }
 
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize thread_count) {
