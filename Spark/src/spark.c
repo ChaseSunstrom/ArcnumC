@@ -1457,7 +1457,7 @@ SPARKAPI SPARKSTATIC SparkConstString __SparkGetFileExtension(SparkConstString f
 #include <math.h>  // For standard math functions like sin, cos, sqrt, etc.
 
 /* Scalar functions */
-SPARKAPI SparkScalar SPARKCALL SparkClampS(SparkScalar value, SparkScalar min,
+SPARKAPI SparkScalar  SparkClampS(SparkScalar value, SparkScalar min,
 	SparkScalar max) {
 	if (value < min)
 		return min;
@@ -1466,29 +1466,29 @@ SPARKAPI SparkScalar SPARKCALL SparkClampS(SparkScalar value, SparkScalar min,
 	return value;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMinS(SparkScalar a, SparkScalar b) {
+SPARKAPI SparkScalar  SparkMinS(SparkScalar a, SparkScalar b) {
 	return (a < b) ? a : b;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMaxS(SparkScalar a, SparkScalar b) {
+SPARKAPI SparkScalar  SparkMaxS(SparkScalar a, SparkScalar b) {
 	return (a > b) ? a : b;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMixS(SparkScalar x, SparkScalar y, SparkScalar a) {
+SPARKAPI SparkScalar  SparkMixS(SparkScalar x, SparkScalar y, SparkScalar a) {
 	return x * (1 - a) + y * a;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkStepS(SparkScalar edge, SparkScalar x) {
+SPARKAPI SparkScalar  SparkStepS(SparkScalar edge, SparkScalar x) {
 	return x < edge ? 0.0f : 1.0f;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkSmoothStepS(SparkScalar edge0, SparkScalar edge1,
+SPARKAPI SparkScalar  SparkSmoothStepS(SparkScalar edge0, SparkScalar edge1,
 	SparkScalar x) {
 	SparkScalar t = SparkClampS((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
 	return t * t * (3 - 2 * t);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkSign(SparkScalar x) {
+SPARKAPI SparkScalar  SparkSign(SparkScalar x) {
 	if (x > 0)
 		return 1.0f;
 	else if (x < 0)
@@ -1497,128 +1497,128 @@ SPARKAPI SparkScalar SPARKCALL SparkSign(SparkScalar x) {
 		return 0.0f;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMod(SparkScalar x, SparkScalar y) {
+SPARKAPI SparkScalar  SparkMod(SparkScalar x, SparkScalar y) {
 	return fmodf(x, y);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkAbs(SparkScalar value) {
+SPARKAPI SparkScalar  SparkAbs(SparkScalar value) {
 	return fabsf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkFloor(SparkScalar value) {
+SPARKAPI SparkScalar  SparkFloor(SparkScalar value) {
 	return floorf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkCeil(SparkScalar value) {
+SPARKAPI SparkScalar  SparkCeil(SparkScalar value) {
 	return ceilf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkFract(SparkScalar value) {
+SPARKAPI SparkScalar  SparkFract(SparkScalar value) {
 	return value - SparkFloor(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkSqrt(SparkScalar value) {
+SPARKAPI SparkScalar  SparkSqrt(SparkScalar value) {
 	return sqrtf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkPow(SparkScalar base, SparkScalar exponent) {
+SPARKAPI SparkScalar  SparkPow(SparkScalar base, SparkScalar exponent) {
 	return powf(base, exponent);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkExp(SparkScalar exponent) {
+SPARKAPI SparkScalar  SparkExp(SparkScalar exponent) {
 	return expf(exponent);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkLog2(SparkScalar value) {
+SPARKAPI SparkScalar  SparkLog2(SparkScalar value) {
 	return log2f(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkInverseSqrt(SparkScalar value) {
+SPARKAPI SparkScalar  SparkInverseSqrt(SparkScalar value) {
 	return 1.0f / SparkSqrt(value);
 }
 
 /* Trigonometric functions */
-SPARKAPI SparkScalar SPARKCALL SparkRadians(SparkScalar degrees) {
+SPARKAPI SparkScalar  SparkRadians(SparkScalar degrees) {
 	return degrees * (SparkScalar)(SPARK_PI / 180.0f);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkDegrees(SparkScalar radians) {
+SPARKAPI SparkScalar  SparkDegrees(SparkScalar radians) {
 	return radians * (SparkScalar)(180.0f / SPARK_PI);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkSin(SparkScalar angle) {
+SPARKAPI SparkScalar  SparkSin(SparkScalar angle) {
 	return sinf(angle);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkCos(SparkScalar angle) {
+SPARKAPI SparkScalar  SparkCos(SparkScalar angle) {
 	return cosf(angle);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkTan(SparkScalar angle) {
+SPARKAPI SparkScalar  SparkTan(SparkScalar angle) {
 	return tanf(angle);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkASin(SparkScalar value) {
+SPARKAPI SparkScalar  SparkASin(SparkScalar value) {
 	return asinf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkACos(SparkScalar value) {
+SPARKAPI SparkScalar  SparkACos(SparkScalar value) {
 	return acosf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkATan(SparkScalar value) {
+SPARKAPI SparkScalar  SparkATan(SparkScalar value) {
 	return atanf(value);
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkATan2(SparkScalar y, SparkScalar x) {
+SPARKAPI SparkScalar  SparkATan2(SparkScalar y, SparkScalar x) {
 	return atan2f(y, x);
 }
 
 /* SparkVec2 functions */
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Add(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkVec2  SparkVec2Add(SparkVec2 a, SparkVec2 b) {
 	SparkVec2 result;
 	result.x = a.x + b.x;
 	result.y = a.y + b.y;
 	return result;
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Subtract(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkVec2  SparkVec2Subtract(SparkVec2 a, SparkVec2 b) {
 	SparkVec2 result;
 	result.x = a.x - b.x;
 	result.y = a.y - b.y;
 	return result;
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Multiply(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkVec2  SparkVec2Multiply(SparkVec2 a, SparkVec2 b) {
 	SparkVec2 result;
 	result.x = a.x * b.x;
 	result.y = a.y * b.y;
 	return result;
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Divide(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkVec2  SparkVec2Divide(SparkVec2 a, SparkVec2 b) {
 	SparkVec2 result;
 	result.x = a.x / b.x;
 	result.y = a.y / b.y;
 	return result;
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Scale(SparkVec2 a, SparkScalar s) {
+SPARKAPI SparkVec2  SparkVec2Scale(SparkVec2 a, SparkScalar s) {
 	SparkVec2 result;
 	result.x = a.x * s;
 	result.y = a.y * s;
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec2Dot(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkScalar  SparkVec2Dot(SparkVec2 a, SparkVec2 b) {
 	return a.x * b.x + a.y * b.y;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec2Length(SparkVec2 a) {
+SPARKAPI SparkScalar  SparkVec2Length(SparkVec2 a) {
 	return SparkSqrt(a.x * a.x + a.y * a.y);
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Normalize(SparkVec2 a) {
+SPARKAPI SparkVec2  SparkVec2Normalize(SparkVec2 a) {
 	SparkScalar length = SparkVec2Length(a);
 	SparkVec2 result;
 	if (length != 0) {
@@ -1632,20 +1632,20 @@ SPARKAPI SparkVec2 SPARKCALL SparkVec2Normalize(SparkVec2 a) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec2Distance(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkScalar  SparkVec2Distance(SparkVec2 a, SparkVec2 b) {
 	SparkScalar dx = a.x - b.x;
 	SparkScalar dy = a.y - b.y;
 	return SparkSqrt(dx * dx + dy * dy);
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Negate(SparkVec2 a) {
+SPARKAPI SparkVec2  SparkVec2Negate(SparkVec2 a) {
 	SparkVec2 result;
 	result.x = -a.x;
 	result.y = -a.y;
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec2Angle(SparkVec2 a, SparkVec2 b) {
+SPARKAPI SparkScalar  SparkVec2Angle(SparkVec2 a, SparkVec2 b) {
 	SparkScalar dot = SparkVec2Dot(a, b);
 	SparkScalar lenA = SparkVec2Length(a);
 	SparkScalar lenB = SparkVec2Length(b);
@@ -1657,7 +1657,7 @@ SPARKAPI SparkScalar SPARKCALL SparkVec2Angle(SparkVec2 a, SparkVec2 b) {
 	return SparkACos(cosTheta);
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Reflect(SparkVec2 v, SparkVec2 n) {
+SPARKAPI SparkVec2  SparkVec2Reflect(SparkVec2 v, SparkVec2 n) {
 	SparkScalar dotVN = SparkVec2Dot(v, n);
 	SparkVec2 result;
 	result.x = v.x - 2 * dotVN * n.x;
@@ -1665,7 +1665,7 @@ SPARKAPI SparkVec2 SPARKCALL SparkVec2Reflect(SparkVec2 v, SparkVec2 n) {
 	return result;
 }
 
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b, SparkScalar t) {
+SPARKAPI SparkVec2  SparkVec2Lerp(SparkVec2 a, SparkVec2 b, SparkScalar t) {
 	SparkVec2 result;
 	result.x = a.x + t * (b.x - a.x);
 	result.y = a.y + t * (b.y - a.y);
@@ -1673,7 +1673,7 @@ SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b, SparkScalar
 }
 
 /* SparkVec3 functions */
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Add(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkVec3  SparkVec3Add(SparkVec3 a, SparkVec3 b) {
 	SparkVec3 result;
 	result.x = a.x + b.x;
 	result.y = a.y + b.y;
@@ -1681,7 +1681,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Add(SparkVec3 a, SparkVec3 b) {
 	return result;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Subtract(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkVec3  SparkVec3Subtract(SparkVec3 a, SparkVec3 b) {
 	SparkVec3 result;
 	result.x = a.x - b.x;
 	result.y = a.y - b.y;
@@ -1689,7 +1689,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Subtract(SparkVec3 a, SparkVec3 b) {
 	return result;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Multiply(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkVec3  SparkVec3Multiply(SparkVec3 a, SparkVec3 b) {
 	SparkVec3 result;
 	result.x = a.x * b.x;
 	result.y = a.y * b.y;
@@ -1697,7 +1697,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Multiply(SparkVec3 a, SparkVec3 b) {
 	return result;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Divide(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkVec3  SparkVec3Divide(SparkVec3 a, SparkVec3 b) {
 	SparkVec3 result;
 	result.x = a.x / b.x;
 	result.y = a.y / b.y;
@@ -1705,7 +1705,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Divide(SparkVec3 a, SparkVec3 b) {
 	return result;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Scale(SparkVec3 a, SparkScalar s) {
+SPARKAPI SparkVec3  SparkVec3Scale(SparkVec3 a, SparkScalar s) {
 	SparkVec3 result;
 	result.x = a.x * s;
 	result.y = a.y * s;
@@ -1713,11 +1713,11 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Scale(SparkVec3 a, SparkScalar s) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec3Dot(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkScalar  SparkVec3Dot(SparkVec3 a, SparkVec3 b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Cross(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkVec3  SparkVec3Cross(SparkVec3 a, SparkVec3 b) {
 	SparkVec3 result;
 	result.x = a.y * b.z - a.z * b.y;
 	result.y = a.z * b.x - a.x * b.z;
@@ -1725,11 +1725,11 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Cross(SparkVec3 a, SparkVec3 b) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec3Length(SparkVec3 a) {
+SPARKAPI SparkScalar  SparkVec3Length(SparkVec3 a) {
 	return SparkSqrt(a.x * a.x + a.y * a.y + a.z * a.z);
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Normalize(SparkVec3 a) {
+SPARKAPI SparkVec3  SparkVec3Normalize(SparkVec3 a) {
 	SparkScalar length = SparkVec3Length(a);
 	SparkVec3 result;
 	if (length != 0) {
@@ -1745,14 +1745,14 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Normalize(SparkVec3 a) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec3Distance(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkScalar  SparkVec3Distance(SparkVec3 a, SparkVec3 b) {
 	SparkScalar dx = a.x - b.x;
 	SparkScalar dy = a.y - b.y;
 	SparkScalar dz = a.z - b.z;
 	return SparkSqrt(dx * dx + dy * dy + dz * dz);
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Negate(SparkVec3 a) {
+SPARKAPI SparkVec3  SparkVec3Negate(SparkVec3 a) {
 	SparkVec3 result;
 	result.x = -a.x;
 	result.y = -a.y;
@@ -1760,7 +1760,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Negate(SparkVec3 a) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec3Angle(SparkVec3 a, SparkVec3 b) {
+SPARKAPI SparkScalar  SparkVec3Angle(SparkVec3 a, SparkVec3 b) {
 	SparkScalar dot = SparkVec3Dot(a, b);
 	SparkScalar lenA = SparkVec3Length(a);
 	SparkScalar lenB = SparkVec3Length(b);
@@ -1772,7 +1772,7 @@ SPARKAPI SparkScalar SPARKCALL SparkVec3Angle(SparkVec3 a, SparkVec3 b) {
 	return SparkACos(cosTheta);
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Reflect(SparkVec3 v, SparkVec3 n) {
+SPARKAPI SparkVec3  SparkVec3Reflect(SparkVec3 v, SparkVec3 n) {
 	SparkScalar dotVN = SparkVec3Dot(v, n);
 	SparkVec3 result;
 	result.x = v.x - 2 * dotVN * n.x;
@@ -1781,7 +1781,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Reflect(SparkVec3 v, SparkVec3 n) {
 	return result;
 }
 
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b, SparkScalar t) {
+SPARKAPI SparkVec3  SparkVec3Lerp(SparkVec3 a, SparkVec3 b, SparkScalar t) {
 	SparkVec3 result;
 	result.x = a.x + t * (b.x - a.x);
 	result.y = a.y + t * (b.y - a.y);
@@ -1790,7 +1790,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b, SparkScalar
 }
 
 /* SparkVec4 functions */
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Add(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkVec4  SparkVec4Add(SparkVec4 a, SparkVec4 b) {
 	SparkVec4 result;
 	result.x = a.x + b.x;
 	result.y = a.y + b.y;
@@ -1799,7 +1799,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Add(SparkVec4 a, SparkVec4 b) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Subtract(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkVec4  SparkVec4Subtract(SparkVec4 a, SparkVec4 b) {
 	SparkVec4 result;
 	result.x = a.x - b.x;
 	result.y = a.y - b.y;
@@ -1808,7 +1808,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Subtract(SparkVec4 a, SparkVec4 b) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Multiply(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkVec4  SparkVec4Multiply(SparkVec4 a, SparkVec4 b) {
 	SparkVec4 result;
 	result.x = a.x * b.x;
 	result.y = a.y * b.y;
@@ -1817,7 +1817,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Multiply(SparkVec4 a, SparkVec4 b) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Divide(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkVec4  SparkVec4Divide(SparkVec4 a, SparkVec4 b) {
 	SparkVec4 result;
 	result.x = a.x / b.x;
 	result.y = a.y / b.y;
@@ -1826,7 +1826,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Divide(SparkVec4 a, SparkVec4 b) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Scale(SparkVec4 a, SparkScalar s) {
+SPARKAPI SparkVec4  SparkVec4Scale(SparkVec4 a, SparkScalar s) {
 	SparkVec4 result;
 	result.x = a.x * s;
 	result.y = a.y * s;
@@ -1835,15 +1835,15 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Scale(SparkVec4 a, SparkScalar s) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec4Dot(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkScalar  SparkVec4Dot(SparkVec4 a, SparkVec4 b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec4Length(SparkVec4 a) {
+SPARKAPI SparkScalar  SparkVec4Length(SparkVec4 a) {
 	return SparkSqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Normalize(SparkVec4 a) {
+SPARKAPI SparkVec4  SparkVec4Normalize(SparkVec4 a) {
 	SparkScalar length = SparkVec4Length(a);
 	SparkVec4 result;
 	if (length != 0) {
@@ -1861,7 +1861,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Normalize(SparkVec4 a) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkVec4Distance(SparkVec4 a, SparkVec4 b) {
+SPARKAPI SparkScalar  SparkVec4Distance(SparkVec4 a, SparkVec4 b) {
 	SparkScalar dx = a.x - b.x;
 	SparkScalar dy = a.y - b.y;
 	SparkScalar dz = a.z - b.z;
@@ -1869,7 +1869,7 @@ SPARKAPI SparkScalar SPARKCALL SparkVec4Distance(SparkVec4 a, SparkVec4 b) {
 	return SparkSqrt(dx * dx + dy * dy + dz * dz + dw * dw);
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Negate(SparkVec4 a) {
+SPARKAPI SparkVec4  SparkVec4Negate(SparkVec4 a) {
 	SparkVec4 result;
 	result.x = -a.x;
 	result.y = -a.y;
@@ -1878,7 +1878,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Negate(SparkVec4 a) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b, SparkScalar t) {
+SPARKAPI SparkVec4  SparkVec4Lerp(SparkVec4 a, SparkVec4 b, SparkScalar t) {
 	SparkVec4 result;
 	result.x = a.x + t * (b.x - a.x);
 	result.y = a.y + t * (b.y - a.y);
@@ -1890,7 +1890,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b, SparkScalar
 /* Matrix functions */
 
 /* SparkMat2 functions */
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Add(SparkMat2 a, SparkMat2 b) {
+SPARKAPI SparkMat2  SparkMat2Add(SparkMat2 a, SparkMat2 b) {
 	SparkMat2 result;
 	result.m00 = a.m00 + b.m00;
 	result.m01 = a.m01 + b.m01;
@@ -1899,7 +1899,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Add(SparkMat2 a, SparkMat2 b) {
 	return result;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Subtract(SparkMat2 a, SparkMat2 b) {
+SPARKAPI SparkMat2  SparkMat2Subtract(SparkMat2 a, SparkMat2 b) {
 	SparkMat2 result;
 	result.m00 = a.m00 - b.m00;
 	result.m01 = a.m01 - b.m01;
@@ -1908,7 +1908,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Subtract(SparkMat2 a, SparkMat2 b) {
 	return result;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Multiply(SparkMat2 a, SparkMat2 b) {
+SPARKAPI SparkMat2  SparkMat2Multiply(SparkMat2 a, SparkMat2 b) {
 	SparkMat2 result;
 	result.m00 = a.m00 * b.m00 + a.m01 * b.m10;
 	result.m01 = a.m00 * b.m01 + a.m01 * b.m11;
@@ -1917,7 +1917,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Multiply(SparkMat2 a, SparkMat2 b) {
 	return result;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Scale(SparkMat2 m, SparkScalar s) {
+SPARKAPI SparkMat2  SparkMat2Scale(SparkMat2 m, SparkScalar s) {
 	SparkMat2 result;
 	result.m00 = m.m00 * s;
 	result.m01 = m.m01 * s;
@@ -1926,7 +1926,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Scale(SparkMat2 m, SparkScalar s) {
 	return result;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Transpose(SparkMat2 m) {
+SPARKAPI SparkMat2  SparkMat2Transpose(SparkMat2 m) {
 	SparkMat2 result;
 	result.m00 = m.m00;
 	result.m01 = m.m10;
@@ -1935,11 +1935,11 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Transpose(SparkMat2 m) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMat2Determinant(SparkMat2 m) {
+SPARKAPI SparkScalar  SparkMat2Determinant(SparkMat2 m) {
 	return m.m00 * m.m11 - m.m01 * m.m10;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Inverse(SparkMat2 m) {
+SPARKAPI SparkMat2  SparkMat2Inverse(SparkMat2 m) {
 	SparkScalar det = SparkMat2Determinant(m);
 	SparkMat2 result;
 	if (det != 0) {
@@ -1956,7 +1956,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Inverse(SparkMat2 m) {
 	return result;
 }
 
-SPARKAPI SparkMat2 SPARKCALL SparkMat2Identity() {
+SPARKAPI SparkMat2  SparkMat2Identity() {
 	SparkMat2 result;
 	result.m00 = 1.0f;
 	result.m01 = 0.0f;
@@ -1966,7 +1966,7 @@ SPARKAPI SparkMat2 SPARKCALL SparkMat2Identity() {
 }
 
 /* SparkMat3 functions */
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Add(SparkMat3 a, SparkMat3 b) {
+SPARKAPI SparkMat3  SparkMat3Add(SparkMat3 a, SparkMat3 b) {
 	SparkMat3 result;
 	result.m00 = a.m00 + b.m00;
 	result.m01 = a.m01 + b.m01;
@@ -1980,7 +1980,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Add(SparkMat3 a, SparkMat3 b) {
 	return result;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Subtract(SparkMat3 a, SparkMat3 b) {
+SPARKAPI SparkMat3  SparkMat3Subtract(SparkMat3 a, SparkMat3 b) {
 	SparkMat3 result;
 	result.m00 = a.m00 - b.m00;
 	result.m01 = a.m01 - b.m01;
@@ -1994,7 +1994,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Subtract(SparkMat3 a, SparkMat3 b) {
 	return result;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Multiply(SparkMat3 a, SparkMat3 b) {
+SPARKAPI SparkMat3  SparkMat3Multiply(SparkMat3 a, SparkMat3 b) {
 	SparkMat3 result;
 	result.m00 = a.m00 * b.m00 + a.m01 * b.m10 + a.m02 * b.m20;
 	result.m01 = a.m00 * b.m01 + a.m01 * b.m11 + a.m02 * b.m21;
@@ -2010,7 +2010,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Multiply(SparkMat3 a, SparkMat3 b) {
 	return result;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Scale(SparkMat3 m, SparkScalar s) {
+SPARKAPI SparkMat3  SparkMat3Scale(SparkMat3 m, SparkScalar s) {
 	SparkMat3 result;
 	result.m00 = m.m00 * s;
 	result.m01 = m.m01 * s;
@@ -2024,7 +2024,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Scale(SparkMat3 m, SparkScalar s) {
 	return result;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Transpose(SparkMat3 m) {
+SPARKAPI SparkMat3  SparkMat3Transpose(SparkMat3 m) {
 	SparkMat3 result;
 	result.m00 = m.m00;
 	result.m01 = m.m10;
@@ -2038,7 +2038,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Transpose(SparkMat3 m) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMat3Determinant(SparkMat3 m) {
+SPARKAPI SparkScalar  SparkMat3Determinant(SparkMat3 m) {
 	SparkScalar det =
 		m.m00 * (m.m11 * m.m22 - m.m12 * m.m21) -
 		m.m01 * (m.m10 * m.m22 - m.m12 * m.m20) +
@@ -2046,7 +2046,7 @@ SPARKAPI SparkScalar SPARKCALL SparkMat3Determinant(SparkMat3 m) {
 	return det;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Inverse(SparkMat3 m) {
+SPARKAPI SparkMat3  SparkMat3Inverse(SparkMat3 m) {
 	SparkScalar det = SparkMat3Determinant(m);
 	SparkMat3 result;
 	if (det != 0) {
@@ -2073,7 +2073,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Inverse(SparkMat3 m) {
 	return result;
 }
 
-SPARKAPI SparkMat3 SPARKCALL SparkMat3Identity() {
+SPARKAPI SparkMat3  SparkMat3Identity() {
 	SparkMat3 result;
 	result.m00 = 1.0f;
 	result.m01 = 0.0f;
@@ -2088,7 +2088,7 @@ SPARKAPI SparkMat3 SPARKCALL SparkMat3Identity() {
 }
 
 /* SparkMat4 functions */
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Add(SparkMat4 a, SparkMat4 b) {
+SPARKAPI SparkMat4  SparkMat4Add(SparkMat4 a, SparkMat4 b) {
 	SparkMat4 result;
 	result.m00 = a.m00 + b.m00;
 	result.m01 = a.m01 + b.m01;
@@ -2109,7 +2109,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Add(SparkMat4 a, SparkMat4 b) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Subtract(SparkMat4 a, SparkMat4 b) {
+SPARKAPI SparkMat4  SparkMat4Subtract(SparkMat4 a, SparkMat4 b) {
 	SparkMat4 result;
 	result.m00 = a.m00 - b.m00;
 	result.m01 = a.m01 - b.m01;
@@ -2130,7 +2130,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Subtract(SparkMat4 a, SparkMat4 b) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Multiply(SparkMat4 a, SparkMat4 b) {
+SPARKAPI SparkMat4  SparkMat4Multiply(SparkMat4 a, SparkMat4 b) {
 	SparkMat4 result;
 	result.m00 = a.m00 * b.m00 + a.m01 * b.m10 + a.m02 * b.m20 + a.m03 * b.m30;
 	result.m01 = a.m00 * b.m01 + a.m01 * b.m11 + a.m02 * b.m21 + a.m03 * b.m31;
@@ -2154,7 +2154,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Multiply(SparkMat4 a, SparkMat4 b) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Scale(SparkMat4 m, SparkScalar s) {
+SPARKAPI SparkMat4  SparkMat4Scale(SparkMat4 m, SparkScalar s) {
 	SparkMat4 result;
 	result.m00 = m.m00 * s;
 	result.m01 = m.m01 * s;
@@ -2175,7 +2175,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Scale(SparkMat4 m, SparkScalar s) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Transpose(SparkMat4 m) {
+SPARKAPI SparkMat4  SparkMat4Transpose(SparkMat4 m) {
 	SparkMat4 result;
 	result.m00 = m.m00;
 	result.m01 = m.m10;
@@ -2196,7 +2196,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Transpose(SparkMat4 m) {
 	return result;
 }
 
-SPARKAPI SparkScalar SPARKCALL SparkMat4Determinant(SparkMat4 m) {
+SPARKAPI SparkScalar  SparkMat4Determinant(SparkMat4 m) {
 	// Compute the determinant of a 4x4 matrix using Laplace expansion
 	SparkScalar det;
 
@@ -2217,7 +2217,7 @@ SPARKAPI SparkScalar SPARKCALL SparkMat4Determinant(SparkMat4 m) {
 	return det;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Inverse(SparkMat4 m) {
+SPARKAPI SparkMat4  SparkMat4Inverse(SparkMat4 m) {
 	SparkScalar det = SparkMat4Determinant(m);
 	SparkMat4 result;
 
@@ -2254,7 +2254,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Inverse(SparkMat4 m) {
 }
 
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Identity() {
+SPARKAPI SparkMat4  SparkMat4Identity() {
 	SparkMat4 result = { 0 };
 	result.m00 = 1.0f;
 	result.m11 = 1.0f;
@@ -2263,7 +2263,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Identity() {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Translate(SparkVec3 translation) {
+SPARKAPI SparkMat4  SparkMat4Translate(SparkVec3 translation) {
 	SparkMat4 result = SparkMat4Identity();
 	result.m03 = translation.x;
 	result.m13 = translation.y;
@@ -2271,7 +2271,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Translate(SparkVec3 translation) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4ScaleVec3(SparkVec3 scale) {
+SPARKAPI SparkMat4  SparkMat4ScaleVec3(SparkVec3 scale) {
 	SparkMat4 result = SparkMat4Identity();
 	result.m00 = scale.x;
 	result.m11 = scale.y;
@@ -2279,7 +2279,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4ScaleVec3(SparkVec3 scale) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4ScaleScalar(SparkScalar scale) {
+SPARKAPI SparkMat4  SparkMat4ScaleScalar(SparkScalar scale) {
 	SparkMat4 result = SparkMat4Identity();
 	result.m00 = scale;
 	result.m11 = scale;
@@ -2287,7 +2287,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4ScaleScalar(SparkScalar scale) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Rotate(SparkScalar angle, SparkVec3 axis) {
+SPARKAPI SparkMat4  SparkMat4Rotate(SparkScalar angle, SparkVec3 axis) {
 	SparkMat4 result = { 0 };
 	SparkScalar c = SparkCos(angle);
 	SparkScalar s = SparkSin(angle);
@@ -2308,7 +2308,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Rotate(SparkScalar angle, SparkVec3 axis) 
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateX(SparkScalar angle) {
+SPARKAPI SparkMat4  SparkMat4RotateX(SparkScalar angle) {
 	SparkMat4 result = SparkMat4Identity();
 	SparkScalar c = SparkCos(angle);
 	SparkScalar s = SparkSin(angle);
@@ -2320,7 +2320,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateX(SparkScalar angle) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateY(SparkScalar angle) {
+SPARKAPI SparkMat4  SparkMat4RotateY(SparkScalar angle) {
 	SparkMat4 result = SparkMat4Identity();
 	SparkScalar c = SparkCos(angle);
 	SparkScalar s = SparkSin(angle);
@@ -2332,7 +2332,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateY(SparkScalar angle) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateZ(SparkScalar angle) {
+SPARKAPI SparkMat4  SparkMat4RotateZ(SparkScalar angle) {
 	SparkMat4 result = SparkMat4Identity();
 	SparkScalar c = SparkCos(angle);
 	SparkScalar s = SparkSin(angle);
@@ -2344,7 +2344,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateZ(SparkScalar angle) {
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
+SPARKAPI SparkMat4  SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
 	SparkVec3 up) {
 	SparkVec3 f = SparkVec3Normalize(SparkVec3Subtract(center, eye));
 	SparkVec3 s = SparkVec3Normalize(SparkVec3Cross(f, up));
@@ -2366,7 +2366,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy, SparkScalar aspect,
+SPARKAPI SparkMat4  SparkMat4Perspective(SparkScalar fovy, SparkScalar aspect,
 	SparkScalar near, SparkScalar far) {
 	SparkScalar f = 1.0f / SparkTan(fovy / 2.0f);
 	SparkMat4 result = { 0 };
@@ -2378,7 +2378,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy, SparkScalar 
 	return result;
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Ortho(SparkScalar left, SparkScalar right,
+SPARKAPI SparkMat4  SparkMat4Ortho(SparkScalar left, SparkScalar right,
 	SparkScalar bottom, SparkScalar top,
 	SparkScalar near, SparkScalar far) {
 	SparkMat4 result = { 0 };
@@ -2393,7 +2393,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Ortho(SparkScalar left, SparkScalar right,
 }
 
 /* Vector transformations */
-SPARKAPI SparkVec3 SPARKCALL SparkMat4MultiplyVec3(SparkMat4 m, SparkVec3 v) {
+SPARKAPI SparkVec3  SparkMat4MultiplyVec3(SparkMat4 m, SparkVec3 v) {
 	SparkVec3 result;
 	result.x = m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03;
 	result.y = m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13;
@@ -2401,7 +2401,7 @@ SPARKAPI SparkVec3 SPARKCALL SparkMat4MultiplyVec3(SparkMat4 m, SparkVec3 v) {
 	return result;
 }
 
-SPARKAPI SparkVec4 SPARKCALL SparkMat4MultiplyVec4(SparkMat4 m, SparkVec4 v) {
+SPARKAPI SparkVec4  SparkMat4MultiplyVec4(SparkMat4 m, SparkVec4 v) {
 	SparkVec4 result;
 	result.x = m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03 * v.w;
 	result.y = m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13 * v.w;
@@ -2411,7 +2411,7 @@ SPARKAPI SparkVec4 SPARKCALL SparkMat4MultiplyVec4(SparkMat4 m, SparkVec4 v) {
 }
 
 /* Quaternion functions */
-SPARKAPI SparkQuat SPARKCALL SparkQuatMultiply(SparkQuat a, SparkQuat b) {
+SPARKAPI SparkQuat  SparkQuatMultiply(SparkQuat a, SparkQuat b) {
 	SparkQuat result;
 	result.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
 	result.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
@@ -2420,7 +2420,7 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatMultiply(SparkQuat a, SparkQuat b) {
 	return result;
 }
 
-SPARKAPI SparkQuat SPARKCALL SparkQuatConjugate(SparkQuat q) {
+SPARKAPI SparkQuat  SparkQuatConjugate(SparkQuat q) {
 	SparkQuat result;
 	result.w = q.w;
 	result.x = -q.x;
@@ -2429,7 +2429,7 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatConjugate(SparkQuat q) {
 	return result;
 }
 
-SPARKAPI SparkQuat SPARKCALL SparkQuatInverse(SparkQuat q) {
+SPARKAPI SparkQuat  SparkQuatInverse(SparkQuat q) {
 	SparkScalar norm = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
 	if (norm > 0.0f) {
 		SparkScalar invNorm = 1.0f / norm;
@@ -2447,7 +2447,7 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatInverse(SparkQuat q) {
 	}
 }
 
-SPARKAPI SparkQuat SPARKCALL SparkQuatNormalize(SparkQuat q) {
+SPARKAPI SparkQuat  SparkQuatNormalize(SparkQuat q) {
 	SparkScalar length = SparkSqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
 	if (length != 0) {
 		SparkScalar invLength = 1.0f / length;
@@ -2463,7 +2463,7 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatNormalize(SparkQuat q) {
 	}
 }
 
-SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis, SparkScalar angle) {
+SPARKAPI SparkQuat  SparkQuatFromAxisAngle(SparkVec3 axis, SparkScalar angle) {
 	SparkQuat result;
 	SparkScalar halfAngle = angle / 2.0f;
 	SparkScalar s = SparkSin(halfAngle);
@@ -2474,7 +2474,7 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis, SparkScalar 
 	return result;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3* axis,
+SPARKAPI SparkVoid  SparkQuatToAxisAngle(SparkQuat q, SparkVec3* axis,
 	SparkScalar* angle) {
 	if (q.w > 1.0f)
 		q = SparkQuatNormalize(q);
@@ -2492,7 +2492,7 @@ SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3* axis,
 	}
 }
 
-SPARKAPI SparkMat4 SPARKCALL SparkQuatToMat4(SparkQuat q) {
+SPARKAPI SparkMat4  SparkQuatToMat4(SparkQuat q) {
 	SparkMat4 result = SparkMat4Identity();
 	SparkScalar xx = q.x * q.x;
 	SparkScalar yy = q.y * q.y;
@@ -2518,7 +2518,7 @@ SPARKAPI SparkMat4 SPARKCALL SparkQuatToMat4(SparkQuat q) {
 	return result;
 }
 
-SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t) {
+SPARKAPI SparkQuat  SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t) {
 	SparkQuat result;
 	SparkScalar cosHalfTheta = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
 	if (fabsf(cosHalfTheta) >= 1.0f) {
@@ -2582,14 +2582,14 @@ SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator) {
 #pragma region PAIR
 
 
-SPARKAPI SparkPair* SPARKCALL SparkCreatePair(SparkHandle first, SparkHandle second) {
+SPARKAPI SparkPair* SparkCreatePair(SparkHandle first, SparkHandle second) {
 	SparkPair* pair = SparkAllocate(sizeof(struct SparkPairT));
 	pair->first = first;
 	pair->second = second;
 	return pair;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkDestroyPair(SparkPair* pair) {
+SPARKAPI SparkVoid  SparkDestroyPair(SparkPair* pair) {
 	SparkFree(pair);
 }
 
@@ -2840,7 +2840,7 @@ SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkCompressVector(SparkVector vector) {
+SPARKAPI SparkResult  SparkCompressVector(SparkVector vector) {
 	if (!vector) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -2878,7 +2878,7 @@ SPARKAPI SparkResult SparkClearVector(SparkVector vector) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size) {
+SPARKAPI SparkResult  SparkPushBackBufferVector(SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size) {
 	if (!vector) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -4314,9 +4314,9 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		(SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
 	pool->task_queue_head = NULL;
 	pool->task_queue_tail = NULL;
-	pool->stop = 0; 
+	pool->stop = 0;
 	pool->pending_task_count = 0;
-	
+
 
 	SparkInitMutex(pool->mutex);
 	SparkInitCondition(pool->condition);
@@ -4509,7 +4509,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkCleanupNetworking() {
 }
 
 /* Serialize and Deserialize Envelopes */
-SPARKAPI SparkResult SPARKCALL SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffer* buffer, SparkSize* size) {
+SPARKAPI SparkResult  SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffer* buffer, SparkSize* size) {
 	if (!envelope || !buffer || !size) {
 		return SPARK_FAILURE;
 	}
@@ -4531,7 +4531,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeEnvelope(SparkEnvelope* envelope, S
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope* envelope) {
 	if (!buffer || !envelope || size < sizeof(SparkU32) + sizeof(SparkSize)) {
 		return SPARK_FAILURE;
 	}
@@ -4591,7 +4591,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
 }
 
 /* Server Functions */
-SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback) {
+SPARKAPI SparkServer  SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback) {
 	if (__SparkInitNetworking() != SPARK_SUCCESS) {
 		return NULL;
 	}
@@ -4614,7 +4614,7 @@ SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 po
 	return server;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkDestroyServer(SparkServer server) {
+SPARKAPI SparkVoid  SparkDestroyServer(SparkServer server) {
 	if (!server) {
 		return;
 	}
@@ -4657,10 +4657,10 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 	return NULL;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkStartServer(SparkServer server) {
+SPARKAPI SparkResult  SparkStartServer(SparkServer server) {
 	if (!server) {
 		return SPARK_FAILURE;
-}
+	}
 
 	SOCKET_TYPE listen_socket;
 	struct sockaddr_in server_addr;
@@ -4708,9 +4708,9 @@ SPARKAPI SparkResult SPARKCALL SparkStartServer(SparkServer server) {
 	SparkAddTaskThreadPool(server->thread_pool, __SparkAcceptConnections, server, SPARK_FALSE);
 
 	return SPARK_SUCCESS;
-	}
+}
 
-SPARKAPI SparkResult SPARKCALL SparkStopServer(SparkServer server) {
+SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	if (!server) {
 		return SPARK_FAILURE;
 	}
@@ -4731,7 +4731,7 @@ SPARKAPI SparkResult SPARKCALL SparkStopServer(SparkServer server) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
 	if (!server || !client || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -4752,7 +4752,7 @@ SPARKAPI SparkResult SPARKCALL SparkSendToClient(SparkServer server, SparkClient
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkBroadcast(SparkServer server, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkBroadcast(SparkServer server, SparkEnvelope* envelope) {
 	if (!server || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -4789,7 +4789,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientReceiveHandler(SparkHandle arg) {
 }
 
 /* Client Functions */
-SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
+SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
 	if (__SparkInitNetworking() != SPARK_SUCCESS) {
 		return NULL;
 	}
@@ -4830,7 +4830,7 @@ SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstS
 	return client;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
+SPARKAPI SparkVoid  SparkDestroyClient(SparkClient client) {
 	if (!client) {
 		return;
 	}
@@ -4841,7 +4841,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client) {
 	__SparkCleanupNetworking();
 }
 
-SPARKAPI SparkResult SPARKCALL SparkConnectClient(SparkClient client) {
+SPARKAPI SparkResult  SparkConnectClient(SparkClient client) {
 	if (!client) {
 		return SPARK_FAILURE;
 	}
@@ -4868,7 +4868,7 @@ SPARKAPI SparkResult SPARKCALL SparkConnectClient(SparkClient client) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkDisconnectClient(SparkClient client) {
+SPARKAPI SparkResult  SparkDisconnectClient(SparkClient client) {
 	if (!client || !client->connected) {
 		return SPARK_FAILURE;
 	}
@@ -4878,7 +4878,7 @@ SPARKAPI SparkResult SPARKCALL SparkDisconnectClient(SparkClient client) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkSendToServer(SparkClient client, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope* envelope) {
 	if (!client || !envelope || !client->connected) {
 		return SPARK_FAILURE;
 	}
@@ -6666,7 +6666,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, Spar
 }
 
 // Create File Serializer
-SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path) {
+SPARKAPI SparkFileSerializer  SparkCreateFileSerializer(SparkConstString path) {
 	if (!path) return NULL;
 
 	SparkFileSerializer serializer = (SparkFileSerializer)SparkAllocate(sizeof(struct SparkFileSerializerT));
@@ -6696,7 +6696,7 @@ SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstStrin
 }
 
 // Destroy File Serializer
-SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer) {
+SPARKAPI SparkVoid  SparkDestroyFileSerializer(SparkFileSerializer serializer) {
 	if (!serializer) return;
 
 	if (serializer->file) {
@@ -6711,7 +6711,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer seri
 }
 
 // Helper Function to Serialize Raw Data Without Size Prefix
-SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+SPARKAPI SparkResult  SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
 	if (!serializer || !data || size == 0) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6736,7 +6736,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer seriali
 }
 
 // Serialize Data with Size Prefix
-SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+SPARKAPI SparkResult  SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
 	if (!serializer || !data || size == 0) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6756,7 +6756,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkSerializeTrivial(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
+SPARKAPI SparkResult  SparkSerializeTrivial(SparkFileSerializer serializer, SparkHandle data, SparkSize size) {
 	if (!serializer || !data || size == 0) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6766,7 +6766,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeTrivial(SparkFileSerializer seriali
 }
 
 // Serialize Header (Magic Number and Version)
-SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer) {
+SPARKAPI SparkResult  SparkSerializeHeader(SparkFileSerializer serializer) {
 	if (!serializer) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6786,7 +6786,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializ
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector) {
+SPARKAPI SparkResult  SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector) {
 	if (!serializer || !vector) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6813,7 +6813,7 @@ SPARKAPI SparkResult SPARKCALL SparkSerializeVector(SparkFileSerializer serializ
 }
 
 // Create File Deserializer
-SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path) {
+SPARKAPI SparkFileDeserializer  SparkCreateFileDeserializer(SparkConstString path) {
 	if (!path) return NULL;
 
 	SparkFileDeserializer deserializer = (SparkFileDeserializer)SparkAllocate(sizeof(struct SparkFileDeserializerT));
@@ -6873,7 +6873,7 @@ SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstS
 }
 
 // Destroy File Deserializer
-SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer) {
+SPARKAPI SparkVoid  SparkDestroyFileDeserializer(SparkFileDeserializer deserializer) {
 	if (!deserializer) return;
 
 	if (deserializer->file) {
@@ -6888,7 +6888,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer 
 }
 
 // Helper Function to Deserialize Raw Data Without Size Prefix
-SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
+SPARKAPI SparkResult  SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6904,7 +6904,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer des
 }
 
 // Deserialize Data with Size Prefix
-SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
+SPARKAPI SparkResult  SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -6939,7 +6939,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deseri
 }
 
 // Deserialize Header (Magic Number and Version)
-SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer) {
+SPARKAPI SparkResult  SparkDeserializeHeader(SparkFileDeserializer deserializer) {
 	if (!deserializer) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6973,7 +6973,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer dese
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
+SPARKAPI SparkResult  SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6988,7 +6988,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer des
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
+SPARKAPI SparkResult  SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -7023,7 +7023,7 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer dese
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SPARKCALL SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector) {
+SPARKAPI SparkResult  SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector) {
 	if (!deserializer || !deserializer->data || !vector) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -7070,7 +7070,7 @@ SPARKAPI SPARKSTATIC SparkI32 __SparkGetOpenALFormat(SparkI32 channels, SparkI32
 static ALCdevice* SPARK_AUDIO_DEVICE = NULL;
 static ALCcontext* SPARK_AUDIO_CONTEXT = NULL;
 
-SPARKAPI SparkBool SPARKCALL SparkInitAudio() {
+SPARKAPI SparkBool  SparkInitAudio() {
 	// These are already initialized, so we will exit early
 	if (SPARK_AUDIO_DEVICE && SPARK_AUDIO_CONTEXT)
 		return SPARK_SUCCESS;
@@ -7091,13 +7091,13 @@ SPARKAPI SparkBool SPARKCALL SparkInitAudio() {
 	return SPARK_TRUE;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkShutdownAudio() {
+SPARKAPI SparkVoid  SparkShutdownAudio() {
 	alcMakeContextCurrent(NULL);
 	if (SPARK_AUDIO_CONTEXT) alcDestroyContext(SPARK_AUDIO_CONTEXT);
 	if (SPARK_AUDIO_DEVICE) alcCloseDevice(SPARK_AUDIO_DEVICE);
 }
 
-SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file_path) {
+SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	if (SparkInitAudio() != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to initialize audio.");
 		return NULL;
@@ -7260,14 +7260,14 @@ SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file
 	return buffer;
 }
 
-SPARKAPI void SPARKCALL SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
+SPARKAPI void  SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
 	if (!buffer) return;
 
 	alDeleteBuffers(1, &buffer->bufferid);
 	SparkFree(buffer);
 }
 
-SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource(SparkAudioBuffer buffer) {
+SPARKAPI SparkAudioSource  SparkCreateAudioSource(SparkAudioBuffer buffer) {
 	if (!buffer) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid audio buffer.");
 		return NULL;
@@ -7317,29 +7317,29 @@ SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource(SparkAudioBuffer buff
 	return source;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkDeleteAudioSource(SparkAudioSource source) {
 	if (!source) return;
 
 	alDeleteSources(1, &source->sourceid);
 	SparkFree(source);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkPlayAudioSource(SparkAudioSource source) {
 	if (!source) return;
 	alSourcePlay(source->sourceid);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkStopAudioSource(SparkAudioSource source) {
 	if (!source) return;
 	alSourceStop(source->sourceid);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkPauseAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkPauseAudioSource(SparkAudioSource source) {
 	if (!source) return;
 	alSourcePause(source->sourceid);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos) {
+SPARKAPI SparkVoid  SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos) {
 	if (!source) return;
 	source->position.x = pos.x;
 	source->position.y = pos.y;
@@ -7347,24 +7347,23 @@ SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, Spa
 	alSource3f(source->sourceid, AL_POSITION, pos.x, pos.y, pos.z);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkSetSourceGain(SparkAudioSource source, SparkF32 gain) {
+SPARKAPI SparkVoid  SparkSetSourceGain(SparkAudioSource source, SparkF32 gain) {
 	if (!source) return;
 	source->gain = gain;
 	alSourcef(source->sourceid, AL_GAIN, gain);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch) {
+SPARKAPI SparkVoid  SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch) {
 	if (!source) return;
 	source->pitch = pitch;
 	alSourcef(source->sourceid, AL_PITCH, pitch);
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkSetSourceLooping(SparkAudioSource source, SparkBool looping) {
+SPARKAPI SparkVoid  SparkSetSourceLooping(SparkAudioSource source, SparkBool looping) {
 	if (!source) return;
 	source->looping = looping;
 	alSourcei(source->sourceid, AL_LOOPING, looping ? AL_TRUE : AL_FALSE);
 }
-
 
 #pragma endregion
 
@@ -7691,7 +7690,7 @@ __SparkApplicationKeepOpen(SparkApplication app) {
 SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	for (SparkSize i = 0; i < app->stop_functions->size; i++) {
 		SparkStopHandlerFunction function =
-			SparkGetElementVector(app->stop_functions, i);		
+			SparkGetElementVector(app->stop_functions, i);
 		if (function->thread_settings.first) {
 			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
 			task_arg->app = app;
