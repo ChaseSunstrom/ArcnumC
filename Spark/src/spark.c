@@ -1444,7 +1444,7 @@ SPARKAPI SparkConstString SparkGetTime() {
 	return output;
 }
 
-SPARKAPI SPARKSTATIC SparkConstString __SparkGetFileExtension(SparkConstString filename) {
+SPARKAPI SparkConstString SparkGetFileExtension(SparkConstString filename) {
 	SparkConstString dot = strrchr(filename, '.');
 	if (!dot || dot == filename) return "";
 	return dot + 1;
@@ -7115,7 +7115,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 
 	memset(buffer, 0, sizeof(struct SparkAudioBufferT));
 
-	SparkConstString extension = __SparkGetFileExtension(file_path);
+	SparkConstString extension = SparkGetFileExtension(file_path);
 	SparkHandle data = NULL;
 	SparkI32 format = 0;
 	SparkI32 frequency = 0;

@@ -1429,6 +1429,7 @@ SPARKAPI SparkRenderAPI SPARKCALL SparkStringToRenderAPI(SparkConstString string
 
 SPARKAPI SparkConstString SPARKCALL SparkFormatString(SparkConstString format, ...);
 SPARKAPI SparkConstString SPARKCALL SparkGetTime();
+SPARKAPI SparkConstString SPARKCALL SparkGetFileExtension(SparkConstString filename);
 
 SPARKAPI SparkVoid SPARKCALL SparkLog(SparkLogLevel log_level, SparkConstString format,
 	...);
