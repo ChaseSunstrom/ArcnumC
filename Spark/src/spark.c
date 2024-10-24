@@ -7260,7 +7260,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	return buffer;
 }
 
-SPARKAPI void  SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
+SPARKAPI SparkVoid  SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
 	if (!buffer) return;
 
 	alDeleteBuffers(1, &buffer->bufferid);
@@ -7273,7 +7273,7 @@ SPARKAPI SparkAudioSource  SparkCreateAudioSource(SparkAudioBuffer buffer) {
 		return NULL;
 	}
 
-	SparkAudioSource source = (SparkAudioSource)malloc(sizeof(struct SparkAudioSourceT));
+	SparkAudioSource source = (SparkAudioSource)SparkAllocate(sizeof(struct SparkAudioSourceT));
 	if (!source) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio source.");
 		return NULL;
@@ -7320,6 +7320,7 @@ SPARKAPI SparkAudioSource  SparkCreateAudioSource(SparkAudioBuffer buffer) {
 SPARKAPI SparkVoid  SparkDeleteAudioSource(SparkAudioSource source) {
 	if (!source) return;
 
+	SparkDeleteAudioBuffer(source->buffer);
 	alDeleteSources(1, &source->sourceid);
 	SparkFree(source);
 }
@@ -7327,6 +7328,11 @@ SPARKAPI SparkVoid  SparkDeleteAudioSource(SparkAudioSource source) {
 SPARKAPI SparkVoid  SparkPlayAudioSource(SparkAudioSource source) {
 	if (!source) return;
 	alSourcePlay(source->sourceid);
+}
+
+SPARKAPI SparkVoid SparkRewindAudioSource(SparkAudioSource source) {
+	if (!source) return;
+	alSourceRewind(source->sourceid);
 }
 
 SPARKAPI SparkVoid  SparkStopAudioSource(SparkAudioSource source) {

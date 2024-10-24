@@ -2348,6 +2348,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkPauseAudioSource(SparkAudioSource source);
+SPARKAPI SparkVoid SPARKCALL SparkRewindAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos);
 SPARKAPI SparkVoid SPARKCALL SparkSetSourceGain(SparkAudioSource source, SparkF32 gain);
 SPARKAPI SparkVoid SPARKCALL SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch);
