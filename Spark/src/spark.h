@@ -1247,9 +1247,24 @@ typedef struct SparkInputT {
 	SparkScalar mousey;
 } *SparkInput;
 
-/* Audio-related declarations */
-typedef struct SparkAudioBufferT* SparkAudioBuffer;
-typedef struct SparkAudioSourceT* SparkAudioSource;
+typedef struct SparkAudioBufferT {
+	SparkU32 bufferid;        // OpenAL buffer identifier
+	SparkI32 format;          // Audio data format (e.g., AL_FORMAT_MONO16)
+	SparkFrequency frequency; // Sampling frequency (e.g., 44100 Hz)
+	SparkSize size;           // Size of the audio data in bytes
+	SparkHandle data; 
+} *SparkAudioBuffer;
+
+typedef struct SparkAudioSourceT {
+	SparkU32 sourceid;           // OpenAL source identifier
+	SparkVec3 position;       // Source position in 3D space
+	SparkVec3 velocity;       // Source velocity in 3D space
+	SparkVec3 direction;      // Source direction vector
+	SparkBool looping;        // Looping flag (AL_TRUE or AL_FALSE)
+	SparkF32 gain;            // Volume gain (default is 1.0)
+	SparkF32 pitch;           // Pitch shift (default is 1.0)
+	SparkAudioBuffer buffer;  // Associated audio buffer
+} *SparkAudioSource;
 
 /* Scene management declarations */
 typedef struct SparkSceneNodeT {
@@ -2323,16 +2338,21 @@ SPARKAPI SparkInput SPARKCALL SparkCreateInput();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyInput(SparkInput input);
 SPARKAPI SparkVoid SPARKCALL SparkUpdateInput(SparkInput input);
 
-
-SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString filePath);
+SPARKAPI SparkBool SPARKCALL SparkInitAudio();
+SPARKAPI SparkVoid SPARKCALL SparkShutdownAudio();
+SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioBuffer(SparkAudioBuffer buffer);
-SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource();
+SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource(SparkAudioBuffer buffer);
 SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source, SparkAudioBuffer buffer);
+SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source);
 SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioSourcePosition(SparkAudioSource source, SparkVec3 position);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerPosition(SparkVec3 position);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioListenerOrientation(SparkVec3 forward, SparkVec3 up);
+SPARKAPI SparkVoid SPARKCALL SparkPauseAudioSource(SparkAudioSource source);
+SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos);
+SPARKAPI SparkVoid SPARKCALL SparkSetSourceGain(SparkAudioSource source, SparkF32 gain);
+SPARKAPI SparkVoid SPARKCALL SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch);
+SPARKAPI SparkVoid SPARKCALL SparkSetSourceLooping(SparkAudioSource source, SparkBool loop);
+
+
 
 SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer);

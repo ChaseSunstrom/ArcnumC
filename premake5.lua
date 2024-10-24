@@ -39,6 +39,7 @@ project "Spark"
         "version.lib",
         "setupapi.lib",
         "lib/glfw3.lib",
+        "lib/OpenAL32.lib",
         "vulkan-1.lib",
         "ws2_32.lib"
     }
@@ -84,10 +85,6 @@ project "Arcnum"
 
     includedirs {
         "Spark/src"
-    }
-
-    libdirs {
-        "%{VULKAN_SDK}/Lib"  -- Vulkan SDK libraries
     }
 
     links {

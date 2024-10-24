@@ -69,7 +69,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>opengl32.lib;winmm.lib;imm32.lib;version.lib;setupapi.lib;..\lib\glfw3.lib;vulkan-1.lib;ws2_32.lib;glslangd.lib;SPIRVd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;OSDependentd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;winmm.lib;imm32.lib;version.lib;setupapi.lib;..\lib\glfw3.lib;..\lib\OpenAL32.lib;vulkan-1.lib;ws2_32.lib;glslangd.lib;SPIRVd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;OSDependentd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.296.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
@@ -95,7 +95,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>opengl32.lib;winmm.lib;imm32.lib;version.lib;setupapi.lib;..\lib\glfw3.lib;vulkan-1.lib;ws2_32.lib;glslang.lib;SPIRV.lib;SPIRV-Tools.lib;SPIRV-Tools-opt.lib;OSDependent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;winmm.lib;imm32.lib;version.lib;setupapi.lib;..\lib\glfw3.lib;..\lib\OpenAL32.lib;vulkan-1.lib;ws2_32.lib;glslang.lib;SPIRV.lib;SPIRV-Tools.lib;SPIRV-Tools-opt.lib;OSDependent.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.296.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>

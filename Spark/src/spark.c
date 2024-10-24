@@ -10,6 +10,16 @@
 #include <string.h>
 #include <time.h>
 
+#include <OPENAL/al.h>
+#include <OPENAL/alc.h>
+
+#define DR_FLAC_IMPLEMENTATION
+#define DR_MP3_IMPLEMENTATION
+#define DR_WAV_IMPLEMENTATION
+#include <DR/dr_flac.h>
+#include <DR/dr_mp3.h>
+#include <DR/dr_wav.h>
+
 #ifdef _MSC_VER
 #include <Windows.h>
 #define SparkAtomicIncrement(data) InterlockedIncrement((LONG volatile*)(data))
@@ -1432,6 +1442,12 @@ SPARKAPI SparkConstString SparkGetTime() {
 		timeinfo->tm_min, timeinfo->tm_sec);
 
 	return output;
+}
+
+SPARKAPI SPARKSTATIC SparkConstString __SparkGetFileExtension(SparkConstString filename) {
+	SparkConstString dot = strrchr(filename, '.');
+	if (!dot || dot == filename) return "";
+	return dot + 1;
 }
 
 #pragma endregion
@@ -4234,7 +4250,7 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
 #endif
 
-SPARKAPI SPARKSTATIC void* __SparkThreadPoolWorker(void* arg) {
+SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
 	SparkThreadPool pool = (SparkThreadPool)arg;
 	SparkTaskHandle task;
 
@@ -7033,6 +7049,322 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeVector(SparkFileDeserializer dese
 
 	return SPARK_SUCCESS;
 }
+
+#pragma endregion
+
+#pragma region AUDIO
+
+// Helper function to determine OpenAL format
+SPARKAPI SPARKSTATIC SparkI32 __SparkGetOpenALFormat(SparkI32 channels, SparkI32 bits_per_sample) {
+	if (bits_per_sample == 16) {
+		if (channels == 1) return AL_FORMAT_MONO16;
+		else if (channels == 2) return AL_FORMAT_STEREO16;
+	}
+	else if (bits_per_sample == 8) {
+		if (channels == 1) return AL_FORMAT_MONO8;
+		else if (channels == 2) return AL_FORMAT_STEREO8;
+	}
+	return 0;
+}
+
+static ALCdevice* SPARK_AUDIO_DEVICE = NULL;
+static ALCcontext* SPARK_AUDIO_CONTEXT = NULL;
+
+SPARKAPI SparkBool SPARKCALL SparkInitAudio() {
+	// These are already initialized, so we will exit early
+	if (SPARK_AUDIO_DEVICE && SPARK_AUDIO_CONTEXT)
+		return SPARK_SUCCESS;
+	SPARK_AUDIO_DEVICE = alcOpenDevice(NULL); // Open default device
+	if (!SPARK_AUDIO_DEVICE) {
+		fprintf(stderr, "Failed to open OpenAL device.\n");
+		return SPARK_FALSE;
+	}
+
+	SPARK_AUDIO_CONTEXT = alcCreateContext(SPARK_AUDIO_DEVICE, NULL);
+	if (!SPARK_AUDIO_CONTEXT || alcMakeContextCurrent(SPARK_AUDIO_CONTEXT) == ALC_FALSE) {
+		fprintf(stderr, "Failed to create or set OpenAL context.\n");
+		if (SPARK_AUDIO_CONTEXT) alcDestroyContext(SPARK_AUDIO_CONTEXT);
+		alcCloseDevice(SPARK_AUDIO_DEVICE);
+		return SPARK_FALSE;
+	}
+
+	return SPARK_TRUE;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkShutdownAudio() {
+	alcMakeContextCurrent(NULL);
+	if (SPARK_AUDIO_CONTEXT) alcDestroyContext(SPARK_AUDIO_CONTEXT);
+	if (SPARK_AUDIO_DEVICE) alcCloseDevice(SPARK_AUDIO_DEVICE);
+}
+
+SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file_path) {
+	if (SparkInitAudio() != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to initialize audio.");
+		return NULL;
+	}
+	if (!file_path) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid file path.");
+		return NULL;
+	}
+
+	SparkAudioBuffer buffer = (SparkAudioBuffer)SparkAllocate(sizeof(struct SparkAudioBufferT));
+	if (!buffer) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio buffer.\n");
+		return NULL;
+	}
+
+	memset(buffer, 0, sizeof(struct SparkAudioBufferT));
+
+	SparkConstString extension = __SparkGetFileExtension(file_path);
+	SparkHandle data = NULL;
+	SparkI32 format = 0;
+	SparkI32 frequency = 0;
+	SparkI32 size = 0;
+
+	if (strcmp(extension, "wav") == 0) {
+		// Load WAV file using dr_wav
+		drwav wav;
+		if (!drwav_init_file(&wav, file_path, NULL)) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load WAV file: %s", file_path);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		SparkSize total_sample_count = wav.totalPCMFrameCount * wav.channels;
+		SparkI16* sample_data = (int16_t*)SparkAllocate(total_sample_count * sizeof(SparkI16));
+		SparkSize samples_read = drwav_read_pcm_frames_s16(&wav, wav.totalPCMFrameCount, sample_data);
+
+		drwav_uninit(&wav);
+
+		if (samples_read == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from WAV file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		format = __SparkGetOpenALFormat(wav.channels, 16);
+		if (format == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported WAV format in file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		data = sample_data;
+		frequency = wav.sampleRate;
+		size = (SparkI32)(total_sample_count * sizeof(SparkI16));
+	}
+	else if (strcmp(extension, "flac") == 0) {
+		// Load FLAC file using dr_flac
+		drflac* flac = drflac_open_file(file_path, NULL);
+		if (!flac) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load FLAC file: %s", file_path);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		SparkSize total_sample_count = flac->totalPCMFrameCount * flac->channels;
+		SparkI16* sample_data = (int16_t*)SparkAllocate(total_sample_count * sizeof(SparkI16));
+		SparkSize samples_read = drflac_read_pcm_frames_s16(flac, flac->totalPCMFrameCount, sample_data);
+
+		drflac_close(flac);
+
+		if (samples_read == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from FLAC file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		format = __SparkGetOpenALFormat(flac->channels, 16);
+		if (format == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported FLAC format in file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		data = sample_data;
+		frequency = flac->sampleRate;
+		size = (SparkI32)(total_sample_count * sizeof(SparkI16));
+	}
+	else if (strcmp(extension, "mp3") == 0) {
+		// Load MP3 file using dr_mp3
+		drmp3 mp3;
+		if (!drmp3_init_file(&mp3, file_path, NULL)) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load MP3 file: %s", file_path);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		SparkU64 total_pcm_frame_count = drmp3_get_pcm_frame_count(&mp3);
+		SparkSize total_sample_count = (SparkSize)(total_pcm_frame_count * mp3.channels);
+		SparkI16* sample_data = (SparkI16*)SparkAllocate(total_sample_count * sizeof(SparkI16));
+		SparkSize samples_read = drmp3_read_pcm_frames_s16(&mp3, total_pcm_frame_count, sample_data);
+
+		drmp3_uninit(&mp3);
+
+		if (samples_read == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from MP3 file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		format = __SparkGetOpenALFormat(mp3.channels, 16);
+		if (format == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported MP3 format in file: %s", file_path);
+			SparkFree(sample_data);
+			SparkFree(buffer);
+			return NULL;
+		}
+
+		data = sample_data;
+		frequency = mp3.sampleRate;
+		size = (SparkI32)(total_sample_count * sizeof(SparkI16));
+	}
+	else {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported file extension: %s", extension);
+		SparkFree(buffer);
+		return NULL;
+	}
+
+	// Generate OpenAL buffer
+	alGenBuffers(1, &buffer->bufferid);
+	if (alGetError() != AL_NO_ERROR) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL buffer.");
+		SparkFree(data);
+		SparkFree(buffer);
+		return NULL;
+	}
+
+	// Buffer the audio data into OpenAL
+	alBufferData(buffer->bufferid, format, data, size, frequency);
+	if (alGetError() != AL_NO_ERROR) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to buffer audio data into OpenAL.");
+		alDeleteBuffers(1, &buffer->bufferid);
+		SparkFree(data);
+		SparkFree(buffer);
+		return NULL;
+	}
+
+	buffer->format = format;
+	buffer->frequency = frequency;
+	buffer->size = size;
+	buffer->data = NULL; // Data has been passed to OpenAL
+
+	// Free the sample data as OpenAL has its own copy
+	SparkFree(data);
+
+	return buffer;
+}
+
+SPARKAPI void SPARKCALL SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
+	if (!buffer) return;
+
+	alDeleteBuffers(1, &buffer->bufferid);
+	SparkFree(buffer);
+}
+
+SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource(SparkAudioBuffer buffer) {
+	if (!buffer) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid audio buffer.");
+		return NULL;
+	}
+
+	SparkAudioSource source = (SparkAudioSource)malloc(sizeof(struct SparkAudioSourceT));
+	if (!source) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio source.");
+		return NULL;
+	}
+
+	memset(source, 0, sizeof(struct SparkAudioSourceT));
+
+	alGenSources(1, &source->sourceid);
+	if (alGetError() != AL_NO_ERROR) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL source.");
+		SparkFree(source);
+		return NULL;
+	}
+
+	// Attach buffer to source
+	alSourcei(source->sourceid, AL_BUFFER, buffer->bufferid);
+	if (alGetError() != AL_NO_ERROR) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to attach buffer to source.");
+		alDeleteSources(1, &source->sourceid);
+		SparkFree(source);
+		return NULL;
+	}
+
+	source->buffer = buffer;
+	source->looping = SPARK_FALSE;
+	source->gain = 1.0f;
+	source->pitch = 1.0f;
+	source->position.x = source->position.y = source->position.z = 0.0f;
+	source->velocity.x = source->velocity.y = source->velocity.z = 0.0f;
+	source->direction.x = source->direction.y = source->direction.z = 0.0f;
+
+	// Set initial source properties in OpenAL
+	alSourcef(source->sourceid, AL_GAIN, source->gain);
+	alSourcef(source->sourceid, AL_PITCH, source->pitch);
+	alSourcei(source->sourceid, AL_LOOPING, source->looping ? AL_TRUE : AL_FALSE);
+
+	alSource3f(source->sourceid, AL_POSITION, source->position.x, source->position.y, source->position.z);
+	alSource3f(source->sourceid, AL_VELOCITY, source->velocity.x, source->velocity.y, source->velocity.z);
+	alSource3f(source->sourceid, AL_DIRECTION, source->direction.x, source->direction.y, source->direction.z);
+
+	return source;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source) {
+	if (!source) return;
+
+	alDeleteSources(1, &source->sourceid);
+	SparkFree(source);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source) {
+	if (!source) return;
+	alSourcePlay(source->sourceid);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source) {
+	if (!source) return;
+	alSourceStop(source->sourceid);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkPauseAudioSource(SparkAudioSource source) {
+	if (!source) return;
+	alSourcePause(source->sourceid);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos) {
+	if (!source) return;
+	source->position.x = pos.x;
+	source->position.y = pos.y;
+	source->position.z = pos.z;
+	alSource3f(source->sourceid, AL_POSITION, pos.x, pos.y, pos.z);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkSetSourceGain(SparkAudioSource source, SparkF32 gain) {
+	if (!source) return;
+	source->gain = gain;
+	alSourcef(source->sourceid, AL_GAIN, gain);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch) {
+	if (!source) return;
+	source->pitch = pitch;
+	alSourcef(source->sourceid, AL_PITCH, pitch);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkSetSourceLooping(SparkAudioSource source, SparkBool looping) {
+	if (!source) return;
+	source->looping = looping;
+	alSourcei(source->sourceid, AL_LOOPING, looping ? AL_TRUE : AL_FALSE);
+}
+
 
 #pragma endregion
 
