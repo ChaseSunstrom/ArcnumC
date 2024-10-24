@@ -277,9 +277,6 @@
 #define SPARK_LOG_ERROR(message, ...)
 #endif
 
-// Default serialization function when size is not provided
-// Helper Macros
-
 #ifdef __STDC_VERSION__ >= 201112L
 
 #define SparkSerializeString(serializer, data) \
@@ -327,12 +324,6 @@
 
 #endif
 	
-
-/* Capabilities */
-#define SPARK_DEPTH_TEST 0x0B71
-#define SPARK_BLEND 0x0BE2
-#define SPARK_CULL_FACE 0x0B44
-#define SPARK_SCISSOR_TEST 0x0C11
 
 /* Clear mask bits */
 #define SPARK_COLOR_BUFFER_BIT 0x00004000
@@ -404,6 +395,8 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_EVENT_MAX_BIT ((SparkEventType)0x1ULL << 12)
 #define SPARK_EVENT_ALL 0xFFFFFFFFFFFFFFFF
 
+#define SPARK_ARRAY_ARG(arr) (arr), sizeof((arr)) / sizeof((arr)[0])
+
 #define SPARK_EVENT_TYPE_WINDOW                                                \
   SPARK_EVENT_WINDOW_CLOSE | SPARK_EVENT_WINDOW_RESIZE |                       \
       SPARK_EVENT_WINDOW_FOCUS | SPARK_EVENT_WINDOW_LOST_FOCUS |               \
@@ -416,11 +409,24 @@ typedef pthread_cond_t SparkCondition;
 
 #define SPARK_TRANSFORM_COMPONENT "__TRANSFORM_COMPONENT__"
 #define SPARK_MATERIAL_COMPONENT "__MATERIAL_COMPONENT__"
-#define SPARK_MESH_COMPONENT "__MESH_COMPONENT__"
-#define SPARK_MODEL_COMPONENT "__MODEL_COMPONENT__"
+#define SPARK_STATIC_MESH_COMPONENT "__STATIC_MESH_COMPONENT__"
+#define SPARK_DYNAMIC_MESH_COMPONENT "__DYNAMIC_MESH_COMPONENT__"
+#define SPARK_STATIC_MODEL_COMPONENT "__STATIC_MODEL_COMPONENT__"
+#define SPARK_DYNAMIC_MODEL_COMPONENT "__DYNAMIC_MODEL_COMPONENT__"
 #define SPARK_RIGID_BODY_COMPONENT "__RIGID_BODY_COMPONENT__"
 #define SPARK_COLLIDER_COMPONENT "__COLLIDER_COMPONENT__"
 #define SPARK_CAMERA_COMPONENT "__CAMERA_COMPONENT__"
+
+#define SPARK_RESOURCE_TYPE_STATIC_MESH "__STATIC_MESH_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_DYNAMIC_MESH "__DYNAMIC_MESH_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_TEXTURE "__TEXTURE_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_SHADER "__SHADER_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_MATERIAL "__MATERIAL_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_STATIC_MODEL "__STATIC_MODEL_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_DYNAMIC_MODEL "__DYNAMIC_MODEL_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_AUDIO "__AUDIO_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_FONT "__FONT_RESOURCE__"
+#define SPARK_RESOURCE_TYPE_ANIMATION "__ANIMATION_RESOURCE__"
 
 #define SPARK_PI        3.14159265358979323846
 #define SPARK_TWO_PI    6.28318530717958647692
@@ -439,6 +445,13 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_TWO_OVER_SQRT_PI 1.12837916709551257390
 #define SPARK_DEG_TO_RAD (SPARK_PI / 180.0f)
 #define SPARK_RAD_TO_DEG (180.0f / SPARK_PI)
+
+#define SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v) \
+(SparkVertex){ \
+	.position = { x, y, z }, \
+	.normal = { nx, ny, nz }, \
+	.texcoord = { u, v } \
+}
 
 #pragma endregion
 
@@ -1183,6 +1196,7 @@ typedef struct SparkResourceT {
 	SparkConstString name;
 	SparkConstString type;
 	SparkHandle data;
+	SparkFreeFunction destructor;
 } *SparkResource;
 
 typedef struct SparkResourceLoaderT {
@@ -1191,12 +1205,15 @@ typedef struct SparkResourceLoaderT {
 	SparkResult(*unload)(SparkHandle handle);
 } *SparkResourceLoader;
 
-typedef struct SparkResourceRegistryT {
+typedef struct SparkResourceManagerT {
 	/* HashMap <SparkString, SparkResourceLoader> */
 	SparkHashMap loaders;
+	/* Type to be inserted into all SparkResources */
+	SparkConstString type;
 	/* HashMap <SparkString, SparkResource> */
 	SparkHashMap resources;
-} *SparkResourceRegistry;
+	SparkFreeFunction resource_destructor;
+} *SparkResourceManager;
 
 typedef struct SparkWindowDataT {
 	SparkConstString title;
@@ -1255,7 +1272,7 @@ typedef struct SparkAudioBufferT {
 	SparkHandle data; 
 } *SparkAudioBuffer;
 
-typedef struct SparkAudioSourceT {
+typedef struct SparkAudioT {
 	SparkU32 sourceid;           // OpenAL source identifier
 	SparkVec3 position;       // Source position in 3D space
 	SparkVec3 velocity;       // Source velocity in 3D space
@@ -1264,7 +1281,42 @@ typedef struct SparkAudioSourceT {
 	SparkF32 gain;            // Volume gain (default is 1.0)
 	SparkF32 pitch;           // Pitch shift (default is 1.0)
 	SparkAudioBuffer buffer;  // Associated audio buffer
-} *SparkAudioSource;
+} *SparkAudio;
+
+typedef struct SparkVertexT {
+	SparkVec3 position;
+	SparkVec3 normal;
+	SparkVec2 texcoord;
+} SparkVertex;
+
+typedef struct SparkStaticMeshT {
+	SparkVertex* vertices;
+	SparkU32* indices;
+	SparkU32 vertex_count;
+	SparkU32 index_count;
+} *SparkStaticMesh;
+
+typedef struct SparkDynamicMeshT {
+	SparkVertex* vertices;
+	SparkU32* indices;
+	SparkU32 vertex_count;
+	SparkU32 index_count;
+}*SparkDynamicMesh;
+
+
+typedef struct SparkMaterialT {
+	SparkI8 not_implemented;
+}*SparkMaterial;
+
+typedef struct SparkStaticModelT {
+	SparkStaticMesh mesh;
+	SparkMaterial material;
+}*SparkStaticModel;
+
+typedef struct SparkDynamicModelT {
+	SparkDynamicMesh mesh;
+	SparkMaterial material;
+}*SparkDynamicModel;
 
 /* Scene management declarations */
 typedef struct SparkSceneNodeT {
@@ -1370,7 +1422,7 @@ typedef struct SparkWindowT {
 typedef struct SparkApplicationT {
 	SparkWindow window;
 	SparkEcs ecs;
-	SparkResourceRegistry resource_registry;
+	SparkHashMap resource_manager;
 	SparkEventHandler event_handler;
 	/* Vector <SparkApplicationStartFunction> */
 	SparkVector start_functions;
@@ -2187,7 +2239,7 @@ typedef struct SparkProgramT* SparkProgram;
 SPARKAPI SparkShader SPARKCALL SparkCreateShader(SparkShaderType type,
 	SparkConstString source);
 SPARKAPI SparkResult SPARKCALL SparkCompileShader(SparkShader shader);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteShader(SparkShader shader);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader);
 
 /* Program creation, linking, and deletion */
 SPARKAPI SparkProgram SPARKCALL SparkCreateProgram();
@@ -2251,7 +2303,7 @@ SPARKAPI SparkResult SPARKCALL SparkGetUniformLocation(SparkProgram program,
 
 /* Shader utility functions */
 SPARKAPI SparkResult SPARKCALL SparkLoadShaderFromFile(SparkShader shader,
-	SparkConstString filePath);
+	SparkConstString file_path);
 SPARKAPI SparkResult SPARKCALL SparkSetShaderSource(SparkShader shader,
 	SparkConstString source);
 
@@ -2290,9 +2342,8 @@ SPARKAPI SparkResult SPARKCALL SparkDrawElements(SparkPrimitiveType mode, SparkS
 
 /* Texture functions */
 typedef struct SparkTextureT* SparkTexture;
-SPARKAPI SparkTexture SPARKCALL SparkCreateTexture2D(SparkI32 width, SparkI32 height,
-	SparkConstBuffer data);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteTexture(SparkTexture texture);
+SPARKAPI SparkTexture SPARKCALL SparkCreateTexture(SparkConstString file_path);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyTexture(SparkTexture texture);
 SPARKAPI SparkResult SPARKCALL SparkBindTexture(SparkTexture texture, SparkI32 unit);
 SPARKAPI SparkResult SPARKCALL SparkSetTextureParameter(SparkTexture texture,
 	SparkI32 pname, SparkI32 param);
@@ -2313,6 +2364,14 @@ SPARKAPI SparkVoid SPARKCALL SparkDeleteRenderbuffer(SparkRenderbuffer renderbuf
 SPARKAPI SparkResult SPARKCALL SparkBindRenderbuffer(SparkRenderbuffer renderbuffer);
 SPARKAPI SparkResult SPARKCALL SparkFramebufferRenderbuffer(
 	SparkFramebuffer framebuffer, SparkRenderbuffer renderbuffer);
+
+SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[], SparkU32 vertices_size);
+SPARKAPI SparkStaticMesh SPARKCALL SparkCreateStaticMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticMesh(SparkStaticMesh mesh);
+
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[], SparkU32 vertices_size);
+SPARKAPI SparkDynamicMesh SPARKCALL SparkCreateDynamicMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicMesh(SparkDynamicMesh mesh);
 
 /* Render loop functions */
 SPARKAPI SparkResult SPARKCALL SparkClear(SparkU32 mask);
@@ -2339,22 +2398,21 @@ SPARKAPI SparkInput SPARKCALL SparkCreateInput();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyInput(SparkInput input);
 SPARKAPI SparkVoid SPARKCALL SparkUpdateInput(SparkInput input);
 
+
 SPARKAPI SparkBool SPARKCALL SparkInitAudio();
 SPARKAPI SparkVoid SPARKCALL SparkShutdownAudio();
 SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file_path);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioBuffer(SparkAudioBuffer buffer);
-SPARKAPI SparkAudioSource SPARKCALL SparkCreateAudioSource(SparkAudioBuffer buffer);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkPlayAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkStopAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkPauseAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkRewindAudioSource(SparkAudioSource source);
-SPARKAPI SparkVoid SPARKCALL SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos);
-SPARKAPI SparkVoid SPARKCALL SparkSetSourceGain(SparkAudioSource source, SparkF32 gain);
-SPARKAPI SparkVoid SPARKCALL SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch);
-SPARKAPI SparkVoid SPARKCALL SparkSetSourceLooping(SparkAudioSource source, SparkBool loop);
-
-
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAudioBuffer(SparkAudioBuffer buffer);
+SPARKAPI SparkAudio SPARKCALL SparkCreateAudio(SparkAudioBuffer buffer);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAudio(SparkAudio source);
+SPARKAPI SparkVoid SPARKCALL SparkPlayAudio(SparkAudio source);
+SPARKAPI SparkVoid SPARKCALL SparkStopAudio(SparkAudio source);
+SPARKAPI SparkVoid SPARKCALL SparkPauseAudio(SparkAudio source);
+SPARKAPI SparkVoid SPARKCALL SparkRewindAudio(SparkAudio source);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioPosition(SparkAudio source, SparkVec3 pos);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioGain(SparkAudio source, SparkF32 gain);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioPitch(SparkAudio source, SparkF32 pitch);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioLooping(SparkAudio source, SparkBool loop);
 
 SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer);
@@ -2377,12 +2435,15 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene);
 SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene, SparkEntity entity, SparkSceneNode parent);
 SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene, SparkEntity entity);
 
-/* Resource management declarations */
-SPARKAPI SparkResource SPARKCALL SparkLoadResource(SparkResourceRegistry registry, SparkConstString type, SparkConstString filePath);
-SPARKAPI SparkVoid SPARKCALL SparkUnloadResource(SparkResourceRegistry registry, SparkResource resource);
-SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceRegistry registry, SparkConstString name);
+SPARKAPI SparkResourceManager SPARKCALL SparkCreateResourceManager(SparkConstString type, SparkFreeFunction resource_free);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyResourceManager(SparkResourceManager manager);
+SPARKAPI SparkResult SPARKCALL SparkAddResource(SparkResourceManager manager, SparkResource resource);
+SPARKAPI SparkResult SPARKCALL SparkRemoveResource(SparkResourceManager manager, SparkConstString name);
+SPARKAPI SparkHandle SPARKCALL SparkCreateResourceData(SparkConstString type, ...);
+SPARKAPI SparkResource SPARKCALL SparkCreateResource(SparkResourceManager manager, SparkConstString name, SparkHandle data);
+SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceManager manager, SparkConstString name);
 
-SPARKAPI SparkAnimation SPARKCALL SparkCreateAnimation(SparkConstString filePath);
+SPARKAPI SparkAnimation SPARKCALL SparkCreateAnimation(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAnimation(SparkAnimation animation);
 SPARKAPI SparkResult SPARKCALL SparkPlayAnimation(SparkEntity entity, SparkAnimation animation);
 
@@ -2400,9 +2461,18 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyParticleEmitter(SparkParticleEmitter em
 SPARKAPI SparkResult SPARKCALL SparkSetParticleEmitterProperties(SparkParticleEmitter emitter /* properties */);
 SPARKAPI SparkVoid SPARKCALL SparkEmitParticles(SparkParticleEmitter emitter, SparkSize count);
 
-SPARKAPI SparkFont SPARKCALL SparkLoadFont(SparkConstString filePath, SparkScalar size);
-SPARKAPI SparkVoid SPARKCALL SparkUnloadFont(SparkFont font);
+SPARKAPI SparkFont SPARKCALL SparkCreateFont(SparkConstString file_path, SparkScalar size);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyFont(SparkFont font);
 SPARKAPI SparkVoid SPARKCALL SparkRenderText(SparkText* text);
+
+SPARKAPI SparkMaterial SPARKCALL SparkCreateMaterial();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyMaterial(SparkMaterial material);
+
+SPARKAPI SparkStaticModel SPARKCALL SparkCreateStaticModel(SparkStaticMesh mesh, SparkMaterial material);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticModel(SparkStaticModel model);
+
+SPARKAPI SparkDynamicModel SPARKCALL SparkCreateDynamicModel(SparkDynamicMesh mesh, SparkMaterial material);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicModel(SparkDynamicModel model);
 
 /* Miscellaneous utility functions */
 SPARKAPI SparkVoid SPARKCALL SparkSetWindowTitle(SparkWindow window, SparkConstString title);
@@ -2522,6 +2592,10 @@ SPARKAPI SparkResult SPARKCALL SparkAddQueryEventFunctionApplication(
 	SparkApplication app, SparkEventType event_type,
 	SparkConstString component_type,
 	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
+SPARKAPI SparkResource SPARKCALL SparkCreateResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name, SparkHandle data);
+SPARKAPI SparkResource SPARKCALL SparkGetResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
+SPARKAPI SparkResult SPARKCALL SparkAddResourceApplication(SparkApplication app, SparkConstString type, SparkResource resource);
+SPARKAPI SparkResult SPARKCALL SparkRemoveResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
 
 #pragma endregion
@@ -2716,7 +2790,7 @@ typedef SparkEcs Ecs;
 typedef SparkEventHandler EventHandler;
 typedef SparkResource Resource;
 typedef SparkResourceLoader ResourceLoader;
-typedef SparkResourceRegistry ResourceRegistry;
+typedef SparkResourceManager ResourceRegistry;
 typedef SparkWindowData WindowData;
 typedef SparkWindow Window;
 typedef SparkRenderer Renderer;
@@ -2724,6 +2798,17 @@ typedef SparkEvent Event;
 typedef SparkEventHandler EventHandler;
 typedef SparkClientConnection ClientConnection;
 typedef SparkEnvelope Envelope;
+typedef SparkResource Resource;
+typedef SparkResourceManager ResourceManager;
+typedef SparkStaticMesh StaticMesh;
+typedef SparkDynamicMesh DynamicMesh;
+typedef SparkStaticModel StaticModel;
+typedef SparkDynamicModel DynamicModel;
+typedef SparkMaterial Material;
+typedef SparkTexture Texture;
+typedef SparkAudioBuffer AudioBuffer;
+typedef SparkVertex Vertex;
+typedef SparkAudio Audio;
 typedef SparkThreadPool ThreadPool;
 typedef SparkTaskHandle TaskHandle;
 typedef SparkServer Server;
@@ -2840,6 +2925,15 @@ typedef SparkApplication Application;
 #define ContainsSet SparkContainsSet
 #define ClearSet SparkClearSet
 
+#define CreateResourceManager SparkCreateResourceManager
+#define DestroyResourceManager SparkDestroyResourceManager
+#define AddResource SparkAddResource
+#define CreateResource SparkCreateResource
+#define RemoveResource SparkRemoveResource
+#define CreateResourceDataV SparkCreateResourceData
+#define CreateResourceData SparkCreateResourceData
+#define GetResource SparkGetResource
+
 #define DefaultHashSet SparkDefaultHashSet
 #define CreateHashSet SparkCreateHashSet
 #define DestroyHashSet SparkDestroyHashSet
@@ -2924,6 +3018,16 @@ typedef SparkApplication Application;
 #define SendToClient SparkSendToClient
 #define Broadcast SparkBroadcast
 
+#define CreateStaticMesh SparkCreateStaticMesh
+#define CreateStaticMeshI SparkCreateStaticMeshI
+#define DestroyStaticMesh SparkDestroyStaticMesh
+#define CreateDynamicMesh SparkCreateDynamicMesh
+#define CreateDynamicMeshI SparkCreateDynamicMeshI
+#define DestroyDynamicMesh SparkDestroyDynamicMesh
+
+#define CreateTexture SparkCreateTexture
+#define DestroyTexture SparkDestroyTexture
+
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication
 #define UpdateApplication SparkUpdateApplication
@@ -2936,6 +3040,39 @@ typedef SparkApplication Application;
 #define AddEventFunctionApplication SparkAddEventFunctionApplication
 #define AddQueryFunctionApplication SparkAddQueryFunctionApplication
 #define AddQueryEventFunctionApplication SparkAddQueryEventFunctionApplication
+#define CreateResourceApplication SparkCreateResourceApplication
+#define GetResourceApplication SparkGetResourceApplication
+#define AddResourceApplication SparkAddResourceApplication
+#define RemoveResourceApplication SparkRemoveResourceApplication
+
+#endif
+
+#if defined(SPARK_DEFINE_MACRO_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+
+#define TransformComponent SPARK_TRANSFORM_COMPONENT
+#define StaticMeshComponent SPARK_STATIC_MESH_COMPONENT
+#define DynamicMeshComponent SPARK_DYNAMIC_MESH_COMPONENT
+#define MaterialComponent SPARK_MATERIAL_COMPONENT
+#define CameraComponent SPARK_CAMERA_COMPONENT
+#define StaticModelComponent SPARK_STATIC_MODEL_COMPONENT
+#define DynamicModelComponent SPARK_DYNAMIC_MODEL_COMPONENT
+#define RigidBodyComponent SPARK_RIGID_BODY_COMPONENT
+#define ColliderComponent SPARK_COLLIDER_COMPONENT
+
+#define StaticMeshResourceType SPARK_RESOURCE_TYPE_STATIC_MESH
+#define DynamicMeshResourceType SPARK_RESOURCE_TYPE_DYNAMIC_MESH
+#define TextureResourceType SPARK_RESOURCE_TYPE_TEXTURE
+#define ShaderResourceType SPARK_RESOURCE_TYPE_SHADER
+#define FontResourceType SPARK_RESOURCE_TYPE_FONT
+#define AnimationResourceType SPARK_RESOURCE_TYPE_ANIMATION
+#define AudioResourceType SPARK_RESOURCE_TYPE_AUDIO
+#define StaticModelResourceType SPARK_RESOURCE_TYPE_STATIC_MODEL
+#define DynamicModelResourceType SPARK_RESOURCE_TYPE_DYNAMIC_MODEL
+#define MaterialResourceType SPARK_RESOURCE_TYPE_MATERIAL
+
+#define ArrayArg SPARK_ARRAY_ARG
+#define NoIndices SPARK_NULL, 0
+#define MakeVertex(x, y, z, nx, ny, nz, u, v) SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)
 
 #endif
 

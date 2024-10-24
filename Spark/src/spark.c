@@ -7260,26 +7260,26 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	return buffer;
 }
 
-SPARKAPI SparkVoid  SparkDeleteAudioBuffer(SparkAudioBuffer buffer) {
+SPARKAPI SparkVoid  SparkDestroyAudioBuffer(SparkAudioBuffer buffer) {
 	if (!buffer) return;
 
 	alDeleteBuffers(1, &buffer->bufferid);
 	SparkFree(buffer);
 }
 
-SPARKAPI SparkAudioSource  SparkCreateAudioSource(SparkAudioBuffer buffer) {
+SPARKAPI SparkAudio  SparkCreateAudio(SparkAudioBuffer buffer) {
 	if (!buffer) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid audio buffer.");
 		return NULL;
 	}
 
-	SparkAudioSource source = (SparkAudioSource)SparkAllocate(sizeof(struct SparkAudioSourceT));
+	SparkAudio source = (SparkAudio)SparkAllocate(sizeof(struct SparkAudioT));
 	if (!source) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio source.");
 		return NULL;
 	}
 
-	memset(source, 0, sizeof(struct SparkAudioSourceT));
+	memset(source, 0, sizeof(struct SparkAudioT));
 
 	alGenSources(1, &source->sourceid);
 	if (alGetError() != AL_NO_ERROR) {
@@ -7317,35 +7317,35 @@ SPARKAPI SparkAudioSource  SparkCreateAudioSource(SparkAudioBuffer buffer) {
 	return source;
 }
 
-SPARKAPI SparkVoid  SparkDeleteAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkDestroyAudio(SparkAudio source) {
 	if (!source) return;
 
-	SparkDeleteAudioBuffer(source->buffer);
+	SparkDestroyAudioBuffer(source->buffer);
 	alDeleteSources(1, &source->sourceid);
 	SparkFree(source);
 }
 
-SPARKAPI SparkVoid  SparkPlayAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkPlayAudio(SparkAudio source) {
 	if (!source) return;
 	alSourcePlay(source->sourceid);
 }
 
-SPARKAPI SparkVoid SparkRewindAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid SparkRewindAudio(SparkAudio source) {
 	if (!source) return;
 	alSourceRewind(source->sourceid);
 }
 
-SPARKAPI SparkVoid  SparkStopAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkStopAudio(SparkAudio source) {
 	if (!source) return;
 	alSourceStop(source->sourceid);
 }
 
-SPARKAPI SparkVoid  SparkPauseAudioSource(SparkAudioSource source) {
+SPARKAPI SparkVoid  SparkPauseAudio(SparkAudio source) {
 	if (!source) return;
 	alSourcePause(source->sourceid);
 }
 
-SPARKAPI SparkVoid  SparkSetSourcePosition(SparkAudioSource source, SparkVec3 pos) {
+SPARKAPI SparkVoid  SparkSetAudioPosition(SparkAudio source, SparkVec3 pos) {
 	if (!source) return;
 	source->position.x = pos.x;
 	source->position.y = pos.y;
@@ -7353,19 +7353,19 @@ SPARKAPI SparkVoid  SparkSetSourcePosition(SparkAudioSource source, SparkVec3 po
 	alSource3f(source->sourceid, AL_POSITION, pos.x, pos.y, pos.z);
 }
 
-SPARKAPI SparkVoid  SparkSetSourceGain(SparkAudioSource source, SparkF32 gain) {
+SPARKAPI SparkVoid  SparkSetAudioGain(SparkAudio source, SparkF32 gain) {
 	if (!source) return;
 	source->gain = gain;
 	alSourcef(source->sourceid, AL_GAIN, gain);
 }
 
-SPARKAPI SparkVoid  SparkSetSourcePitch(SparkAudioSource source, SparkF32 pitch) {
+SPARKAPI SparkVoid  SparkSetAudioPitch(SparkAudio source, SparkF32 pitch) {
 	if (!source) return;
 	source->pitch = pitch;
 	alSourcef(source->sourceid, AL_PITCH, pitch);
 }
 
-SPARKAPI SparkVoid  SparkSetSourceLooping(SparkAudioSource source, SparkBool looping) {
+SPARKAPI SparkVoid  SparkSetAudioLooping(SparkAudio source, SparkBool looping) {
 	if (!source) return;
 	source->looping = looping;
 	alSourcei(source->sourceid, AL_LOOPING, looping ? AL_TRUE : AL_FALSE);
@@ -7585,49 +7585,216 @@ SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer) {
 
 #pragma endregion
 
+#pragma region RESOURCE
+
+SPARKAPI SparkVoid SPARKSTATIC __SparkFreeResource(SparkResource resource) {
+	resource->destructor(resource->data);
+	SparkFree(resource);
+}
+
+SPARKAPI SparkResourceManager SparkCreateResourceManager(SparkConstString type, SparkFreeFunction resource_free) {
+	SparkResourceManager manager = SparkAllocate(sizeof(struct SparkResourceManagerT));
+	manager->type = type;
+	manager->resource_destructor = resource_free;
+	manager->resources = SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, __SparkFreeResource);
+	return manager;
+}
+
+SPARKAPI SparkVoid SparkDestroyResourceManager(SparkResourceManager manager) {
+	SparkDestroyHashMap(manager->resources);
+	SparkFree(manager);
+}
+
+SPARKAPI SparkResult SparkAddResource(SparkResourceManager manager, SparkResource resource) {
+	if (!manager) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	// Will overwrite the resource if it already exists
+	return SparkInsertHashMap(manager->resources, resource->name, strlen(resource->name), resource);
+}
+
+SPARKAPI SparkResult SparkRemoveResource(SparkResourceManager manager, SparkConstString name) {
+	if (!manager) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	return SparkRemoveHashMap(manager->resources, name, strlen(name));
+}
+
+SPARKAPI SparkHandle SparkCreateResourceData(SparkConstString type, ...) {
+	va_list args;
+	va_start(type, args);
+
+	SparkHandle handle = SPARK_NULL;
+
+	if (strcmp(type, SPARK_RESOURCE_TYPE_STATIC_MESH) == 0) {
+		SparkF32* vertices = va_arg(args, SparkF32*);
+		SparkU32 vertices_size = va_arg(args, SparkU32);
+		SparkU32* indices = va_arg(args, SparkU32*);
+		SparkU32 indices_size = va_arg(args, SparkU32);
+
+		handle = SparkCreateStaticMeshI(vertices, vertices_size, indices, indices_size);
+	}
+	else if (strcmp(type, SPARK_RESOURCE_TYPE_DYNAMIC_MESH) == 0) {
+		SparkF32* vertices = va_arg(args, SparkF32*);
+		SparkU32 vertices_size = va_arg(args, SparkU32);
+		SparkU32* indices = va_arg(args, SparkU32*);
+		SparkU32 indices_size = va_arg(args, SparkU32);
+
+		handle = SparkCreateDynamicMeshI(vertices, vertices_size, indices, indices_size);
+	}
+
+	va_end(args);
+
+	return handle;
+}
+
+SPARKAPI SparkResource SparkCreateResource(SparkResourceManager manager, SparkConstString name, SparkHandle data) {
+	if (!manager) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	SparkResource resource = SparkAllocate(sizeof(struct SparkResourceT));
+	resource->name = name;
+	resource->data = data;
+	resource->type = manager->type;
+	resource->destructor = manager->resource_destructor;
+
+	if (SparkAddResource(manager, resource) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Adding resource: %s", name);
+	}
+
+	return resource;
+}
+
+SPARKAPI SparkResource SparkGetResource(SparkResourceManager manager, SparkConstString name) {
+	if (!manager) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		return SPARK_NULL;
+	}
+
+	return SparkGetElementHashMap(manager->resources, name, strlen(name));
+}
+
+#pragma endregion
+
+#pragma region MESH
+
+SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[], SparkU32 vertices_size) {
+	return SparkCreateStaticMeshI(vertices, vertices_size, SPARK_NULL, 0);
+}
+
+SPARKAPI SparkStaticMesh SparkCreateStaticMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size) {
+	SparkStaticMesh mesh = SparkAllocate(sizeof(struct SparkStaticMeshT));
+	mesh->vertices = vertices;
+	mesh->vertex_count = vertices_size;
+	mesh->indices = indices;
+	mesh->index_count = indices_size;
+	return mesh;
+}
+
+SPARKAPI SparkVoid SparkDestroyStaticMesh(SparkStaticMesh mesh) {
+	SparkFree(mesh);
+}
+
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[], SparkU32 vertices_size) {
+	return SparkCreateDynamicMeshI(vertices, vertices_size, SPARK_NULL, 0);
+}
+
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size) {
+	SparkDynamicMesh mesh = SparkAllocate(sizeof(struct SparkDynamicMeshT));
+	mesh->vertices = vertices;
+	mesh->vertex_count = vertices_size;
+	mesh->indices = indices;
+	mesh->index_count = indices_size;
+	return mesh;
+}
+
+SPARKAPI SparkVoid SparkDestroyDynamicMesh(SparkDynamicMesh mesh) {
+	SparkFree(mesh);
+}
+
+#pragma endregion
+
+#pragma region MATERIAL
+
+SPARKAPI SparkMaterial SparkCreateMaterial() {
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkVoid SparkDestroyMaterial(SparkMaterial material) {
+	SparkFree(material);
+}
+
+#pragma endregion
+
+#pragma region MODEL
+
+SPARKAPI SparkStaticModel SparkCreateStaticModel(SparkStaticMesh mesh, SparkMaterial material) {
+	SparkStaticModel model = SparkAllocate(sizeof(struct SparkStaticModelT));
+	model->mesh = mesh;
+	model->material = material;
+	return model;
+}
+
+SPARKAPI SparkVoid SparkDestroyStaticModel(SparkStaticModel model) {
+	SparkFree(model);
+}
+
+SPARKAPI SparkDynamicModel SparkCreateDynamicModel(SparkDynamicMesh mesh, SparkMaterial material) {
+	SparkDynamicModel model = SparkAllocate(sizeof(struct SparkDynamicModelT));
+	model->mesh = mesh;
+	model->material = material;
+	return model;
+}
+
+SPARKAPI SparkVoid SparkDestroyDynamicModel(SparkDynamicModel model) {
+	SparkFree(model);
+}
+
+#pragma endregion
+
+#pragma region TEXTURE
+
+SPARKAPI SparkTexture SparkCreateTexture(SparkConstString file_path) {
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkVoid SparkDestroyTexture(SparkTexture texture) {
+	SparkFree(texture);
+}
+
+#pragma endregion
+
+#pragma region SHADER
+
+SPARKAPI SparkShader SparkCreateShader(SparkConstString vertex_shader_path, SparkConstString fragment_shader_path) {
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkVoid SparkDestroyShader(SparkShader shader) {
+	SparkFree(shader);
+}
+
+#pragma endregion
+
+#pragma region FONT
+
+SPARKAPI SparkFont SparkCreateFont(SparkConstString file_path, SparkU32 size) {
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkVoid SparkDestroyFont(SparkFont font) {
+	SparkFree(font);
+}
+
+#pragma endregion
+
 #pragma region APPLICATION
-
-SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize thread_count) {
-	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
-	app->window = window;
-	app->ecs = SparkCreateEcs();
-	app->event_handler = window->window_data->event_handler;
-	app->ecs->event_handler = app->event_handler;
-	app->start_functions = SparkDefaultVector();
-	app->stop_functions = SparkDefaultVector();
-	app->update_functions = SparkDefaultVector();
-	app->thread_pool = SparkCreateThreadPool(thread_count);
-	app->query_functions =
-		SparkCreateHashMap(
-			4,
-			SparkStringHash,
-			SparkStringCompare,
-			SPARK_NULL,
-			SPARK_NULL,
-			SparkDestroyVector);
-	app->event_functions = SparkDefaultVector();
-	app->query_event_functions = SparkDefaultVector();
-	app->event_handler->application = app;
-	app->event_handler->ecs = app->ecs;
-	SparkInitMutex(app->mutex);
-	return app;
-}
-
-SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
-	SparkDestroyWindow(app->window);
-	SparkDestroyEcs(app->ecs);
-	SparkDestroyEventHandler(app->event_handler);
-	SparkDestroyVector(app->start_functions);
-	SparkDestroyVector(app->stop_functions);
-	SparkDestroyVector(app->update_functions);
-	SparkDestroyVector(app->query_functions);
-	SparkDestroyVector(app->event_functions);
-	SparkDestroyVector(app->query_event_functions);
-	SparkDestroyThreadPool(app->thread_pool);
-	SparkDestroyMutex(app->mutex);
-	SparkFree(app);
-}
-
 
 typedef struct SparkQueryTaskArgT {
 	SparkApplication app;
@@ -7664,30 +7831,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateTaskFunction(SparkHandle task) {
 	SparkFree(task_arg);
 }
 
-SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
-	for (SparkSize i = 0; i < app->start_functions->size; i++) {
-		SparkStartHandlerFunction function =
-			SparkGetElementVector(app->start_functions, i);
-
-		if (function->thread_settings.first) {
-			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
-			task_arg->app = app;
-			task_arg->function = function->function;
-
-			SparkAddTaskThreadPool(
-				app->thread_pool,
-				(SparkThreadFunction)__SparkUpdateTaskFunction,
-				task_arg,
-				function->thread_settings.second);
-		}
-		else {
-			function->function(app);
-		}
-	}
-
-	return SparkUpdateApplication(app);
-}
-
 SPARKAPI SPARKSTATIC SparkBool
 __SparkApplicationKeepOpen(SparkApplication app) {
 	return !glfwWindowShouldClose(app->window) || SPARK_TRUE;
@@ -7715,7 +7858,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 	SparkDestroyApplication(app);
 	return SPARK_SUCCESS;
 }
-
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	// Run update functions
@@ -7785,6 +7927,98 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 
 	// Wait for tasks that need to be waited upon
 	SparkWaitThreadPool(app->thread_pool);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkInitializeResourceManagerApplication(SparkApplication app) {
+	SparkResourceManager smesh_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_STATIC_MESH, SparkDestroyStaticMesh);
+	SparkResourceManager dmesh_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_DYNAMIC_MESH, SparkDestroyDynamicMesh);
+	SparkResourceManager texture_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_TEXTURE, SparkDestroyTexture);
+	SparkResourceManager shader_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_SHADER, SparkDestroyShader);
+	SparkResourceManager material_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_MATERIAL, SparkDestroyMaterial);
+	SparkResourceManager font_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_FONT, SparkDestroyFont);
+	SparkResourceManager audio_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_AUDIO, SparkDestroyAudio);
+	SparkResourceManager smodel_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_STATIC_MODEL, SparkDestroyStaticModel);
+	SparkResourceManager dmodel_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, SparkDestroyDynamicModel);
+
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH), smesh_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MESH, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MESH), dmesh_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_TEXTURE, strlen(SPARK_RESOURCE_TYPE_TEXTURE), texture_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SHADER, strlen(SPARK_RESOURCE_TYPE_SHADER), shader_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_MATERIAL, strlen(SPARK_RESOURCE_TYPE_MATERIAL), material_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_FONT, strlen(SPARK_RESOURCE_TYPE_FONT), font_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_AUDIO, strlen(SPARK_RESOURCE_TYPE_AUDIO), audio_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MODEL, strlen(SPARK_RESOURCE_TYPE_STATIC_MODEL), smodel_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL), dmodel_manager);
+}
+
+SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window, SparkSize thread_count) {
+	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
+	app->window = window;
+	app->ecs = SparkCreateEcs();
+	app->event_handler = window->window_data->event_handler;
+	app->ecs->event_handler = app->event_handler;
+	app->start_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->stop_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->update_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->thread_pool = SparkCreateThreadPool(thread_count);
+	app->resource_manager = SparkCreateHashMap(8, SparkStringHash, SparkStringCompare, SPARK_NULL, SPARK_NULL, SparkDestroyResourceManager);
+	app->query_functions =
+		SparkCreateHashMap(
+			2,
+			SparkStringHash,
+			SparkStringCompare,
+			SPARK_NULL,
+			SPARK_NULL,
+			SparkDestroyVector);
+	app->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->query_event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->event_handler->application = app;
+	app->event_handler->ecs = app->ecs;
+	SparkInitMutex(app->mutex);
+
+	__SparkInitializeResourceManagerApplication(app);
+
+	return app;
+}
+
+SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
+	SparkDestroyWindow(app->window);
+	SparkDestroyEcs(app->ecs);
+	SparkDestroyEventHandler(app->event_handler);
+	SparkDestroyVector(app->start_functions);
+	SparkDestroyVector(app->stop_functions);
+	SparkDestroyVector(app->update_functions);
+	SparkDestroyVector(app->query_functions);
+	SparkDestroyVector(app->event_functions);
+	SparkDestroyVector(app->query_event_functions);
+	SparkDestroyHashMap(app->resource_manager);
+	SparkDestroyThreadPool(app->thread_pool);
+	SparkDestroyMutex(app->mutex);
+	SparkFree(app);
+}
+
+SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
+	for (SparkSize i = 0; i < app->start_functions->size; i++) {
+		SparkStartHandlerFunction function =
+			SparkGetElementVector(app->start_functions, i);
+
+		if (function->thread_settings.first) {
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			task_arg->app = app;
+			task_arg->function = function->function;
+
+			SparkAddTaskThreadPool(
+				app->thread_pool,
+				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				task_arg,
+				function->thread_settings.second);
+		}
+		else {
+			function->function(app);
+		}
+	}
+
+	return SparkUpdateApplication(app);
 }
 
 SPARKAPI SparkResult SparkAddStartFunctionApplication(
@@ -7863,6 +8097,26 @@ SPARKAPI SparkResult SparkAddQueryEventFunctionApplication(
 SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app,
 	SparkEvent event) {
 	return SparkDispatchEvent(app->event_handler, event);
+}
+
+SPARKAPI SparkResource SparkCreateResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name, SparkHandle data) {
+	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, type, strlen(type));
+	return SparkCreateResource(rm, name, data);
+}
+
+SPARKAPI SparkResource SparkGetResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name) {
+	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	return SparkGetResource(rm, name);
+}
+
+SPARKAPI SparkResult SparkAddResourceApplication(SparkApplication app, SparkConstString type, SparkResource resource) {
+	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	return SparkAddResource(rm, resource);
+}
+
+SPARKAPI SparkResult SparkRemoveResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name) {
+	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	return SparkRemoveResource(rm, name);
 }
 
 #pragma endregion
