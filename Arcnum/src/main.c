@@ -138,8 +138,7 @@ void ResourceCreater(Application app) {
 		StaticMeshResourceType,
 		"Square",
 		CreateStaticMesh(
-			vertices,
-			4
+			ArrayArg(vertices)
 		)
 	);
 
@@ -158,7 +157,7 @@ void ResourceCreater(Application app) {
 			curr_vertex.texcoord.y);
 	}
 
-	return;
+	RemoveResourceApplication(app, StaticMeshResourceType, "Square");
 }
 
 i32 main() {

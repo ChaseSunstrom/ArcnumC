@@ -8105,18 +8105,23 @@ SPARKAPI SparkResource SparkCreateResourceApplication(SparkApplication app, Spar
 }
 
 SPARKAPI SparkResource SparkGetResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name) {
-	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, type, strlen(type));
 	return SparkGetResource(rm, name);
 }
 
 SPARKAPI SparkResult SparkAddResourceApplication(SparkApplication app, SparkConstString type, SparkResource resource) {
-	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, type, strlen(type));
 	return SparkAddResource(rm, resource);
 }
 
 SPARKAPI SparkResult SparkRemoveResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name) {
-	SparkResourceManager rm = SparkGetResource(app->resource_manager, type);
+	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, type, strlen(type));
 	return SparkRemoveResource(rm, name);
+}
+
+SPARKAPI SparkResult SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type, SparkFreeFunction resource_destructor) {
+	SparkResourceManager rm = SparkCreateResourceManager(type, resource_destructor);
+	return SparkInsertHashMap(app->resource_manager, type, strlen(type), rm);
 }
 
 #pragma endregion

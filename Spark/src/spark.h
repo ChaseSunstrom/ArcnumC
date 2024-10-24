@@ -2596,6 +2596,7 @@ SPARKAPI SparkResource SPARKCALL SparkCreateResourceApplication(SparkApplication
 SPARKAPI SparkResource SPARKCALL SparkGetResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
 SPARKAPI SparkResult SPARKCALL SparkAddResourceApplication(SparkApplication app, SparkConstString type, SparkResource resource);
 SPARKAPI SparkResult SPARKCALL SparkRemoveResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
+SPARKAPI SparkResult SPARKCALL SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type, SparkFreeFunction resource_destructor);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
 
 #pragma endregion
@@ -3043,6 +3044,7 @@ typedef SparkApplication Application;
 #define CreateResourceApplication SparkCreateResourceApplication
 #define GetResourceApplication SparkGetResourceApplication
 #define AddResourceApplication SparkAddResourceApplication
+#define AddResourceManagerApplication SparkAddResourceManagerApplication
 #define RemoveResourceApplication SparkRemoveResourceApplication
 
 #endif
