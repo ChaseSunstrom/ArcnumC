@@ -22,6 +22,7 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#include <process.h>
 #define SparkAtomicIncrement(data) InterlockedIncrement((LONG volatile*)(data))
 #define SparkAtomicDecrement(data) InterlockedDecrement((LONG volatile*)(data))
 #elif defined(__clang__) || defined(__GNUC__)
@@ -2642,7 +2643,9 @@ SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
 		}
 	}
 
-	allocator->free(vector->elements);
+	
+	if (vector->elements)
+		allocator->free(vector->elements);
 
 	SparkBool external_allocator = vector->external_allocator;
 
@@ -4249,28 +4252,35 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
 #endif
 
+#ifdef _WIN32
+DWORD WINAPI __SparkThreadPoolWorker(LPVOID arg) {
+#else
 SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
+#endif
 	SparkThreadPool pool = (SparkThreadPool)arg;
 	SparkTaskHandle task;
 
 	while (SPARK_TRUE) {
 		SparkLockMutex(pool->mutex);
 
-		while (pool->task_queue_head == NULL && !pool->stop) {
+		while (pool->task_queue_head == NULL) {
+			if (pool->stop) {
+				SparkUnlockMutex(pool->mutex);
+				break;
+			}
 			SparkWaitCondition(pool->condition, pool->mutex);
 		}
 
-		if (pool->stop && pool->task_queue_head == NULL) {
+		if (pool->task_queue_head == NULL && pool->stop) {
 			SparkUnlockMutex(pool->mutex);
 			break;
 		}
 
+		// Get the task from the queue
 		task = pool->task_queue_head;
-		if (task != NULL) {
-			pool->task_queue_head = task->next;
-			if (pool->task_queue_head == NULL) {
-				pool->task_queue_tail = NULL;
-			}
+		pool->task_queue_head = task->next;
+		if (pool->task_queue_head == NULL) {
+			pool->task_queue_tail = NULL;
 		}
 
 		SparkUnlockMutex(pool->mutex);
@@ -4279,26 +4289,23 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
 			// Perform the task
 			task->function(task->arg);
 
+			// Decrement pending task count and signal if zero
 			if (task->wait_on_update) {
-				// Decrement pending task count and signal if zero
 				SparkLockMutex(pool->pending_task_mutex);
 				pool->pending_task_count--;
 				if (pool->pending_task_count == 0) {
 					SparkSignalCondition(pool->pending_task_cond);
 				}
 				SparkUnlockMutex(pool->pending_task_mutex);
+			}
 
-				// Destroy the task
-				SparkTaskDestroy(task);
-			}
-			else {
-				// Destroy the task immediately
-				SparkTaskDestroy(task);
-			}
+			// Destroy the task
+			SparkTaskDestroy(task);
 		}
 	}
 
-	return NULL;
+
+	return 0; // Return 0 instead of NULL
 }
 
 
@@ -4326,12 +4333,18 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 
 	for (SparkSize i = 0; i < thread_count; ++i) {
 #ifdef _WIN32
-		pool->threads[i] = CreateThread(
-			NULL, 0, (LPTHREAD_START_ROUTINE)__SparkThreadPoolWorker, pool, 0, NULL);
+		unsigned threadID;
+		pool->threads[i] = (HANDLE)_beginthreadex(
+			NULL, 0, __SparkThreadPoolWorker, pool, 0, &threadID);
+		if (pool->threads[i] == 0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create thread %zu", i);
+			// Handle error (e.g., clean up and return)
+	}
 #else
 		pthread_create(&pool->threads[i], NULL, __SparkThreadPoolWorker, pool);
 #endif
-	}
+}
+
 
 	return pool;
 }
@@ -4349,12 +4362,17 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 	/* Join all threads */
 	for (SparkSize i = 0; i < pool->thread_count; ++i) {
 #ifdef _WIN32
-		WaitForSingleObject(pool->threads[i], INFINITE);
+		DWORD wait_result = WaitForSingleObject(pool->threads[i], INFINITE);
+		if (wait_result != WAIT_OBJECT_0) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "WaitForSingleObject failed on thread %zu", i);
+			// Handle error (e.g., log and continue)
+		}
 		CloseHandle(pool->threads[i]);
 #else
 		pthread_join(pool->threads[i], NULL);
 #endif
 	}
+
 
 	/* Clean up */
 	SparkDestroyMutex(pool->mutex);
@@ -4380,6 +4398,13 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 
 	if (pool == NULL || function == NULL)
 		return NULL;
+
+	SparkLockMutex(pool->mutex);
+	if (pool->shutdown) {
+		SparkUnlockMutex(pool->mutex);
+		return NULL; // Or handle error appropriately
+	}
+	SparkUnlockMutex(pool->mutex);
 
 	SparkTaskHandle task = SparkAllocate(sizeof(struct SparkTaskT));
 	if (task == NULL)
@@ -4902,6 +4927,13 @@ SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope* envel
 
 #pragma region ECS
 
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
+	SparkComponentArray arr = handle;
+
+	SparkDestroyHashMap(arr->entity_to_component);
+	SparkFree(arr);
+}
+
 SPARKAPI SparkEcs SparkCreateEcs() {
 	SparkEcs ecs = (SparkEcs)SparkAllocate(sizeof(struct SparkEcsT));
 	if (!ecs) {
@@ -4915,8 +4947,7 @@ SPARKAPI SparkEcs SparkCreateEcs() {
 	ecs->components = SparkCreateHashMap(
 		16, SparkStringHash, SparkStringCompare, ecs->allocator,
 		SPARK_NULL, // No key destructor needed for string literals
-		(SparkFreeFunction)
-		SparkDestroyHashMap // Value destructor for component arrays
+		__SparkDestroyComponentArray // Value destructor for component arrays
 	);
 	return ecs;
 }
@@ -5163,6 +5194,8 @@ const SparkConstString DEVICE_EXTENSIONS[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 
 const VkDynamicState DYNAMIC_STATES[] = { VK_DYNAMIC_STATE_VIEWPORT,
 										 VK_DYNAMIC_STATE_SCISSOR };
+
+const SparkI32 MAX_FRAMES_IN_FLIGHT = 2;
 
 struct VulkanExtensions {
 	SparkU32 count;
@@ -6100,12 +6133,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	viewport.height = (SparkScalar)window->swap_chain_extent->height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(window->command_buffer, 0, 1, &viewport);
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 	VkRect2D scissor = { 0 };
 	scissor.offset = (VkOffset2D){ 0, 0 };
 	scissor.extent = *window->swap_chain_extent;
-	vkCmdSetScissor(window->command_buffer, 0, 1, &scissor);
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 	vkCmdDraw(command_buffer, 3, 1, 0, 0);
 
@@ -6120,15 +6153,18 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 }
 
 SPARKAPI SPARKSTATIC SparkResult
-__SparkCreateCommandBuffer(SparkWindow window) {
+__SparkCreateCommandBuffers(SparkWindow window) {
+	window->command_buffers = SparkAllocate(MAX_FRAMES_IN_FLIGHT * sizeof(VkCommandBuffer));
+	window->command_buffers_size = MAX_FRAMES_IN_FLIGHT;
+
 	VkCommandBufferAllocateInfo alloc_info = { 0 };
 	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	alloc_info.commandPool = window->command_pool;
 	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	alloc_info.commandBufferCount = 1;
+	alloc_info.commandBufferCount = window->command_buffers_size;
 
 	if (vkAllocateCommandBuffers(window->device, &alloc_info,
-		&window->command_buffer) != VK_SUCCESS) {
+		window->command_buffers) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate command buffers!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -6137,6 +6173,13 @@ __SparkCreateCommandBuffer(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
+	window->image_available_semaphores = SparkAllocate(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
+	window->render_finished_semaphores = SparkAllocate(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
+	window->in_flight_fences = SparkAllocate(MAX_FRAMES_IN_FLIGHT * sizeof(VkFence));
+	window->image_available_semaphores_size = MAX_FRAMES_IN_FLIGHT;
+	window->render_finished_semaphores_size = MAX_FRAMES_IN_FLIGHT;
+	window->in_flight_fences_size = MAX_FRAMES_IN_FLIGHT;
+	
 	VkSemaphoreCreateInfo semaphore_info = { 0 };
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -6144,18 +6187,61 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	if (vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
-		&window->image_available_semaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
-			&window->render_finished_semaphore) != VK_SUCCESS ||
-		vkCreateFence(window->device, &fence_info, SPARK_NULL,
-			&window->in_flight_fence) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
-			"Failed to create synchronization objects!");
-		return SPARK_ERROR_INVALID;
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		window->image_available_semaphores[i] = VK_NULL_HANDLE;
+		window->render_finished_semaphores[i] = VK_NULL_HANDLE;
+		window->in_flight_fences[i] = VK_NULL_HANDLE;
+		if (vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
+			&window->image_available_semaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(window->device, &semaphore_info, SPARK_NULL,
+				&window->render_finished_semaphores[i]) != VK_SUCCESS ||
+			vkCreateFence(window->device, &fence_info, SPARK_NULL,
+				&window->in_flight_fences[i]) != VK_SUCCESS) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR,
+				"Failed to create synchronization objects!");
+			return SPARK_ERROR_INVALID;
+		}
 	}
 
 	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCleanupSwapChain(SparkWindow window) {
+	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
+		vkDestroyFramebuffer(window->device, window->swap_chain_framebuffers[i], SPARK_NULL);
+	}
+
+	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
+		vkDestroyImageView(window->device, window->swap_chain_image_views[i], SPARK_NULL);
+	}
+
+	vkDestroySwapchainKHR(window->device, window->swap_chain, SPARK_NULL);
+
+	SparkFree(window->swap_chain_framebuffers);
+	SparkFree(window->swap_chain_image_views);
+	SparkFree(window->swap_chain_extent);
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkRecreateSwapChain(SparkWindow window) {
+	SparkI32 width = 0;
+	SparkI32 height = 0;
+
+	glfwGetFramebufferSize(window->window, &width, &height);
+
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window->window, &width, &height);
+		glfwWaitEvents();
+	}
+	
+	vkDeviceWaitIdle(window->device);
+
+	__SparkCleanupSwapChain(window);
+
+	__SparkCreateSwapChain(window);
+	__SparkCreateImageViews(window);
+	__SparkCreateFramebuffers(window);
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
@@ -6215,7 +6301,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	if (__SparkCreateCommandBuffer(window) != SPARK_SUCCESS) {
+	if (__SparkCreateCommandBuffers(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -6229,35 +6315,21 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
-	vkDestroySemaphore(window->device, window->image_available_semaphore,
-		SPARK_NULL);
-	vkDestroySemaphore(window->device, window->render_finished_semaphore,
-		SPARK_NULL);
-	vkDestroyFence(window->device, window->in_flight_fence, SPARK_NULL);
-	vkDestroyCommandPool(window->device, window->command_pool, SPARK_NULL);
-
-	// Technically this is bad because the swap chain image views size could be
-	// different,
-	// TODO: Fix
-	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
-		vkDestroyFramebuffer(window->device, window->swap_chain_framebuffers[i],
-			SPARK_NULL);
-	}
+	__SparkCleanupSwapChain(window);
 
 	vkDestroyPipeline(window->device, window->graphics_pipeline, SPARK_NULL);
 	vkDestroyPipelineLayout(window->device, window->pipeline_layout, SPARK_NULL);
 	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
-
-	for (SparkSize i = 0; i < window->swap_chain_image_views_size; i++) {
-		vkDestroyImageView(window->device, window->swap_chain_image_views[i],
+	
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(window->device, window->image_available_semaphores[i],
 			SPARK_NULL);
+		vkDestroySemaphore(window->device, window->render_finished_semaphores[i],
+			SPARK_NULL);
+		vkDestroyFence(window->device, window->in_flight_fences[i], SPARK_NULL);
 	}
 
-	vkDestroySwapchainKHR(window->device, window->swap_chain, SPARK_NULL);
-
-	SparkFree(window->swap_chain_images);
-	SparkFree(window->swap_chain_image_views);
-	SparkFree(window->swap_chain_extent);
+	vkDestroyCommandPool(window->device, window->command_pool, SPARK_NULL);
 
 	vkDestroyDevice(window->device, SPARK_NULL);
 
@@ -6272,21 +6344,30 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
-	vkWaitForFences(window->device, 1, &window->in_flight_fence, VK_TRUE,
+	SparkU32 current_frame = window->current_frame;
+	vkWaitForFences(window->device, 1, &window->in_flight_fences[current_frame], VK_TRUE,
 		UINT64_MAX);
-	vkResetFences(window->device, 1, &window->in_flight_fence);
-
 	SparkU32 image_index;
-	vkAcquireNextImageKHR(window->device, window->swap_chain, UINT64_MAX,
-		window->image_available_semaphore, VK_NULL_HANDLE,
+	VkResult result = vkAcquireNextImageKHR(window->device, window->swap_chain, UINT64_MAX,
+		window->image_available_semaphores[current_frame], VK_NULL_HANDLE,
 		&image_index);
 
-	vkResetCommandBuffer(window->command_buffer, 0);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		return __SparkRecreateSwapChain(window);
+	}
+	else if (result != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to acquire swap chain image!");
+		return SPARK_ERROR_INVALID;
+	}
 
-	__SparkRecordCommandBuffer(window, window->command_buffer, image_index);
+	vkResetFences(window->device, 1, &window->in_flight_fences[current_frame]);
 
-	VkSemaphore wait_semaphores[] = { window->image_available_semaphore };
-	VkSemaphore signal_semaphores[] = { window->render_finished_semaphore };
+	vkResetCommandBuffer(window->command_buffers[current_frame], 0);
+
+	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame], image_index);
+
+	VkSemaphore wait_semaphores[] = { window->image_available_semaphores[current_frame]};
+	VkSemaphore signal_semaphores[] = { window->render_finished_semaphores[current_frame]};
 	VkPipelineStageFlags wait_stages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -6296,12 +6377,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 	submit_info.pWaitSemaphores = wait_semaphores;
 	submit_info.pWaitDstStageMask = wait_stages;
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &window->command_buffer;
+	submit_info.pCommandBuffers = &window->command_buffers[current_frame];
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = signal_semaphores;
 
 	if (vkQueueSubmit(window->graphics_queue, 1, &submit_info,
-		window->in_flight_fence) != VK_SUCCESS) {
+		window->in_flight_fences[current_frame]) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to submit draw command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -6316,9 +6397,24 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 	present_info.pSwapchains = swap_chains;
 	present_info.pImageIndices = &image_index;
 
-	vkQueuePresentKHR(window->present_queue, &present_info);
+	result = vkQueuePresentKHR(window->present_queue, &present_info);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window->framebuffer_resized) {
+		window->framebuffer_resized = SPARK_FALSE;
+		return __SparkRecreateSwapChain(window);
+	}
+	else if (result != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to present swap chain image!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	window->current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkWaitIdle(SparkWindow window) {
+	vkDeviceWaitIdle(window->device);
 }
 
 #pragma endregion
@@ -7402,7 +7498,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 	SparkI32 scancode,
 	SparkI32 action,
 	SparkI32 mods) {
-	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+	SparkWindow data = glfwGetWindowUserPointer(window);
 
 	switch (action) {
 	case GLFW_PRESS: {
@@ -7412,7 +7508,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 		event_data->repeat = SPARK_FALSE;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
 			(SparkHandle)event_data, SparkFree);
-		SparkDispatchEvent(data->event_handler, event);
+		SparkDispatchEvent(data->window_data->event_handler, event);
 		break;
 	}
 	case GLFW_RELEASE: {
@@ -7421,7 +7517,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 		event_data->key = key;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_RELEASED,
 			(SparkHandle)event_data, SparkFree);
-		SparkDispatchEvent(data->event_handler, event);
+		SparkDispatchEvent(data->window_data->event_handler, event);
 		break;
 	}
 	case GLFW_REPEAT: {
@@ -7431,7 +7527,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 		event_data->repeat = SPARK_TRUE;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_KEY_PRESSED,
 			(SparkHandle)event_data, SparkFree);
-		SparkDispatchEvent(data->event_handler, event);
+		SparkDispatchEvent(data->window_data->event_handler, event);
 		break;
 	}
 	}
@@ -7440,7 +7536,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
 	double xpos,
 	double ypos) {
-	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+	SparkWindow data = glfwGetWindowUserPointer(window);
 
 	SparkEventDataMouseMoved event_data =
 		SparkAllocate(sizeof(struct SparkEventDataMouseMovedT));
@@ -7448,14 +7544,14 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
 	event_data->ypos = ypos;
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_MOVED,
 		(SparkHandle)event_data, SparkFree);
-	SparkDispatchEvent(data->event_handler, event);
+	SparkDispatchEvent(data->window_data->event_handler, event);
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 	SparkI32 button,
 	SparkI32 action,
 	SparkI32 mods) {
-	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+	SparkWindow data = glfwGetWindowUserPointer(window);
 
 	switch (action) {
 	case GLFW_PRESS: {
@@ -7464,7 +7560,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 		event_data->button = button;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_PRESSED,
 			(SparkHandle)event_data, SparkFree);
-		SparkDispatchEvent(data->event_handler, event);
+		SparkDispatchEvent(data->window_data->event_handler, event);
 		break;
 	}
 	case GLFW_RELEASE: {
@@ -7473,7 +7569,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 		event_data->button = button;
 		SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_BUTTON_RELEASED,
 			(SparkHandle)event_data, SparkFree);
-		SparkDispatchEvent(data->event_handler, event);
+		SparkDispatchEvent(data->window_data->event_handler, event);
 		break;
 	}
 	}
@@ -7482,7 +7578,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
 	SparkF64 xoffset,
 	SparkF64 yoffset) {
-	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
+	SparkWindow data = glfwGetWindowUserPointer(window);
 
 	SparkEventDataMouseScrolled event_data =
 		SparkAllocate(sizeof(struct SparkEventDataMouseScrolledT));
@@ -7490,20 +7586,12 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
 	event_data->y = yoffset;
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_MOUSE_SCROLLED,
 		(SparkHandle)event_data, SparkFree);
-	SparkDispatchEvent(data->event_handler, event);
+	SparkDispatchEvent(data->window_data->event_handler, event);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid
-__GlfwSetFramebufferSizeCallback(GLFWwindow* window, SparkI32 width, SparkI32 height) {
-	SparkWindowData data = (SparkWindowData)glfwGetWindowUserPointer(window);
-
-	SparkEventDataWindowResized event_data =
-		SparkAllocate(sizeof(struct SparkEventDataWindowResizedT));
-	event_data->width = width;
-	event_data->height = height;
-	SparkEvent event = SparkCreateEvent(SPARK_EVENT_WINDOW_RESIZE,
-		(SparkHandle)event_data, SparkFree);
-	SparkDispatchEvent(data->event_handler, event);
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferResizeCallback(GLFWwindow* window, SparkI32 width, SparkI32 height) {
+	SparkWindow data = window;
+	data->framebuffer_resized = SPARK_TRUE;
 }
 
 SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
@@ -7511,6 +7599,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	memset(window, 0, sizeof(struct SparkWindowT));
 	window->window_data = window_data;
 	window->renderer = SparkCreateRenderer();
+	window->current_frame = 0;
 
 	if (!glfwInit()) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize GLFW!");
@@ -7521,7 +7610,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	glfwSetErrorCallback(__GlfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	window->window = glfwCreateWindow(window_data->width, window_data->height,
 		window_data->title, SPARK_NULL, SPARK_NULL);
 
@@ -7534,14 +7623,13 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		return NULL;
 	}
 
-	glfwSetWindowUserPointer(window->window, window->window_data);
+	glfwSetWindowUserPointer(window->window, window);
 
+	glfwSetFramebufferSizeCallback(window->window, __GlfwSetFramebufferResizeCallback);
 	glfwSetKeyCallback(window->window, __GlfwSetKeyCallback);
 	glfwSetCursorPosCallback(window->window, __GlfwSetCursorPosCallback);
 	glfwSetMouseButtonCallback(window->window, __GlfwSetMouseButtonCallback);
 	glfwSetScrollCallback(window->window, __GlfwSetScrollCallback);
-	glfwSetFramebufferSizeCallback(window->window,
-		__GlfwSetFramebufferSizeCallback);
 
 	if (__SparkInitializeVulkan(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
@@ -7559,6 +7647,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwDestroyWindow(window->window);
 	glfwTerminate();
+	__SparkWaitIdle(window);
 	__SparkDestroyVulkan(window);
 	SparkDestroyRenderer(window->renderer);
 	SparkDestroyWindowData(window->window_data);
@@ -7850,7 +7939,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkQueryTaskFunction(SparkHandle arg) {
 	return NULL;
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateTaskFunction(SparkHandle task) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkApplicationTaskFunction(SparkHandle task) {
 	SparkApplicationTaskArg task_arg = task;
 
 	SparkLockMutex(task_arg->app->mutex);
@@ -7864,7 +7953,31 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateTaskFunction(SparkHandle task) {
 
 SPARKAPI SPARKSTATIC SparkBool
 __SparkApplicationKeepOpen(SparkApplication app) {
-	return !glfwWindowShouldClose(app->window) || SPARK_TRUE;
+	return !glfwWindowShouldClose(app->window->window);
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkRunStartFunctions(SparkApplication app) {
+	for (SparkSize i = 0; i < app->start_functions->size; i++) {
+		SparkStartHandlerFunction function =
+			SparkGetElementVector(app->start_functions, i);
+
+		if (function->thread_settings.first) {
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			task_arg->app = app;
+			task_arg->function = function->function;
+
+			SparkAddTaskThreadPool(
+				app->thread_pool,
+				(SparkThreadFunction)__SparkApplicationTaskFunction,
+				task_arg,
+				function->thread_settings.second);
+		}
+		else {
+			function->function(app);
+		}
+	}
+
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
@@ -7878,7 +7991,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 
 			SparkAddTaskThreadPool(
 				app->thread_pool,
-				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				(SparkThreadFunction)__SparkApplicationTaskFunction,
 				task_arg,
 				function->thread_settings.second);
 		}
@@ -7903,7 +8016,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 
 			SparkAddTaskThreadPool(
 				app->thread_pool,
-				(SparkThreadFunction)__SparkUpdateTaskFunction,
+				(SparkThreadFunction)__SparkApplicationTaskFunction,
 				task_arg,
 				function->thread_settings.second);
 		}
@@ -7958,6 +8071,15 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 
 	// Wait for tasks that need to be waited upon
 	SparkWaitThreadPool(app->thread_pool);
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkUpdateApplication(SparkApplication app) {
+	while (__SparkApplicationKeepOpen(app)) {
+		__SparkRunUpdateFunctions(app);
+		__SparkUpdateWindow(app->window);
+	}
+
+	return __SparkStopApplication(app);
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkInitializeResourceManagerApplication(SparkApplication app) {
@@ -8023,7 +8145,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyVector(app->start_functions);
 	SparkDestroyVector(app->stop_functions);
 	SparkDestroyVector(app->update_functions);
-	SparkDestroyVector(app->query_functions);
+	SparkDestroyHashMap(app->query_functions);
 	SparkDestroyVector(app->event_functions);
 	SparkDestroyVector(app->query_event_functions);
 	SparkDestroyHashMap(app->resource_manager);
@@ -8033,27 +8155,15 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 }
 
 SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
-	for (SparkSize i = 0; i < app->start_functions->size; i++) {
-		SparkStartHandlerFunction function =
-			SparkGetElementVector(app->start_functions, i);
-
-		if (function->thread_settings.first) {
-			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
-			task_arg->app = app;
-			task_arg->function = function->function;
-
-			SparkAddTaskThreadPool(
-				app->thread_pool,
-				(SparkThreadFunction)__SparkUpdateTaskFunction,
-				task_arg,
-				function->thread_settings.second);
-		}
-		else {
-			function->function(app);
-		}
+	if (__SparkRunStartFunctions(app) != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
 	}
 
-	return SparkUpdateApplication(app);
+	if (__SparkUpdateApplication(app) != SPARK_SUCCESS) {
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkAddStartFunctionApplication(
@@ -8078,19 +8188,6 @@ SPARKAPI SparkResult SparkAddStopFunctionApplication(
 	stop_function->function = function;
 	stop_function->thread_settings = thread_settings;
 	return SparkPushBackVector(app->stop_functions, stop_function);
-}
-
-SPARKAPI SparkResult SparkUpdateApplication(SparkApplication app) {
-	while (__SparkApplicationKeepOpen(app)) {
-		__SparkRunUpdateFunctions(app);
-		__SparkUpdateWindow(app->window);
-	}
-
-	if (__SparkStopApplication(app) != SPARK_SUCCESS) {
-		return SPARK_ERROR_INVALID;
-	}
-
-	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkAddEventFunctionApplication(

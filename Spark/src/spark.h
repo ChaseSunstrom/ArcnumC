@@ -1105,7 +1105,8 @@ typedef struct SparkThreadPoolT {
 	SparkSize pending_task_count;
 	SparkMutex pending_task_mutex;
 	SparkCondition pending_task_cond;
-	SparkI32 stop;
+	volatile SparkI32 stop;
+	volatile SparkI32 shutdown;
 } *SparkThreadPool;
 
 typedef struct SparkEventT {
@@ -1197,9 +1198,9 @@ typedef struct SparkEcsT {
 } *SparkEcs;
 
 typedef struct SparkResourceT {
+	SparkHandle data;
 	SparkConstString name;
 	SparkConstString type;
-	SparkHandle data;
 	SparkFreeFunction destructor;
 } *SparkResource;
 
@@ -1414,13 +1415,19 @@ typedef struct SparkWindowT {
 	struct VkRenderPass_T* render_pass;
 	struct VkPipeline_T* graphics_pipeline;
 	struct VkCommandPool_T* command_pool;
-	struct VkCommandBuffer_T* command_buffer;
-	struct VkSemaphore_T* image_available_semaphore;
-	struct VkSemaphore_T* render_finished_semaphore;
-	struct VkFence_T* in_flight_fence;
+	struct VkCommandBuffer_T** command_buffers;
+	struct VkSemaphore_T** image_available_semaphores;
+	struct VkSemaphore_T** render_finished_semaphores;
+	struct VkFence_T** in_flight_fences;
 	enum VkFormat swap_chain_image_format;
+	SparkU32 current_frame;
 	SparkU32 swap_chain_images_size;
 	SparkU32 swap_chain_image_views_size;
+	SparkU32 command_buffers_size;
+	SparkU32 image_available_semaphores_size;
+	SparkU32 render_finished_semaphores_size;
+	SparkU32 in_flight_fences_size;
+	SparkBool framebuffer_resized;
 #endif
 } *SparkWindow;
 
@@ -2578,7 +2585,6 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(SparkBuffer buffer, Spar
 
 SPARKAPI SparkApplication SPARKCALL SparkCreateApplication(SparkWindow window, SparkSize thread_count);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyApplication(SparkApplication app);
-SPARKAPI SparkResult SPARKCALL SparkUpdateApplication(SparkApplication app);
 SPARKAPI SparkResult SPARKCALL SparkDispatchEventApplication(SparkApplication app,
 	SparkEvent event);
 SPARKAPI SparkResult SPARKCALL SparkAddStartFunctionApplication(
@@ -3036,7 +3042,6 @@ typedef SparkApplication Application;
 
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication
-#define UpdateApplication SparkUpdateApplication
 #define AddEventFunctionApplication SparkAddEventFunctionApplication
 #define DispatchEventApplication SparkDispatchEventApplication
 #define StartApplication SparkStartApplication
