@@ -185,7 +185,7 @@ i32 main() {
 	for (size_t i = 0; i < 100000; i++)
 		AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | 
 										 SPARK_EVENT_MOUSE_MOVED , EventHandlerThing, (Pair) { true, false });
-	//AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
+	AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 
 	StartApplication(app);
 

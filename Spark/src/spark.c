@@ -4320,8 +4320,9 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		(SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
 	pool->task_queue_head = NULL;
 	pool->task_queue_tail = NULL;
-	pool->stop = 0;
+	pool->stop = SPARK_FALSE;
 	pool->pending_task_count = 0;
+	pool->shutdown = SPARK_FALSE;
 
 
 	SparkInitMutex(pool->mutex);
