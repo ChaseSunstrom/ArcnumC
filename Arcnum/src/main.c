@@ -166,7 +166,7 @@ i32 main() {
 		CreateWindow(
 			CreateWindowData("Hello", 1080, 1080, SPARK_FALSE)
 		),
-		8
+		16
 	);
 
 	Server server = CreateServer(app->thread_pool, 12345, server_receive_callback);
@@ -182,10 +182,7 @@ i32 main() {
 	AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });
 	AddStartFunctionApplication(app, CreateEntities, (Pair) { false, true });
 	
-	for (size_t i = 0; i < 100000; i++)
-		AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | 
-										 SPARK_EVENT_MOUSE_MOVED , EventHandlerThing, (Pair) { true, false });
-	AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
+	//AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 
 	StartApplication(app);
 

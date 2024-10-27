@@ -32,6 +32,8 @@ project "Spark"
         "%{VULKAN_SDK}/Lib"  -- Vulkan SDK libraries
     }
 
+    defines { "AL_LIBTYPE_STATIC"}
+
     links {
         "opengl32.lib",
         "winmm.lib",
@@ -39,9 +41,9 @@ project "Spark"
         "version.lib",
         "setupapi.lib",
         "lib/glfw3.lib",
-        "lib/OpenAL32.lib",
         "vulkan-1.lib",
-        "ws2_32.lib"
+        "ws2_32.lib",
+        "Avrt.lib",  
     }
 
     filter "configurations:Debug"
@@ -53,7 +55,8 @@ project "Spark"
             "SPIRVd.lib",
             "SPIRV-Toolsd.lib",
             "SPIRV-Tools-optd.lib",
-            "OSDependentd.lib"
+            "OSDependentd.lib",
+            "lib/OpenAL32D.lib",
         }
 
     filter "configurations:Release"
@@ -65,7 +68,8 @@ project "Spark"
             "SPIRV.lib",
             "SPIRV-Tools.lib",
             "SPIRV-Tools-opt.lib",
-            "OSDependent.lib"
+            "OSDependent.lib",
+            "lib/OpenAL32.lib"
         }
 
 
@@ -100,3 +104,7 @@ project "Arcnum"
         defines "NDEBUG"
         runtime "Release"
         optimize "on"
+
+    postbuildcommands {
+        "{COPY} %{wks.location}/lib/*.dll %{cfg.targetdir}"
+    }
