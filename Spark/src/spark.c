@@ -2643,7 +2643,7 @@ SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
 		}
 	}
 
-	
+
 	if (vector->elements)
 		allocator->free(vector->elements);
 
@@ -4227,6 +4227,431 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 
 #pragma endregion
 
+#pragma region ITERATOR
+
+SparkVectorIterator SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector) {
+	if (!vector) return NULL;
+
+	SparkVectorIterator it = (SparkVectorIterator)SparkAllocate(sizeof(struct SparkVectorIteratorT));
+	if (!it) return NULL;
+
+	it->vector = vector;
+
+	switch (start_state)
+	{
+	case SPARK_ITERATOR_STATE_BEGIN:
+		it->pos = (vector->size > 0) ? 0 : (size_t)-1;
+		it->state = (vector->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_END:
+		it->pos = (vector->size > 0) ? vector->size - 1 : (size_t)-1;
+		it->state = (vector->size > 0) ? SPARK_ITERATOR_STATE_END : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_INVALID:
+	case SPARK_ITERATOR_STATE_ITERATING:
+	case SPARK_ITERATOR_STATE_NONE:
+	default:
+		it->pos = (vector->size > 0) ? 0 : (size_t)-1;
+		it->state = (vector->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	}
+
+	return it;
+}
+
+void SparkDestroyVectorIterator(SparkVectorIterator it) {
+	if (it) {
+		SparkFree(it);
+	}
+}
+
+SparkIteratorState SparkIterateForwardVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos < it->vector->size - 1) {
+		it->pos++;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == it->vector->size - 1) {
+		it->state = SPARK_ITERATOR_STATE_END;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIterateBackwardVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos > 0 && it->pos < it->vector->size) {
+		it->pos--;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == 0) {
+		it->state = SPARK_ITERATOR_STATE_BEGIN;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIsAtBeginningVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos == 0 && it->vector->size > 0) {
+		return SPARK_ITERATOR_STATE_BEGIN;
+	}
+	else if (it->pos == it->vector->size - 1 && it->vector->size > 0) {
+		return SPARK_ITERATOR_STATE_END;
+	}
+	else if (it->pos < it->vector->size && it->pos > 0) {
+		return SPARK_ITERATOR_STATE_ITERATING;
+	}
+	else {
+		return SPARK_ITERATOR_STATE_INVALID;
+	}
+}
+
+SparkIteratorState SparkIsAtEndVectorIterator(SparkVectorIterator it) {
+	// Functionally identical to SparkIsAtBeginningVectorIterator
+	return SparkIsAtBeginningVectorIterator(it);
+}
+
+SparkHandle SparkGetCurrentVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return NULL;
+
+	if (it->pos < it->vector->size) {
+		return SparkGetElementVector(it->vector, it->pos);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetPreviousVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return NULL;
+
+	if (it->pos > 0 && it->pos <= it->vector->size - 1) {
+		return SparkGetElementVector(it->vector, it->pos - 1);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetNextVectorIterator(SparkVectorIterator it) {
+	if (!it || !it->vector) return NULL;
+
+	if (it->pos + 1 < it->vector->size) {
+		return SparkGetElementVector(it->vector, it->pos + 1);
+	}
+
+	return NULL;
+}
+
+SparkBool SparkHasNextVectorIterator(SparkVectorIterator it) {
+	return SparkGetNextVectorIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+SparkBool SparkHasPreviousVectorIterator(SparkVectorIterator it) {
+	return SparkGetPreviousVectorIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+// SparkList Iterator Functions
+
+SparkListIterator SparkCreateListIterator(SparkIteratorState start_state, SparkList list) {
+	if (!list) return NULL;
+
+	SparkListIterator it = (SparkListIterator)SparkAllocate(sizeof(struct SparkListIteratorT));
+	if (!it) return NULL;
+
+	it->list = list;
+
+	switch (start_state)
+	{
+	case SPARK_ITERATOR_STATE_BEGIN:
+		it->pos = (list->size > 0) ? 0 : (size_t)-1;
+		it->state = (list->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_END:
+		it->pos = (list->size > 0) ? list->size - 1 : (size_t)-1;
+		it->state = (list->size > 0) ? SPARK_ITERATOR_STATE_END : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_INVALID:
+	case SPARK_ITERATOR_STATE_ITERATING:
+	case SPARK_ITERATOR_STATE_NONE:
+	default:
+		it->pos = (list->size > 0) ? 0 : (size_t)-1;
+		it->state = (list->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	}
+
+	return it;
+}
+
+void SparkDestroyListIterator(SparkListIterator it) {
+	if (it) {
+		SparkFree(it);
+	}
+}
+
+SparkIteratorState SparkIterateForwardListIterator(SparkListIterator it) {
+	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos < it->list->size - 1) {
+		it->pos++;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == it->list->size - 1) {
+		it->state = SPARK_ITERATOR_STATE_END;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIterateBackwardListIterator(SparkListIterator it) {
+	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos > 0 && it->pos < it->list->size) {
+		it->pos--;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == 0) {
+		it->state = SPARK_ITERATOR_STATE_BEGIN;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIsAtBeginningListIterator(SparkListIterator it) {
+	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos == 0 && it->list->size > 0) {
+		return SPARK_ITERATOR_STATE_BEGIN;
+	}
+	else if (it->pos == it->list->size - 1 && it->list->size > 0) {
+		return SPARK_ITERATOR_STATE_END;
+	}
+	else if (it->pos < it->list->size && it->pos > 0) {
+		return SPARK_ITERATOR_STATE_ITERATING;
+	}
+	else {
+		return SPARK_ITERATOR_STATE_INVALID;
+	}
+}
+
+SparkIteratorState SparkIsAtEndListIterator(SparkListIterator it) {
+	// Functionally identical to SparkIsAtBeginningListIterator
+	return SparkIsAtBeginningListIterator(it);
+}
+
+SparkHandle SparkGetCurrentListIterator(SparkListIterator it) {
+	if (!it || !it->list) return NULL;
+
+	if (it->pos < it->list->size) {
+		return SparkGetElementList(it->list, it->pos);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetPreviousListIterator(SparkListIterator it) {
+	if (!it || !it->list) return NULL;
+
+	if (it->pos > 0 && it->pos <= it->list->size - 1) {
+		return SparkGetElementList(it->list, it->pos - 1);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetNextListIterator(SparkListIterator it) {
+	if (!it || !it->list) return NULL;
+
+	if (it->pos + 1 < it->list->size) {
+		return SparkGetElementList(it->list, it->pos + 1);
+	}
+
+	return NULL;
+}
+
+SparkBool SparkHasNextListIterator(SparkListIterator it) {
+	return SparkGetNextListIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+SparkBool SparkHasPreviousListIterator(SparkListIterator it) {
+	return SparkGetPreviousListIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+// SparkHashMap Iterator Functions
+
+SparkHashMapIterator SparkCreateHashMapIterator(SparkIteratorState start_state, SparkHashMapIteratorType iterator_type, SparkHashMap hash_map) {
+	if (!hash_map) return NULL;
+
+	SparkHashMapIterator it = (SparkHashMapIterator)SparkAllocate(sizeof(struct SparkHashMapIteratorT));
+	if (!it) return NULL;
+
+	it->hash_map = hash_map;
+	it->iterator_type = iterator_type;
+
+	switch (start_state) {
+	case SPARK_ITERATOR_STATE_BEGIN:
+		it->pos = (hash_map->size > 0) ? 0 : (size_t)-1;
+		it->state = (hash_map->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_END:
+		it->pos = (hash_map->size > 0) ? hash_map->size - 1 : (size_t)-1;
+		it->state = (hash_map->size > 0) ? SPARK_ITERATOR_STATE_END : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	case SPARK_ITERATOR_STATE_INVALID:
+	case SPARK_ITERATOR_STATE_ITERATING:
+	case SPARK_ITERATOR_STATE_NONE:
+	default:
+		it->pos = (hash_map->size > 0) ? 0 : (size_t)-1;
+		it->state = (hash_map->size > 0) ? SPARK_ITERATOR_STATE_BEGIN : SPARK_ITERATOR_STATE_INVALID;
+		break;
+	}
+
+	switch (iterator_type) {
+	case SPARK_HASHMAP_ITERATOR_TYPE_KEY:
+		it->iterator_data = SparkGetAllKeysHashMap(hash_map);
+		break;
+	case SPARK_HASHMAP_ITERATOR_TYPE_VALUE:
+		it->iterator_data = SparkGetAllValuesHashMap(hash_map);
+		break;
+	case SPARK_HASHMAP_ITERATOR_TYPE_PAIR:
+		it->iterator_data = SparkGetAllPairsHashMap(hash_map);
+		break;
+	default:
+		it->iterator_data = NULL;
+		it->state = SPARK_ITERATOR_STATE_INVALID;
+		SparkFree(it);
+		return NULL;
+	}
+
+	if (!it->iterator_data && hash_map->size > 0) {
+		// Allocation failed
+		it->state = SPARK_ITERATOR_STATE_INVALID;
+		SparkFree(it);
+		return NULL;
+	}
+
+	return it;
+}
+
+void SparkDestroyHashMapIterator(SparkHashMapIterator it) {
+	if (it) {
+		if (it->iterator_data) {
+			SparkFree(it->iterator_data);
+		}
+		SparkFree(it);
+	}
+}
+
+SparkIteratorState SparkIterateForwardHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos < it->iterator_data->size - 1) {
+		it->pos++;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == it->iterator_data->size - 1) {
+		it->state = SPARK_ITERATOR_STATE_END;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIterateBackwardHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos > 0 && it->pos < it->iterator_data->size) {
+		it->pos--;
+		it->state = SPARK_ITERATOR_STATE_ITERATING;
+		return it->state;
+	}
+	else if (it->pos == 0) {
+		it->state = SPARK_ITERATOR_STATE_BEGIN;
+		return it->state;
+	}
+
+	it->state = SPARK_ITERATOR_STATE_INVALID;
+	return it->state;
+}
+
+SparkIteratorState SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
+
+	if (it->pos == 0 && it->iterator_data->size > 0) {
+		return SPARK_ITERATOR_STATE_BEGIN;
+	}
+	else if (it->pos == it->iterator_data->size - 1 && it->iterator_data->size > 0) {
+		return SPARK_ITERATOR_STATE_END;
+	}
+	else if (it->pos < it->iterator_data->size && it->pos > 0) {
+		return SPARK_ITERATOR_STATE_ITERATING;
+	}
+	else {
+		return SPARK_ITERATOR_STATE_INVALID;
+	}
+}
+
+SparkIteratorState SparkIsAtEndHashMapIterator(SparkHashMapIterator it) {
+	// Functionally identical to SparkIsAtBeginningHashMapIterator
+	return SparkIsAtBeginningHashMapIterator(it);
+}
+
+SparkHandle SparkGetCurrentHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return NULL;
+
+	if (it->pos < it->iterator_data->size) {
+		return SparkGetElementVector(it->iterator_data, it->pos);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetPreviousHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return NULL;
+
+	if (it->pos > 0 && it->pos <= it->iterator_data->size - 1) {
+		return SparkGetElementVector(it->iterator_data, it->pos - 1);
+	}
+
+	return NULL;
+}
+
+SparkHandle SparkGetNextHashMapIterator(SparkHashMapIterator it) {
+	if (!it || !it->iterator_data) return NULL;
+
+	if (it->pos + 1 < it->iterator_data->size) {
+		return SparkGetElementVector(it->iterator_data, it->pos + 1);
+	}
+
+	return NULL;
+}
+
+SparkBool SparkHasNextHashMapIterator(SparkHashMapIterator it) {
+	return SparkGetNextHashMapIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+SparkBool SparkHasPreviousHashMapIterator(SparkHashMapIterator it) {
+	return SparkGetPreviousHashMapIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
+}
+
+#pragma endregion
+
 #pragma region THREAD
 
 #ifdef _WIN32
@@ -4335,11 +4760,11 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		if (pool->threads[i] == 0) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create thread %zu", i);
 			// Handle error (e.g., clean up and return)
-	}
+		}
 #else
 		pthread_create(&pool->threads[i], SPARK_NULL, __SparkThreadPoolWorker, pool);
 #endif
-}
+	}
 
 
 	return pool;
@@ -4548,7 +4973,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkCleanupNetworking() {
 }
 
 /* Serialize and Deserialize Envelopes */
-SPARKAPI SparkResult  SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffer* buffer, SparkSize* size) {
+SPARKAPI SparkResult  SparkSerializeEnvelope(SparkEnvelope * envelope, SparkBuffer * buffer, SparkSize * size) {
 	if (!envelope || !buffer || !size) {
 		return SPARK_FAILURE;
 	}
@@ -4570,7 +4995,7 @@ SPARKAPI SparkResult  SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffe
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope * envelope) {
 	if (!buffer || !envelope || size < sizeof(SparkU32) + sizeof(SparkSize)) {
 		return SPARK_FAILURE;
 	}
@@ -4674,7 +5099,7 @@ SPARKAPI SparkVoid  SparkDestroyServer(SparkServer server) {
 
 	__SparkCleanupNetworking();
 }
-     
+
 SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 	SparkServer srv = (SparkServer)arg;
 	while (srv->running) {
@@ -4720,7 +5145,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 
 		/* Handle client in a separate thread */
 		SparkAddTaskThreadPool(srv->thread_pool, __SparkClientHandler, client, SPARK_FALSE);
-	}
+}
 	return SPARK_NULL;
 }
 
@@ -4786,7 +5211,7 @@ SPARKAPI SparkResult  SparkStartServer(SparkServer server) {
 	SparkAddTaskThreadPool(server->thread_pool, __SparkAcceptConnections, server, SPARK_FALSE);
 
 	return SPARK_SUCCESS;
-}
+	}
 
 SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	if (!server) {
@@ -4807,7 +5232,7 @@ SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope * envelope) {
 	if (!server || !client || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -4828,7 +5253,7 @@ SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnectio
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkBroadcast(SparkServer server, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkBroadcast(SparkServer server, SparkEnvelope * envelope) {
 	if (!server || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -4913,7 +5338,7 @@ SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString add
 
 	return client;
 }
- 
+
 SPARKAPI SparkVoid  SparkDestroyClient(SparkClient client) {
 	if (!client) {
 		return;
@@ -4962,7 +5387,7 @@ SPARKAPI SparkResult  SparkDisconnectClient(SparkClient client) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope* envelope) {
+SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope * envelope) {
 	if (!client || !envelope || !client->connected) {
 		return SPARK_FAILURE;
 	}
@@ -5373,7 +5798,7 @@ __SparkFindQueueFamilies(SparkWindow window, VkPhysicalDevice device) {
 SPARKAPI SPARKSTATIC VKAPI_ATTR SparkBool VKAPI_CALL
 __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 	VkDebugUtilsMessageTypeFlagsEXT message_type,
-	const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+	const VkDebugUtilsMessengerCallbackDataEXT * callback_data,
 	SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
@@ -5385,9 +5810,9 @@ __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 }
 
 SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(
-	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info,
-	const VkAllocationCallbacks* allocator,
-	VkDebugUtilsMessengerEXT* debug_messenger) {
+	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * create_info,
+	const VkAllocationCallbacks * allocator,
+	VkDebugUtilsMessengerEXT * debug_messenger) {
 	PFN_vkCreateDebugUtilsMessengerEXT func =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 			instance, "vkCreateDebugUtilsMessengerEXT");
@@ -5401,7 +5826,7 @@ SPARKAPI SPARKSTATIC VkResult __SparkCreateDebugUtilsMessengerEXT(
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyDebugUtilsMessengerEXT(
 	VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger,
-	const VkAllocationCallbacks* allocator) {
+	const VkAllocationCallbacks * allocator) {
 	PFN_vkDestroyDebugUtilsMessengerEXT func =
 		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 			instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -5444,7 +5869,7 @@ __SparkSetupDebugMessenger(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult
-__SparkCreateVulkanInstance(VkInstance* instance, SparkConstString title) {
+__SparkCreateVulkanInstance(VkInstance * instance, SparkConstString title) {
 	if (ENABLE_VALIDATION_LAYERS && !__SparkCheckValidationLayerSupport()) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR,
 			"Validation layers requested, but not available!");
@@ -5560,7 +5985,7 @@ __SparkQuerySwapChainSupport(SparkWindow window, VkPhysicalDevice device) {
 }
 
 SPARKAPI SPARKSTATIC VkSurfaceFormatKHR
-__SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats,
+__SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR * available_formats,
 	const SparkSize available_formats_size) {
 	for (SparkSize i = 0; i < available_formats_size; i++) {
 		if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB &&
@@ -5573,7 +5998,7 @@ __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats,
 }
 
 SPARKAPI SPARKSTATIC VkPresentModeKHR
-__SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes,
+__SparkChooseSwapPresentMode(const VkPresentModeKHR * available_present_modes,
 	const SparkSize available_present_modes_size) {
 	for (SparkSize i = 0; i < available_present_modes_size; i++) {
 		if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -5585,7 +6010,7 @@ __SparkChooseSwapPresentMode(const VkPresentModeKHR* available_present_modes,
 }
 
 SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(
-	const SparkWindow window, VkSurfaceCapabilitiesKHR* capabilities) {
+	const SparkWindow window, VkSurfaceCapabilitiesKHR * capabilities) {
 	if (capabilities->currentExtent.width != UINT32_MAX) {
 		return capabilities->currentExtent;
 	}
@@ -6239,7 +6664,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 	window->image_available_semaphores_size = MAX_FRAMES_IN_FLIGHT;
 	window->render_finished_semaphores_size = MAX_FRAMES_IN_FLIGHT;
 	window->in_flight_fences_size = MAX_FRAMES_IN_FLIGHT;
-	
+
 	VkSemaphoreCreateInfo semaphore_info = { 0 };
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -6294,7 +6719,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecreateSwapChain(SparkWindow window) {
 		glfwGetFramebufferSize(window->window, &width, &height);
 		glfwWaitEvents();
 	}
-	
+
 	vkDeviceWaitIdle(window->device);
 
 	__SparkCleanupSwapChain(window);
@@ -6380,7 +6805,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyPipeline(window->device, window->graphics_pipeline, SPARK_NULL);
 	vkDestroyPipelineLayout(window->device, window->pipeline_layout, SPARK_NULL);
 	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
-	
+
 	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(window->device, window->image_available_semaphores[i],
 			SPARK_NULL);
@@ -6426,8 +6851,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 
 	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame], image_index);
 
-	VkSemaphore wait_semaphores[] = { window->image_available_semaphores[current_frame]};
-	VkSemaphore signal_semaphores[] = { window->render_finished_semaphores[current_frame]};
+	VkSemaphore wait_semaphores[] = { window->image_available_semaphores[current_frame] };
+	VkSemaphore signal_semaphores[] = { window->render_finished_semaphores[current_frame] };
 	VkPipelineStageFlags wait_stages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -6785,7 +7210,7 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
 
 #pragma region FILE
 
-SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer* buffer, SparkSize* capacity) {
+SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer * buffer, SparkSize * capacity) {
 	if (!buffer || !capacity) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -6799,7 +7224,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer* buffer, Sp
 }
 
 // Ensure the buffer has enough capacity to hold additional data
-SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, SparkSize* capacity, SparkSize current_size, SparkSize additional_size) {
+SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer * buffer, SparkSize * capacity, SparkSize current_size, SparkSize additional_size) {
 	if (!buffer || !capacity) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -7058,7 +7483,7 @@ SPARKAPI SparkResult  SparkDeserializeRawData(SparkFileDeserializer deserializer
 }
 
 // Deserialize Data with Size Prefix
-SPARKAPI SparkResult  SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size) {
+SPARKAPI SparkResult  SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle * data, SparkSize * size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -7142,7 +7567,7 @@ SPARKAPI SparkResult  SparkDeserializeTrivial(SparkFileDeserializer deserializer
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size) {
+SPARKAPI SparkResult  SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer * data, SparkSize * size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -7177,7 +7602,7 @@ SPARKAPI SparkResult  SparkDeserializeString(SparkFileDeserializer deserializer,
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector) {
+SPARKAPI SparkResult  SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector * vector) {
 	if (!deserializer || !deserializer->data || !vector) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -7552,7 +7977,7 @@ __GlfwErrorCallback(SparkI32 error, SparkConstString description) {
 	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow * window,
 	SparkI32 key,
 	SparkI32 scancode,
 	SparkI32 action,
@@ -7592,7 +8017,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow * window,
 	double xpos,
 	double ypos) {
 	SparkWindow data = glfwGetWindowUserPointer(window);
@@ -7606,7 +8031,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
 	SparkDispatchEvent(data->window_data->event_handler, event);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow * window,
 	SparkI32 button,
 	SparkI32 action,
 	SparkI32 mods) {
@@ -7634,7 +8059,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow * window,
 	SparkF64 xoffset,
 	SparkF64 yoffset) {
 	SparkWindow data = glfwGetWindowUserPointer(window);
@@ -7648,7 +8073,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
 	SparkDispatchEvent(data->window_data->event_handler, event);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferResizeCallback(GLFWwindow* window, SparkI32 width, SparkI32 height) {
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferResizeCallback(GLFWwindow * window, SparkI32 width, SparkI32 height) {
 	SparkWindow data = window;
 	data->framebuffer_resized = SPARK_TRUE;
 }

@@ -168,6 +168,41 @@ void ExitOnEscape(Application app, Event event) {
 	}
 }
 
+void TestIterator(Application app)
+{
+	HashMap hmap = DefaultHashMap();
+
+	InsertHashMap(hmap, "Hello", strlen("Hello"), "World");
+	InsertHashMap(hmap, "Goodbye", strlen("Goodbye"), "Goodbye");
+	InsertHashMap(hmap, "Test", strlen("Test"), "World");
+
+
+	HashMapIterator kit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_KEY, hmap);
+	SPARK_LOG_DEBUG("Key: %s", GetCurrentHashMapIterator(kit));
+	while (IterateForwardHashMapIterator(kit) != SPARK_ITERATOR_STATE_END) {
+		SPARK_LOG_DEBUG("Key: %s", GetCurrentHashMapIterator(kit));
+	}
+
+	HashMapIterator vit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_VALUE, hmap);
+	SPARK_LOG_DEBUG("Value: %s", GetCurrentHashMapIterator(kit));
+	while (IterateForwardHashMapIterator(vit) != SPARK_ITERATOR_STATE_END) {
+		SPARK_LOG_DEBUG("Value: %s", GetCurrentHashMapIterator(vit));
+	}
+
+	HashMapIterator pit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_PAIR, hmap);
+	SPARK_LOG_DEBUG("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
+	SPARK_LOG_DEBUG("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
+	while (IterateForwardHashMapIterator(pit) != SPARK_ITERATOR_STATE_END) {
+		SPARK_LOG_DEBUG("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
+		SPARK_LOG_DEBUG("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
+	}
+
+	DestroyHashMapIterator(kit);
+	DestroyHashMapIterator(vit);
+	DestroyHashMapIterator(pit);
+	DestroyHashMap(hmap);
+}
+
 i32 main() {
 	/* Create server */
 	Application app = CreateApplication(
@@ -190,6 +225,7 @@ i32 main() {
 	AddStartFunctionApplication(app, TestDeserialization, SPARK_UNTHREADED);
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, TestIterator, SPARK_UNTHREADED);
 
 	//AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 

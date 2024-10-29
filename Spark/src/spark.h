@@ -806,6 +806,27 @@ typedef enum SparkEnvelopeTypeT {
 	SPARK_ENVELOPE_TYPE_RESPONSE,
 } SparkEnvelopeType;
 
+typedef enum SparkIteratorStateT {
+	SPARK_ITERATOR_STATE_INVALID = -1,
+	SPARK_ITERATOR_STATE_NONE = 0,
+	SPARK_ITERATOR_STATE_ITERATING,
+	SPARK_ITERATOR_STATE_BEGIN,
+	SPARK_ITERATOR_STATE_END,
+} SparkIteratorState;
+
+typedef enum SparkIteratorTypeT {
+	SPARK_ITERATOR_TYPE_INVALID = 0,
+	SPARK_ITERATOR_TYPE_VECTOR,
+	SPARK_ITERATOR_TYPE_HASHMAP,
+	SPARK_ITERATOR_TYPE_LIST,
+} SparkIteratorType;
+
+typedef enum SparkHashMapIteratorTypeT {
+	SPARK_HASHMAP_ITERATOR_TYPE_KEY,
+	SPARK_HASHMAP_ITERATOR_TYPE_VALUE,
+	SPARK_HASHMAP_ITERATOR_TYPE_PAIR,
+} SparkHashMapIteratorType;
+
 #pragma endregion
 
 #pragma region STRUCTS
@@ -986,6 +1007,16 @@ typedef SparkVoid(*SparkServerReceiveCallback)(struct SparkServerT* server, stru
 typedef SparkVoid(*SparkClientReceiveCallback)(struct SparkClientT* client, struct SparkEnvelopeT* envelope);
 typedef SparkVoid(*SparkThreadPoolShutdownCallback)(SparkHandle arg);
 
+typedef SparkIteratorState(*SparkIteratorIterateForward)(struct SparkIteratorT* it);
+typedef SparkIteratorState(*SparkIteratorIterateBackward)(struct SparkIteratorT* it);
+typedef SparkIteratorState(*SparkIteratorIsAtBeginningFunction)(struct SparkIteratorT* it);
+typedef SparkIteratorState(*SparkIteratorIsAtEndFunction)(struct SparkIteratorT* it);
+typedef SparkHandle(*SparkIteratorGetCurrentFunction)(struct SparkIteratorT* it);
+typedef SparkHandle(*SparkIteratorGetPreviousFunction)(struct SparkIteratorT* it);
+typedef SparkHandle(*SparkIteratorGetNextFunction)(struct SparkIteratorT* it);
+typedef SparkBool(*SparkIteratorHasNextFunction)(struct SparkIteratorT* it);
+typedef SparkBool(*SparkIteratorHasPreviousFunction)(struct SparkIteratorT* it);
+typedef SparkVoid(*SparkIteratorFreeFunction)(struct SparkIteratorT* it);
 
 typedef struct SparkAllocatorT {
 	SparkAllocateFunction allocate;
@@ -1008,6 +1039,12 @@ typedef struct SparkVectorT {
 	SparkBool external_allocator;
 } *SparkVector;
 
+typedef struct SparkVectorIteratorT {
+	SparkIteratorState state;
+	SparkVector vector;
+	SparkSize pos;
+} *SparkVectorIterator;
+
 typedef struct SparkListNodeT {
 	SparkHandle data;
 	struct SparkListNodeT* next;
@@ -1022,6 +1059,12 @@ typedef struct SparkListT {
 	SparkAllocator allocator;
 	SparkBool external_allocator;
 } *SparkList;
+
+typedef struct SparkListIteratorT {
+	SparkIteratorState state;
+	SparkList list;
+	SparkSize pos;
+} *SparkListIterator;
 
 typedef struct SparkHashMapNodeT {
 	SparkHandle key;
@@ -1042,6 +1085,15 @@ typedef struct SparkHashMapT {
 	SparkFreeFunction value_destructor;
 	SparkBool external_allocator;
 } *SparkHashMap;
+
+typedef struct SparkHashMapIteratorT {
+	SparkIteratorState state;
+	SparkHashMap hash_map;
+	SparkHashMapIteratorType iterator_type;
+	/* Allocated data that gets constructed while iterating the HashMap */
+	SparkVector iterator_data;
+	SparkSize pos;
+} *SparkHashMapIterator;
 
 typedef struct SparkMapT {
 	SparkSize size;
@@ -1090,6 +1142,24 @@ typedef struct SparkStackT {
 	SparkBool external_allocator;
 } *SparkStack;
 
+typedef struct SparkIteratorT {
+	SparkIteratorIterateForward iterate_forward;
+	SparkIteratorIterateBackward iterate_backward;
+	SparkIteratorIsAtBeginningFunction is_at_beginning;
+	SparkIteratorIsAtEndFunction is_at_end;
+	SparkIteratorGetCurrentFunction get_current;
+	SparkIteratorGetPreviousFunction get_previous;
+	SparkIteratorGetNextFunction get_next;
+	SparkIteratorHasNextFunction has_next;
+	SparkIteratorHasPreviousFunction has_previous;
+	SparkIteratorFreeFunction free;
+	SparkIteratorType iterator_type;
+	union {
+		SparkVectorIterator vector_iterator;
+		SparkListIterator list_iterator;
+		SparkHashMapIterator hash_map_iterator;
+	};
+} *SparkIterator;
 
 typedef struct SparkTaskT {
 	SparkThreadFunction function;
@@ -2255,6 +2325,55 @@ SPARKAPI SparkResult SPARKCALL SparkPopStack(SparkStack stack);
 SPARKAPI SparkHandle SPARKCALL SparkGetTopStack(SparkStack stack);
 SPARKAPI SparkResult SPARKCALL SparkClearStack(SparkStack stack);
 
+SPARKAPI SparkVectorIterator SPARKCALL SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetCurrentVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetPreviousVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetNextVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasNextVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasPreviousVectorIterator(SparkVectorIterator it);
+
+SPARKAPI SparkListIterator SPARKCALL SparkCreateListIterator(SparkIteratorState start_state, SparkList list);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndListIterator(SparkListIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetCurrentListIterator(SparkListIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetPreviousListIterator(SparkListIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetNextListIterator(SparkListIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasNextListIterator(SparkListIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasPreviousListIterator(SparkListIterator it);
+
+SPARKAPI SparkHashMapIterator SPARKCALL SparkCreateHashMapIterator(SparkIteratorState start_state, SparkHashMapIteratorType iterator_type, SparkHashMap hash_map);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetCurrentHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetPreviousHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetNextHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasNextHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasPreviousHashMapIterator(SparkHashMapIterator it);
+
+SPARKAPI SparkIterator SPARKCALL SparkCreateIterator(SparkIteratorType iterator_type, SparkHandle collection);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndIterator(SparkIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetCurrentIterator(SparkIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetPreviousIterator(SparkIterator it);
+SPARKAPI SparkHandle SPARKCALL SparkGetNextIterator(SparkIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasNextIterator(SparkIterator it);
+SPARKAPI SparkBool SPARKCALL SparkHasPreviousIterator(SparkIterator it);
+
+
 /* Shader-related function declarations */
 
 typedef struct SparkShaderT* SparkShader;
@@ -2811,6 +2930,11 @@ typedef SparkHashSet HashSet;
 typedef SparkQueue Queue;
 typedef SparkStack Stack;
 typedef SparkPair Pair;
+typedef SparkVectorIterator VectorIterator;
+typedef SparkListIterator ListIterator;
+typedef SparkHashMapIterator HashMapIterator;
+typedef SparkIterator SparkIterator;
+typedef SparkIteratorState IteratorState;
 
 typedef SparkEntity Entity;
 typedef SparkComponentArray ComponentArray;
@@ -2988,6 +3112,42 @@ typedef SparkApplication Application;
 #define PushStack SparkPushStack
 #define PopStack SparkPopStack
 #define ClearStack SparkClearStack
+
+#define CreateVectorIterator SparkCreateVectorIterator
+#define DestroyVectorIterator SparkDestroyVectorIterator
+#define IterateForwardVectorIterator SparkIterateForwardVectorIterator
+#define IterateBackwardVectorIterator SparkIterateBackwardVectorIterator
+#define IsAtBeginningVectorIterator SparkIsAtBeginningVectorIterator
+#define IsAtEndVectorIterator SparkIsAtEndVectorIterator
+#define GetCurrentVectorIterator SparkGetCurrentVectorIterator
+#define GetPreviousVectorIterator SparkGetPreviousVectorIterator
+#define GetNextVectorIterator SparkGetNextVectorIterator
+#define HasNextVectoriterator SparkHasNextVectorIterator
+#define HasPreviousVectorIterator SparkHasPreviousVectorIterator
+
+#define CreateListIterator SparkCreateListIterator
+#define DestroyListIterator SparkDestroyListIterator
+#define IterateForwardListIterator SparkIterateForwardListIterator
+#define IterateBackwardListIterator SparkIterateBackwardListIterator
+#define IsAtBeginningListIterator SparkIsAtBeginningListIterator
+#define IsAtEndListIterator SparkIsAtEndListIterator
+#define GetCurrentListIterator SparkGetCurrentListIterator
+#define GetPreviousListIterator SparkGetPreviousListIterator
+#define GetNextListIterator SparkGetNextListIterator
+#define HasNextListiterator SparkHasNextListIterator
+#define HasPreviousListIterator SparkHasPreviousListIterator
+
+#define CreateHashMapIterator SparkCreateHashMapIterator
+#define DestroyHashMapIterator SparkDestroyHashMapIterator
+#define IterateForwardHashMapIterator SparkIterateForwardHashMapIterator
+#define IterateBackwardHashMapIterator SparkIterateBackwardHashMapIterator
+#define IsAtBeginningHashMapIterator SparkIsAtBeginningHashMapIterator
+#define IsAtEndHashMapIterator SparkIsAtEndHashMapIterator
+#define GetCurrentHashMapIterator SparkGetCurrentHashMapIterator
+#define GetPreviousHashMapIterator SparkGetPreviousHashMapIterator
+#define GetNextHashMapIterator SparkGetNextHashMapIterator
+#define HasNextHashMapiterator SparkHasNextHashMapIterator
+#define HasPreviousHashMapIterator SparkHasPreviousHashMapIterator
 
 #define CreateEcs SparkCreateEcs
 #define DestroyEcs SparkDestroyEcs
