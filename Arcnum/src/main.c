@@ -178,24 +178,20 @@ void TestIterator(Application app)
 
 
 	HashMapIterator kit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_KEY, hmap);
-	SPARK_LOG_DEBUG("Key: %s", GetCurrentHashMapIterator(kit));
-	while (IterateForwardHashMapIterator(kit) != SPARK_ITERATOR_STATE_END) {
+	do {
 		SPARK_LOG_DEBUG("Key: %s", GetCurrentHashMapIterator(kit));
-	}
+	} while (IterateForwardHashMapIterator(kit) != SPARK_ITERATOR_STATE_END);
 
 	HashMapIterator vit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_VALUE, hmap);
-	SPARK_LOG_DEBUG("Value: %s", GetCurrentHashMapIterator(kit));
-	while (IterateForwardHashMapIterator(vit) != SPARK_ITERATOR_STATE_END) {
+	do {
 		SPARK_LOG_DEBUG("Value: %s", GetCurrentHashMapIterator(vit));
-	}
+	} while (IterateForwardHashMapIterator(vit) != SPARK_ITERATOR_STATE_END);
 
 	HashMapIterator pit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_PAIR, hmap);
-	SPARK_LOG_DEBUG("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
-	SPARK_LOG_DEBUG("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
-	while (IterateForwardHashMapIterator(pit) != SPARK_ITERATOR_STATE_END) {
+	do {
 		SPARK_LOG_DEBUG("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
 		SPARK_LOG_DEBUG("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
-	}
+	} while (IterateForwardHashMapIterator(pit) != SPARK_ITERATOR_STATE_END);
 
 	DestroyHashMapIterator(kit);
 	DestroyHashMapIterator(vit);
