@@ -32,7 +32,7 @@ void client_receive_callback(Client  client, Envelope* envelope) {
 }
 
 static Client client = NULL;
-
+static Server server = NULL;
 static Envelope envelope;
 
 
@@ -160,34 +160,40 @@ void ResourceCreater(Application app) {
 	RemoveResourceApplication(app, StaticMeshResourceType, "Square");
 }
 
+void ExitOnEscape(Application app, Event event) {
+	EventDataKeyPressed kp = event.data;
+
+	if (kp->key == SPARK_KEY_ESCAPE) {
+		app->window->should_close = SPARK_TRUE;
+	}
+}
+
 i32 main() {
 	/* Create server */
 	Application app = CreateApplication(
 		CreateWindow(
 			CreateWindowData("Hello", 1080, 1080, SPARK_FALSE)
 		),
-		16
+		3
 	);
 
-	Server server = CreateServer(app->thread_pool, 12345, server_receive_callback);
+	server = CreateServer(app->thread_pool, 12345, server_receive_callback);
 
 	client = CreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
 
 	StartServer(server);
 	ConnectClient(client);
 
-	AddStartFunctionApplication(app, ResourceCreater, (Pair) { true, false });
-	AddStartFunctionApplication(app, TestGetPairs, (Pair) { true, false });
-	AddStartFunctionApplication(app, TestSerialization, (Pair) { false, true });
-	AddStartFunctionApplication(app, TestDeserialization, (Pair) { false, true });
-	AddStartFunctionApplication(app, CreateEntities, (Pair) { false, true });
-	
+	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, TestGetPairs, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, TestSerialization, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, TestDeserialization, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNTHREADED);
+
 	//AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
 
 	StartApplication(app);
-
-	DestroyClient(client);
-	DestroyServer(server);
 
 	return 0;
 }

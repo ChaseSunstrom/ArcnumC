@@ -1348,7 +1348,7 @@ SPARKAPI SparkConstString SparkFormatString(SparkConstString format, ...) {
 	va_start(args, format);
 
 	// Get the length of the formatted string
-	SparkSize length = vsnprintf(NULL, 0, format, args);
+	SparkSize length = vsnprintf(SPARK_NULL, 0, format, args);
 
 	// Allocate a buffer to store the formatted string
 	SparkBuffer buffer = SparkAllocate(length + 1);
@@ -2602,7 +2602,7 @@ SPARKAPI SparkVector SparkDefaultVector() {
 	vector->allocator = SparkDefaultAllocator();
 	vector->capacity = 1;
 	vector->size = 0;
-	vector->destructor = NULL; // Default destructor is NULL
+	vector->destructor = SPARK_NULL; // Default destructor is SPARK_NULL
 	vector->elements =
 		vector->allocator->allocate(vector->capacity * sizeof(SparkHandle));
 	vector->external_allocator = SPARK_FALSE;
@@ -2636,8 +2636,8 @@ SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
 	}
 	SparkAllocator allocator = vector->allocator;
 
-	// Call destructor on each element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < vector->size; i++) {
 			vector->destructor(vector->elements[i]);
 		}
@@ -2697,8 +2697,8 @@ SPARKAPI SparkResult SparkPopBackVector(SparkVector vector) {
 	}
 	vector->size--;
 
-	// Call destructor on the element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		vector->destructor(vector->elements[vector->size]);
 	}
 
@@ -2741,8 +2741,8 @@ SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkSize index) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
-	// Call destructor on the element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		vector->destructor(vector->elements[index]);
 	}
 
@@ -2764,12 +2764,12 @@ SPARKAPI SparkResult SparkRemoveNoShiftVector(SparkVector vector, SparkSize inde
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
-	// Call destructor on the element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		vector->destructor(vector->elements[index]);
 	}
 
-	vector->elements[index] = NULL;
+	vector->elements[index] = SPARK_NULL;
 
 	vector->size--;
 	return SPARK_SUCCESS;
@@ -2787,8 +2787,8 @@ SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin,
 			return SPARK_ERROR_INVALID_ARGUMENT;
 		}
 
-		// Call destructor on the element if destructor is not NULL
-		if (vector->destructor != NULL) {
+		// Call destructor on the element if destructor is not SPARK_NULL
+		if (vector->destructor != SPARK_NULL) {
 			vector->destructor(vector->elements[i]);
 		}
 	}
@@ -2813,8 +2813,8 @@ SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkSize index,
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
-	// Call destructor on the existing element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on the existing element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		vector->destructor(vector->elements[index]);
 	}
 
@@ -2825,7 +2825,7 @@ SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkSize index,
 SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity) {
 	if (capacity < vector->size) {
 		// If new capacity is less than current size, need to destroy extra elements
-		if (vector->destructor != NULL) {
+		if (vector->destructor != SPARK_NULL) {
 			for (SparkSize i = capacity; i < vector->size; i++) {
 				vector->destructor(vector->elements[i]);
 			}
@@ -2870,8 +2870,8 @@ SPARKAPI SparkResult SparkClearVector(SparkVector vector) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
-	// Call destructor on each element if destructor is not NULL
-	if (vector->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (vector->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < vector->size; i++) {
 			vector->destructor(vector->elements[i]);
 		}
@@ -2910,7 +2910,7 @@ SPARKAPI SparkResult  SparkPushBackBufferVector(SparkVector vector, SparkConstBu
 SPARKAPI SparkList SparkDefaultList() {
 	SparkList list = SparkAllocate(sizeof(struct SparkListT));
 	list->allocator = SparkDefaultAllocator();
-	list->destructor = NULL; // Default destructor is NULL
+	list->destructor = SPARK_NULL; // Default destructor is SPARK_NULL
 	list->head = SPARK_NULL;
 	list->tail = SPARK_NULL;
 	list->size = 0;
@@ -2943,10 +2943,10 @@ SPARKAPI SparkVoid SparkDestroyList(SparkList list) {
 	}
 	SparkAllocator allocator = list->allocator;
 
-	// Call destructor on each element if destructor is not NULL
+	// Call destructor on each element if destructor is not SPARK_NULL
 	SparkListNode node = list->head;
 	while (node != SPARK_NULL) {
-		if (list->destructor != NULL) {
+		if (list->destructor != SPARK_NULL) {
 			list->destructor(node->data);
 		}
 		SparkListNode temp = node;
@@ -3008,8 +3008,8 @@ SPARKAPI SparkResult SparkPopBackList(SparkList list) {
 		node = node->next;
 	}
 
-	// Call destructor on the element if destructor is not NULL
-	if (list->destructor != NULL) {
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (list->destructor != SPARK_NULL) {
 		list->destructor(node->data);
 	}
 
@@ -3086,7 +3086,7 @@ SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index) {
 		}
 	}
 
-	// Call destructor on the element if destructor is not NULL
+	// Call destructor on the element if destructor is not SPARK_NULL
 	if (list->destructor) {
 		list->destructor(node_to_remove->data);
 	}
@@ -3108,8 +3108,8 @@ SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index,
 		node = node->next;
 	}
 
-	// Call destructor on the existing element if destructor is not NULL
-	if (list->destructor != NULL) {
+	// Call destructor on the existing element if destructor is not SPARK_NULL
+	if (list->destructor != SPARK_NULL) {
 		list->destructor(node->data);
 	}
 
@@ -3120,7 +3120,7 @@ SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index,
 SPARKAPI SparkResult SparkClearList(SparkList list) {
 	SparkListNode node = list->head;
 	while (node != SPARK_NULL) {
-		if (list->destructor != NULL) {
+		if (list->destructor != SPARK_NULL) {
 			list->destructor(node->data);
 		}
 		SparkListNode temp = node;
@@ -3610,7 +3610,7 @@ SPARKAPI SparkVector SparkGetAllPairsHashMap(SparkHashMap hashmap) {
 #pragma region HASH_SET
 
 SPARKAPI SparkHashSet SparkDefaultHashSet() {
-	return SparkCreateHashSet(16, sizeof(SparkHandle), NULL, NULL, NULL);
+	return SparkCreateHashSet(16, sizeof(SparkHandle), SPARK_NULL, SPARK_NULL, SPARK_NULL);
 }
 
 SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
@@ -3685,8 +3685,8 @@ SPARKAPI SparkVoid SparkDestroyHashSet(SparkHashSet hashset) {
 	}
 	SparkAllocator allocator = hashset->allocator;
 
-	// Call destructor on each element if destructor is not NULL
-	if (hashset->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (hashset->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < hashset->capacity; i++) {
 			if (hashset->elements[i] != SPARK_NULL) {
 				hashset->destructor(hashset->elements[i]);
@@ -3854,8 +3854,8 @@ SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset,
 	SparkSize original_index = index;
 	while (hashset->elements[index] != SPARK_NULL) {
 		if (hashset->hashes[index] == element_hash) {
-			// Call destructor on the element if destructor is not NULL
-			if (hashset->destructor != NULL) {
+			// Call destructor on the element if destructor is not SPARK_NULL
+			if (hashset->destructor != SPARK_NULL) {
 				hashset->destructor(hashset->elements[index]);
 			}
 
@@ -3878,8 +3878,8 @@ SPARKAPI SparkResult SparkClearHashSet(SparkHashSet hashset) {
 	if (hashset == SPARK_NULL) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
-	// Call destructor on each element if destructor is not NULL
-	if (hashset->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (hashset->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < hashset->capacity; i++) {
 			if (hashset->elements[i] != SPARK_NULL) {
 				hashset->destructor(hashset->elements[i]);
@@ -3903,7 +3903,7 @@ SPARKAPI SparkResult SparkClearHashSet(SparkHashSet hashset) {
 #pragma region QUEUE
 
 SPARKAPI SparkQueue SparkDefaultQueue() {
-	return SparkCreateQueue(16, NULL, NULL);
+	return SparkCreateQueue(16, SPARK_NULL, SPARK_NULL);
 }
 
 SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
@@ -3957,8 +3957,8 @@ SPARKAPI SparkVoid SparkDestroyQueue(SparkQueue queue) {
 	}
 	SparkAllocator allocator = queue->allocator;
 
-	// Call destructor on each element if destructor is not NULL
-	if (queue->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (queue->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < queue->size; i++) {
 			SparkSize index = (queue->front + i) % queue->capacity;
 			if (queue->elements[index] != SPARK_NULL) {
@@ -4025,8 +4025,8 @@ SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue) {
 		return SPARK_ERROR_INVALID_STATE;
 	}
 
-	// Call destructor on the element if destructor is not NULL
-	if (queue->destructor != NULL &&
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (queue->destructor != SPARK_NULL &&
 		queue->elements[queue->front] != SPARK_NULL) {
 		queue->destructor(queue->elements[queue->front]);
 		queue->elements[queue->front] = SPARK_NULL;
@@ -4039,7 +4039,7 @@ SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue) {
 
 SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue) {
 	if (queue == SPARK_NULL || queue->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or NULL!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	return queue->elements[queue->front];
@@ -4047,7 +4047,7 @@ SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue) {
 
 SPARKAPI SparkHandle SparkGetBackQueue(SparkQueue queue) {
 	if (queue == SPARK_NULL || queue->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or NULL!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	SparkSize index = (queue->rear == 0) ? queue->capacity - 1 : queue->rear - 1;
@@ -4058,8 +4058,8 @@ SPARKAPI SparkResult SparkClearQueue(SparkQueue queue) {
 	if (queue == SPARK_NULL) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
-	// Call destructor on each element if destructor is not NULL
-	if (queue->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (queue->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < queue->size; i++) {
 			SparkSize index = (queue->front + i) % queue->capacity;
 			if (queue->elements[index] != SPARK_NULL) {
@@ -4079,7 +4079,7 @@ SPARKAPI SparkResult SparkClearQueue(SparkQueue queue) {
 #pragma region STACK
 
 SPARKAPI SparkStack SparkDefaultStack() {
-	return SparkCreateStack(16, NULL, NULL);
+	return SparkCreateStack(16, SPARK_NULL, SPARK_NULL);
 }
 
 SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
@@ -4131,8 +4131,8 @@ SPARKAPI SparkVoid SparkDestroyStack(SparkStack stack) {
 	}
 	SparkAllocator allocator = stack->allocator;
 
-	// Call destructor on each element if destructor is not NULL
-	if (stack->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (stack->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < stack->size; i++) {
 			if (stack->elements[i] != SPARK_NULL) {
 				stack->destructor(stack->elements[i]);
@@ -4191,8 +4191,8 @@ SPARKAPI SparkResult SparkPopStack(SparkStack stack) {
 	}
 	stack->size--;
 
-	// Call destructor on the element if destructor is not NULL
-	if (stack->destructor != NULL && stack->elements[stack->size] != SPARK_NULL) {
+	// Call destructor on the element if destructor is not SPARK_NULL
+	if (stack->destructor != SPARK_NULL && stack->elements[stack->size] != SPARK_NULL) {
 		stack->destructor(stack->elements[stack->size]);
 		stack->elements[stack->size] = SPARK_NULL;
 	}
@@ -4202,7 +4202,7 @@ SPARKAPI SparkResult SparkPopStack(SparkStack stack) {
 
 SPARKAPI SparkHandle SparkGetTopStack(SparkStack stack) {
 	if (stack == SPARK_NULL || stack->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Stack is empty or NULL!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Stack is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	return stack->elements[stack->size - 1];
@@ -4212,8 +4212,8 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 	if (stack == SPARK_NULL) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
-	// Call destructor on each element if destructor is not NULL
-	if (stack->destructor != NULL) {
+	// Call destructor on each element if destructor is not SPARK_NULL
+	if (stack->destructor != SPARK_NULL) {
 		for (SparkSize i = 0; i < stack->size; i++) {
 			if (stack->elements[i] != SPARK_NULL) {
 				stack->destructor(stack->elements[i]);
@@ -4241,11 +4241,11 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 #define SparkDestroyCondition(cond) /* No-op */
 #define SparkBroadcastCondition(cond) WakeAllConditionVariable(&(cond))
 #else
-#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), NULL)
+#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), SPARK_NULL)
 #define SparkLockMutex(mutex) pthread_mutex_lock(&(mutex))
 #define SparkUnlockMutex(mutex) pthread_mutex_unlock(&(mutex))
 #define SparkDestroyMutex(mutex) pthread_mutex_destroy(&(mutex))
-#define SparkInitCondition(cond) pthread_cond_init(&(cond), NULL)
+#define SparkInitCondition(cond) pthread_cond_init(&(cond), SPARK_NULL)
 #define SparkWaitCondition(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
 #define SparkSignalCondition(cond) pthread_cond_signal(&(cond))
 #define SparkDestroyCondition(cond) pthread_cond_destroy(&(cond))
@@ -4263,15 +4263,11 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
 	while (SPARK_TRUE) {
 		SparkLockMutex(pool->mutex);
 
-		while (pool->task_queue_head == NULL) {
-			if (pool->stop) {
-				SparkUnlockMutex(pool->mutex);
-				break;
-			}
+		while (pool->task_queue_head == NULL && !pool->stop) {
 			SparkWaitCondition(pool->condition, pool->mutex);
 		}
 
-		if (pool->task_queue_head == NULL && pool->stop) {
+		if (pool->stop && pool->task_queue_head == NULL) {
 			SparkUnlockMutex(pool->mutex);
 			break;
 		}
@@ -4279,13 +4275,13 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
 		// Get the task from the queue
 		task = pool->task_queue_head;
 		pool->task_queue_head = task->next;
-		if (pool->task_queue_head == NULL) {
-			pool->task_queue_tail = NULL;
+		if (pool->task_queue_head == SPARK_NULL) {
+			pool->task_queue_tail = SPARK_NULL;
 		}
 
 		SparkUnlockMutex(pool->mutex);
 
-		if (task != NULL) {
+		if (task != SPARK_NULL) {
 			// Perform the task
 			task->function(task->arg);
 
@@ -4304,26 +4300,25 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkThreadPoolWorker(SparkHandle arg) {
 		}
 	}
 
-
-	return 0; // Return 0 instead of NULL
+	return 0;
 }
-
 
 SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 	SparkThreadPool pool =
 		(SparkThreadPool)SparkAllocate(sizeof(struct SparkThreadPoolT));
-	if (pool == NULL)
-		return NULL;
+	if (pool == SPARK_NULL)
+		return SPARK_NULL;
 
 	pool->thread_count = thread_count;
 	pool->threads =
 		(SparkThread*)SparkAllocate(thread_count * sizeof(SparkThread));
-	pool->task_queue_head = NULL;
-	pool->task_queue_tail = NULL;
+	pool->task_queue_head = SPARK_NULL;
+	pool->task_queue_tail = SPARK_NULL;
 	pool->stop = SPARK_FALSE;
 	pool->pending_task_count = 0;
 	pool->shutdown = SPARK_FALSE;
-
+	pool->shutdown_callbacks = SparkDefaultVector();
+	pool->shutdown_callback_args = SparkDefaultVector();
 
 	SparkInitMutex(pool->mutex);
 	SparkInitCondition(pool->condition);
@@ -4336,13 +4331,13 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 #ifdef _WIN32
 		unsigned threadID;
 		pool->threads[i] = (HANDLE)_beginthreadex(
-			NULL, 0, __SparkThreadPoolWorker, pool, 0, &threadID);
+			SPARK_NULL, 0, __SparkThreadPoolWorker, pool, 0, &threadID);
 		if (pool->threads[i] == 0) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create thread %zu", i);
 			// Handle error (e.g., clean up and return)
 	}
 #else
-		pthread_create(&pool->threads[i], NULL, __SparkThreadPoolWorker, pool);
+		pthread_create(&pool->threads[i], SPARK_NULL, __SparkThreadPoolWorker, pool);
 #endif
 }
 
@@ -4351,8 +4346,14 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 }
 
 SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
-	if (pool == NULL)
+	if (pool == SPARK_NULL)
 		return;
+
+	for (SparkSize i = 0; i < pool->shutdown_callbacks->size; ++i) {
+		SparkThreadPoolShutdownCallback callback = SparkGetElementVector(pool->shutdown_callbacks, i);
+		SparkHandle arg = SparkGetElementVector(pool->shutdown_callback_args, i);
+		callback(arg);
+	}
 
 	/* Stop all threads */
 	SparkLockMutex(pool->mutex);
@@ -4366,14 +4367,15 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 		DWORD wait_result = WaitForSingleObject(pool->threads[i], INFINITE);
 		if (wait_result != WAIT_OBJECT_0) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "WaitForSingleObject failed on thread %zu", i);
-			// Handle error (e.g., log and continue)
 		}
 		CloseHandle(pool->threads[i]);
 #else
-		pthread_join(pool->threads[i], NULL);
+		pthread_join(pool->threads[i], SPARK_NULL);
 #endif
 	}
 
+	SparkDestroyVector(pool->shutdown_callbacks);
+	SparkDestroyVector(pool->shutdown_callback_args);
 
 	/* Clean up */
 	SparkDestroyMutex(pool->mutex);
@@ -4397,23 +4399,23 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 	SparkHandle arg,
 	SparkBool wait_on_update) {
 
-	if (pool == NULL || function == NULL)
-		return NULL;
+	if (!pool || !function)
+		return SPARK_NULL;
 
 	SparkLockMutex(pool->mutex);
 	if (pool->shutdown) {
 		SparkUnlockMutex(pool->mutex);
-		return NULL; // Or handle error appropriately
+		return SPARK_NULL;
 	}
 	SparkUnlockMutex(pool->mutex);
 
 	SparkTaskHandle task = SparkAllocate(sizeof(struct SparkTaskT));
-	if (task == NULL)
-		return NULL;
+	if (task == SPARK_NULL)
+		return SPARK_NULL;
 
 	task->function = function;
 	task->arg = arg;
-	task->next = NULL;
+	task->next = SPARK_NULL;
 	task->wait_on_update = wait_on_update;
 
 	SparkInitMutex(task->mutex);
@@ -4428,7 +4430,7 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 	SparkLockMutex(pool->mutex);
 
 	// Add the task to the queue
-	if (pool->task_queue_tail == NULL) {
+	if (!pool->task_queue_tail) {
 		pool->task_queue_head = pool->task_queue_tail = task;
 	}
 	else {
@@ -4442,9 +4444,21 @@ SPARKAPI SparkTaskHandle SparkAddTaskThreadPool(SparkThreadPool pool,
 	return task;
 }
 
+SPARKAPI SparkVoid SparkAddShutdownCallbackThreadPool(
+	SparkThreadPool pool,
+	SparkThreadPoolShutdownCallback callback,
+	SparkHandle arg
+) {
+	if (!pool || !callback)
+		return;
+
+	SparkPushBackVector(pool->shutdown_callbacks, callback);
+	SparkPushBackVector(pool->shutdown_callback_args, arg);
+}
+
 
 SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
-	if (task == NULL)
+	if (task == SPARK_NULL)
 		return SPARK_FAILURE;
 
 	SparkLockMutex(task->mutex);
@@ -4459,7 +4473,7 @@ SPARKAPI SparkResult SparkWaitTask(SparkTaskHandle task) {
 }
 
 SPARKAPI SparkBool SparkIsTaskDone(SparkTaskHandle task) {
-	if (task == NULL)
+	if (task == SPARK_NULL)
 		return SPARK_FALSE;
 
 	SparkLockMutex(task->mutex);
@@ -4610,31 +4624,40 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
 	}
 	SparkUnlockMutex(server->mutex);
 
+	// Clean up client resources
 	close(client->socket);
 	SparkFree(client);
-	return NULL;
+
+	return SPARK_NULL;
 }
+
 
 /* Server Functions */
 SPARKAPI SparkServer  SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback) {
 	if (__SparkInitNetworking() != SPARK_SUCCESS) {
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkServer server = (SparkServer)SparkAllocate(sizeof(struct SparkServerT));
 	if (!server) {
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	server->port = port;
 	server->running = SPARK_FALSE;
 	server->receive_callback = callback;
-	server->clients = SparkCreateVector(10, SparkDefaultAllocator(), SPARK_NULL);
+	server->clients = SparkDefaultVector();
 
 	SparkInitMutex(server->mutex);
 
 	/* Create ThreadPool */
 	server->thread_pool = tp;
+
+	SparkAddShutdownCallbackThreadPool(
+		server->thread_pool,
+		(SparkThreadPoolShutdownCallback)SparkDestroyServer,
+		server
+	);
 
 	return server;
 }
@@ -4651,7 +4674,7 @@ SPARKAPI SparkVoid  SparkDestroyServer(SparkServer server) {
 
 	__SparkCleanupNetworking();
 }
-
+     
 SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 	SparkServer srv = (SparkServer)arg;
 	while (srv->running) {
@@ -4659,13 +4682,32 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 		socklen_t addr_len = sizeof(client_addr);
 		SOCKET_TYPE client_socket = accept(srv->listen_socket, (struct sockaddr*)&client_addr, &addr_len);
 		if (client_socket == -1) {
-			if (!srv->running) {
+#ifdef _WIN32
+			SparkI32 error = WSAGetLastError();
+			if (error == WSAEWOULDBLOCK || error == WSAEINTR) {
+				// No incoming connection, sleep briefly and continue
+				Sleep(10); // Sleep for 10 milliseconds
+				continue;
+			}
+			else {
+				// Handle other errors
+				perror("Accept failed");
 				break;
 			}
-			perror("Accept failed");
-			continue;
+#else
+			if (errno == EWOULDBLOCK || errno == EAGAIN || errno == EINTR) {
+				// No incoming connection, sleep briefly and continue
+				usleep(10000); // Sleep for 10 milliseconds
+				continue;
+			}
+			else {
+				// Handle other errors
+				perror("Accept failed");
+				break;
+			}
+#endif
 		}
-
+		// Handle the new client connection
 		SparkClientConnection client = (SparkClientConnection)SparkAllocate(sizeof(struct SparkClientConnectionT));
 		client->socket = client_socket;
 		client->address = client_addr;
@@ -4679,7 +4721,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 		/* Handle client in a separate thread */
 		SparkAddTaskThreadPool(srv->thread_pool, __SparkClientHandler, client, SPARK_FALSE);
 	}
-	return NULL;
+	return SPARK_NULL;
 }
 
 SPARKAPI SparkResult  SparkStartServer(SparkServer server) {
@@ -4691,10 +4733,21 @@ SPARKAPI SparkResult  SparkStartServer(SparkServer server) {
 	struct sockaddr_in server_addr;
 
 	/* Create socket */
+/* Create socket */
 	if ((listen_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		perror("Socket creation failed");
 		return SPARK_FAILURE;
 	}
+
+	/* Set socket to non-blocking mode */
+#ifdef _WIN32
+	u_long mode = 1; // 1 to enable non-blocking socket
+	ioctlsocket(listen_socket, FIONBIO, &mode);
+#else
+	SparkI32 flags = fcntl(listen_socket, F_GETFL, 0);
+	fcntl(listen_socket, F_SETFL, flags | O_NONBLOCK);
+#endif
+
 
 	/* Set socket options */
 	SparkI32 opt = 1;
@@ -4748,9 +4801,7 @@ SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	for (SparkSize i = 0; i < server->clients->size; ++i) {
 		SparkClientConnection client = (SparkClientConnection)SparkGetElementVector(server->clients, i);
 		close(client->socket);
-		SparkFree(client);
 	}
-	SparkClearVector(server->clients);
 	SparkUnlockMutex(server->mutex);
 
 	return SPARK_SUCCESS;
@@ -4808,20 +4859,30 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientReceiveHandler(SparkHandle arg) {
 		}
 	}
 
+	if (bytes_received == 0) {
+		// Connection closed by the server
+		printf("Server has closed the connection.\n");
+	}
+	else if (bytes_received < 0) {
+		// An error occurred
+		perror("recv failed");
+	}
+
 	client->connected = SPARK_FALSE;
 	close(client->socket);
-	return NULL;
+	return SPARK_NULL;
 }
+
 
 /* Client Functions */
 SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
 	if (__SparkInitNetworking() != SPARK_SUCCESS) {
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkClient client = (SparkClient)SparkAllocate(sizeof(struct SparkClientT));
 	if (!client) {
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	client->connected = SPARK_FALSE;
@@ -4831,21 +4892,19 @@ SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString add
 	client->server_address.sin_family = AF_INET;
 	client->server_address.sin_port = htons(port);
 
-	printf("Attempting to connect to address: %s\n", address); // Debug statement
-
 #ifdef _WIN32
 	// Use InetPtonA to handle ANSI strings explicitly
 	if (InetPtonA(AF_INET, address, &client->server_address.sin_addr) <= 0) {
-		printf("Invalid address / Address not supported\n");
-		printf("InetPtonA failed with error: %d\n", WSAGetLastError()); // Detailed error
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid address / Address not supported\n");
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "InetPtonA failed with error: %d\n", WSAGetLastError()); // Detailed error
 		SparkFree(client);
-		return NULL;
+		return SPARK_NULL;
 	}
 #else
 	if (inet_pton(AF_INET, address, &client->server_address.sin_addr) <= 0) {
 		perror("inet_pton failed");
 		SparkFree(client);
-		return NULL;
+		return SPARK_NULL;
 	}
 #endif
 
@@ -4854,7 +4913,7 @@ SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString add
 
 	return client;
 }
-
+ 
 SPARKAPI SparkVoid  SparkDestroyClient(SparkClient client) {
 	if (!client) {
 		return;
@@ -6616,7 +6675,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkEventTask(SparkHandle task) {
 		SparkDestroyEvent(task_arg->event);
 	}
 
-
 	SparkFree(task_arg);
 }
 
@@ -6763,21 +6821,21 @@ SPARKAPI SPARKSTATIC SparkResult __SparkEnsureCapacity(SparkBuffer* buffer, Spar
 
 // Create File Serializer
 SPARKAPI SparkFileSerializer  SparkCreateFileSerializer(SparkConstString path) {
-	if (!path) return NULL;
+	if (!path) return SPARK_NULL;
 
 	SparkFileSerializer serializer = (SparkFileSerializer)SparkAllocate(sizeof(struct SparkFileSerializerT));
-	if (!serializer) return NULL;
+	if (!serializer) return SPARK_NULL;
 
 	serializer->path = path;
 	serializer->size = 0;
 	serializer->capacity = 0;
-	serializer->data = NULL;
+	serializer->data = SPARK_NULL;
 
 	// Initialize buffer
 	SparkResult res = __SparkInitializeBuffer(&serializer->data, &serializer->capacity);
 	if (res != SPARK_SUCCESS) {
 		SparkFree(serializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	// Open file for writing in binary mode
@@ -6785,7 +6843,7 @@ SPARKAPI SparkFileSerializer  SparkCreateFileSerializer(SparkConstString path) {
 	if (!serializer->file) {
 		SparkFree(serializer->data);
 		SparkFree(serializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	return serializer;
@@ -6910,36 +6968,36 @@ SPARKAPI SparkResult  SparkSerializeVector(SparkFileSerializer serializer, Spark
 
 // Create File Deserializer
 SPARKAPI SparkFileDeserializer  SparkCreateFileDeserializer(SparkConstString path) {
-	if (!path) return NULL;
+	if (!path) return SPARK_NULL;
 
 	SparkFileDeserializer deserializer = (SparkFileDeserializer)SparkAllocate(sizeof(struct SparkFileDeserializerT));
-	if (!deserializer) return NULL;
+	if (!deserializer) return SPARK_NULL;
 
 	deserializer->path = path;
 	deserializer->size = 0;
 	deserializer->capacity = 0;
 	deserializer->curr_off = 0;
-	deserializer->data = NULL;
+	deserializer->data = SPARK_NULL;
 
 	// Open file for reading in binary mode
 	FILE* file = fopen(path, "rb");
 	if (!file) {
 		SparkFree(deserializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	// Determine file size
 	if (fseek(file, 0, SEEK_END) != 0) {
 		fclose(file);
 		SparkFree(deserializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkI32 file_size = ftell(file);
 	if (file_size < 0) {
 		fclose(file);
 		SparkFree(deserializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 	rewind(file); // Equivalent to fseek(file, 0, SEEK_SET);
 
@@ -6951,7 +7009,7 @@ SPARKAPI SparkFileDeserializer  SparkCreateFileDeserializer(SparkConstString pat
 	if (!deserializer->data) {
 		fclose(file);
 		SparkFree(deserializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkSize read_bytes = fread(deserializer->data, 1, deserializer->size, file);
@@ -6959,11 +7017,11 @@ SPARKAPI SparkFileDeserializer  SparkCreateFileDeserializer(SparkConstString pat
 		fclose(file);
 		SparkFree(deserializer->data);
 		SparkFree(deserializer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	fclose(file);
-	deserializer->file = NULL; // Not used in deserializer
+	deserializer->file = SPARK_NULL; // Not used in deserializer
 
 	return deserializer;
 }
@@ -7163,20 +7221,20 @@ SPARKAPI SPARKSTATIC SparkI32 __SparkGetOpenALFormat(SparkI32 channels, SparkI32
 	return 0;
 }
 
-static ALCdevice* SPARK_AUDIO_DEVICE = NULL;
-static ALCcontext* SPARK_AUDIO_CONTEXT = NULL;
+static ALCdevice* SPARK_AUDIO_DEVICE = SPARK_NULL;
+static ALCcontext* SPARK_AUDIO_CONTEXT = SPARK_NULL;
 
 SPARKAPI SparkBool  SparkInitAudio() {
 	// These are already initialized, so we will exit early
 	if (SPARK_AUDIO_DEVICE && SPARK_AUDIO_CONTEXT)
 		return SPARK_SUCCESS;
-	SPARK_AUDIO_DEVICE = alcOpenDevice(NULL); // Open default device
+	SPARK_AUDIO_DEVICE = alcOpenDevice(SPARK_NULL); // Open default device
 	if (!SPARK_AUDIO_DEVICE) {
 		fprintf(stderr, "Failed to open OpenAL device.\n");
 		return SPARK_FALSE;
 	}
 
-	SPARK_AUDIO_CONTEXT = alcCreateContext(SPARK_AUDIO_DEVICE, NULL);
+	SPARK_AUDIO_CONTEXT = alcCreateContext(SPARK_AUDIO_DEVICE, SPARK_NULL);
 	if (!SPARK_AUDIO_CONTEXT || alcMakeContextCurrent(SPARK_AUDIO_CONTEXT) == ALC_FALSE) {
 		fprintf(stderr, "Failed to create or set OpenAL context.\n");
 		if (SPARK_AUDIO_CONTEXT) alcDestroyContext(SPARK_AUDIO_CONTEXT);
@@ -7188,7 +7246,7 @@ SPARKAPI SparkBool  SparkInitAudio() {
 }
 
 SPARKAPI SparkVoid  SparkShutdownAudio() {
-	alcMakeContextCurrent(NULL);
+	alcMakeContextCurrent(SPARK_NULL);
 	if (SPARK_AUDIO_CONTEXT) alcDestroyContext(SPARK_AUDIO_CONTEXT);
 	if (SPARK_AUDIO_DEVICE) alcCloseDevice(SPARK_AUDIO_DEVICE);
 }
@@ -7196,23 +7254,23 @@ SPARKAPI SparkVoid  SparkShutdownAudio() {
 SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	if (SparkInitAudio() != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to initialize audio.");
-		return NULL;
+		return SPARK_NULL;
 	}
 	if (!file_path) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid file path.");
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkAudioBuffer buffer = (SparkAudioBuffer)SparkAllocate(sizeof(struct SparkAudioBufferT));
 	if (!buffer) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio buffer.\n");
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	memset(buffer, 0, sizeof(struct SparkAudioBufferT));
 
 	SparkConstString extension = SparkGetFileExtension(file_path);
-	SparkHandle data = NULL;
+	SparkHandle data = SPARK_NULL;
 	SparkI32 format = 0;
 	SparkI32 frequency = 0;
 	SparkI32 size = 0;
@@ -7220,10 +7278,10 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	if (strcmp(extension, "wav") == 0) {
 		// Load WAV file using dr_wav
 		drwav wav;
-		if (!drwav_init_file(&wav, file_path, NULL)) {
+		if (!drwav_init_file(&wav, file_path, SPARK_NULL)) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load WAV file: %s", file_path);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		SparkSize total_sample_count = wav.totalPCMFrameCount * wav.channels;
@@ -7236,7 +7294,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from WAV file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		format = __SparkGetOpenALFormat(wav.channels, 16);
@@ -7244,7 +7302,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported WAV format in file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		data = sample_data;
@@ -7253,11 +7311,11 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	}
 	else if (strcmp(extension, "flac") == 0) {
 		// Load FLAC file using dr_flac
-		drflac* flac = drflac_open_file(file_path, NULL);
+		drflac* flac = drflac_open_file(file_path, SPARK_NULL);
 		if (!flac) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load FLAC file: %s", file_path);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		SparkSize total_sample_count = flac->totalPCMFrameCount * flac->channels;
@@ -7270,7 +7328,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from FLAC file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		format = __SparkGetOpenALFormat(flac->channels, 16);
@@ -7278,7 +7336,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported FLAC format in file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		data = sample_data;
@@ -7288,10 +7346,10 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	else if (strcmp(extension, "mp3") == 0) {
 		// Load MP3 file using dr_mp3
 		drmp3 mp3;
-		if (!drmp3_init_file(&mp3, file_path, NULL)) {
+		if (!drmp3_init_file(&mp3, file_path, SPARK_NULL)) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load MP3 file: %s", file_path);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		SparkU64 total_pcm_frame_count = drmp3_get_pcm_frame_count(&mp3);
@@ -7305,7 +7363,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to read samples from MP3 file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		format = __SparkGetOpenALFormat(mp3.channels, 16);
@@ -7313,7 +7371,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported MP3 format in file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
-			return NULL;
+			return SPARK_NULL;
 		}
 
 		data = sample_data;
@@ -7323,7 +7381,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 	else {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported file extension: %s", extension);
 		SparkFree(buffer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	// Generate OpenAL buffer
@@ -7332,7 +7390,7 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL buffer.");
 		SparkFree(data);
 		SparkFree(buffer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	// Buffer the audio data into OpenAL
@@ -7342,13 +7400,13 @@ SPARKAPI SparkAudioBuffer  SparkCreateAudioBuffer(SparkConstString file_path) {
 		alDeleteBuffers(1, &buffer->bufferid);
 		SparkFree(data);
 		SparkFree(buffer);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	buffer->format = format;
 	buffer->frequency = frequency;
 	buffer->size = size;
-	buffer->data = NULL; // Data has been passed to OpenAL
+	buffer->data = SPARK_NULL; // Data has been passed to OpenAL
 
 	// Free the sample data as OpenAL has its own copy
 	SparkFree(data);
@@ -7366,13 +7424,13 @@ SPARKAPI SparkVoid  SparkDestroyAudioBuffer(SparkAudioBuffer buffer) {
 SPARKAPI SparkAudio  SparkCreateAudio(SparkAudioBuffer buffer) {
 	if (!buffer) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid audio buffer.");
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	SparkAudio source = (SparkAudio)SparkAllocate(sizeof(struct SparkAudioT));
 	if (!source) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for audio source.");
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	memset(source, 0, sizeof(struct SparkAudioT));
@@ -7381,7 +7439,7 @@ SPARKAPI SparkAudio  SparkCreateAudio(SparkAudioBuffer buffer) {
 	if (alGetError() != AL_NO_ERROR) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL source.");
 		SparkFree(source);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	// Attach buffer to source
@@ -7390,7 +7448,7 @@ SPARKAPI SparkAudio  SparkCreateAudio(SparkAudioBuffer buffer) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to attach buffer to source.");
 		alDeleteSources(1, &source->sourceid);
 		SparkFree(source);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	source->buffer = buffer;
@@ -7601,11 +7659,12 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	window->window_data = window_data;
 	window->renderer = SparkCreateRenderer();
 	window->current_frame = 0;
+	window->should_close = SPARK_FALSE;
 
 	if (!glfwInit()) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize GLFW!");
 		SparkFree(window);
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	glfwSetErrorCallback(__GlfwErrorCallback);
@@ -7621,7 +7680,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		SparkDestroyWindowData(window->window_data);
 		SparkFree(window);
 		glfwTerminate();
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	glfwSetWindowUserPointer(window->window, window);
@@ -7639,7 +7698,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		SparkDestroyWindowData(window->window_data);
 		SparkFree(window);
 		glfwTerminate();
-		return NULL;
+		return SPARK_NULL;
 	}
 
 	return window;
@@ -7656,6 +7715,7 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateWindow(SparkWindow window) {
+	window->should_close = glfwWindowShouldClose(window->window);
 	glfwPollEvents();
 	__SparkDrawFrame(window);
 }
@@ -7937,7 +7997,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkQueryTaskFunction(SparkHandle arg) {
 	SparkDestroyVector(task_arg->components);
 	SparkFree(task_arg);
 
-	return NULL;
+	return SPARK_NULL;
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkApplicationTaskFunction(SparkHandle task) {
@@ -7954,7 +8014,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkApplicationTaskFunction(SparkHandle task) 
 
 SPARKAPI SPARKSTATIC SparkBool
 __SparkApplicationKeepOpen(SparkApplication app) {
-	return !glfwWindowShouldClose(app->window->window);
+	return !app->window->should_close;
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkRunStartFunctions(SparkApplication app) {
