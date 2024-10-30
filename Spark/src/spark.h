@@ -3249,6 +3249,12 @@ typedef SparkApplication Application;
 
 #if defined(SPARK_DEFINE_MACRO_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
+#define LogDebug SPARK_LOG_DEBUG
+#define LogInfo SPARK_LOG_INFO
+#define LogWarn SPARK_LOG_WARN
+#define LogError SPARK_LOG_ERROR
+#define LogFatal SPARK_LOG_FATAL
+
 #define TransformComponent SPARK_TRANSFORM_COMPONENT
 #define StaticMeshComponent SPARK_STATIC_MESH_COMPONENT
 #define DynamicMeshComponent SPARK_DYNAMIC_MESH_COMPONENT

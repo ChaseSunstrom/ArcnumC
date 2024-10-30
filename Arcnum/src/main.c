@@ -15,11 +15,10 @@ void server_receive_callback(Server server, ClientConnection client, Envelope* e
 
 	TestThing* test = envelope->packet.data;
 
-	SPARK_LOG_WARN("Name: %s", test->name);
-	SPARK_LOG_WARN("Age: %f", test->age);
-	SPARK_LOG_WARN("ID: %lld", test->id);
+	LogWarn("Name: %s", test->name);
+	LogWarn("Age: %f", test->age);
+	LogWarn("ID: %lld", test->id);
 
-	/* Echo the data back to the client */
 	SparkBroadcast(server, envelope);
 
 	//Free(test->name);
@@ -28,7 +27,6 @@ void server_receive_callback(Server server, ClientConnection client, Envelope* e
 /* Client receive callback */
 void client_receive_callback(Client  client, Envelope* envelope) {
 	printf("Client received data from server.\n");
-	/* Process the data */
 }
 
 static Client client = NULL;
@@ -73,32 +71,13 @@ void update_send(Application app) {
 	envelope.packet.size = sizeof(TestThing);
 	envelope.packet.data = (SparkBuffer)&test;
 	if (SendToServer(client, &envelope) != SPARK_SUCCESS) {
-		printf("Failed to send data to server.\n");
+		LogError("Failed to send data to server.\n");
 	}
-}
-
-void TestGetPairs(Application app) {
-	HashMap hmap = DefaultHashMap();
-
-	InsertHashMap(hmap, "Hello", strlen("Hello"), "World");
-	InsertHashMap(hmap, "Goodbye", strlen("Goodbye"), "World");
-	InsertHashMap(hmap, "Test", strlen("Test"), "World");
-
-
-	Vector pairs = GetAllPairsHashMap(hmap);
-
-	for (u32 i = 0; i < pairs->size; i++) {
-		Pair* pair = pairs->elements[i];
-		printf("Key: %s, Value: %s\n", pair->first, pair->second);
-	}
-
-	DestroyHashMap(hmap);
-	DestroyVector(pairs);
 }
 
 void EventHandlerThing(Application app, Event event) {
 	EventDataKeyPressed key = event.data;
-	//SPARK_LOG_DEBUG("Key pressed: %s", KeyToString(key->key));
+	LogDebug("Key pressed: %s", KeyToString(key->key));
 }
 
 void CreateEntities(Application app) {
@@ -117,9 +96,9 @@ void QueryThing(Application app) {
 	for (u32 i = 0; i < components->size; i++) {
 		Component component = components->elements[i];
 		TestThing* test = component->data;
-		SPARK_LOG_DEBUG("Name: %s", test->name);
-		SPARK_LOG_DEBUG("Age: %f", test->age);
-		SPARK_LOG_DEBUG("ID: %lld", test->id);
+		LogDebug("Name: %s", test->name);
+		LogDebug("Age: %f", test->age);
+		LogDebug("ID: %lld", test->id);
 	}
 	SparkDestroyVector(components);
 }
@@ -145,7 +124,7 @@ void ResourceCreater(Application app) {
 
 	for (size_t i = 0; i < mesh->vertex_count; i++) {
 		Vertex curr_vertex = mesh->vertices[i];
-		SPARK_LOG_DEBUG("Vertex %d: %f, %f, %f, %f, %f, %f, %f, %f", 
+		LogDebug("Vertex %d: %f, %f, %f, %f, %f, %f, %f, %f", 
 			i, 
 			curr_vertex.position.x, 
 			curr_vertex.position.y, 
@@ -168,29 +147,27 @@ void ExitOnEscape(Application app, Event event) {
 	}
 }
 
-void TestIterator(Application app)
-{
+void TestIterator(Application app) {
 	HashMap hmap = DefaultHashMap();
 
 	InsertHashMap(hmap, "Hello", strlen("Hello"), "World");
 	InsertHashMap(hmap, "Goodbye", strlen("Goodbye"), "Goodbye");
 	InsertHashMap(hmap, "Test", strlen("Test"), "World");
 
-
 	HashMapIterator kit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_KEY, hmap);
 	do {
-		SPARK_LOG_DEBUG("Key: %s", GetCurrentHashMapIterator(kit));
+		LogDebug("Key: %s", GetCurrentHashMapIterator(kit));
 	} while (IterateForwardHashMapIterator(kit) != SPARK_ITERATOR_STATE_END);
 
 	HashMapIterator vit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_VALUE, hmap);
 	do {
-		SPARK_LOG_DEBUG("Value: %s", GetCurrentHashMapIterator(vit));
+		LogDebug("Value: %s", GetCurrentHashMapIterator(vit));
 	} while (IterateForwardHashMapIterator(vit) != SPARK_ITERATOR_STATE_END);
 
 	HashMapIterator pit = CreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_PAIR, hmap);
 	do {
-		SPARK_LOG_DEBUG("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
-		SPARK_LOG_DEBUG("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
+		LogDebug("Key: %s", ((Pair*)GetCurrentHashMapIterator(pit))->first);
+		LogDebug("Value: %s", ((Pair*)GetCurrentHashMapIterator(pit))->second);
 	} while (IterateForwardHashMapIterator(pit) != SPARK_ITERATOR_STATE_END);
 
 	DestroyHashMapIterator(kit);
@@ -200,30 +177,30 @@ void TestIterator(Application app)
 }
 
 i32 main() {
-	/* Create server */
 	Application app = CreateApplication(
 		CreateWindow(
-			CreateWindowData("Hello", 1080, 1080, SPARK_FALSE)
+			CreateWindowData(
+				"Hello", 1080, 1080, SPARK_FALSE
+			)
 		),
-		3
+		8
 	);
 
 	server = CreateServer(app->thread_pool, 12345, server_receive_callback);
-
 	client = CreateClient(app->thread_pool, "127.0.0.1", 12345, client_receive_callback);
 
 	StartServer(server);
 	ConnectClient(client);
 
-	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, TestGetPairs, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, TestSerialization, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, TestDeserialization, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
-	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, TestIterator, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, TestSerialization, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, TestDeserialization, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, TestIterator, SPARK_UNBLOCKED_PARRALLELISM);
 
-	//AddUpdateFunctionApplication(app, update_send, (SparkPair){true, false});
+	AddUpdateFunctionApplication(app, update_send, SPARK_UNTHREADED);
 
 	StartApplication(app);
 

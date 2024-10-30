@@ -4229,7 +4229,7 @@ SPARKAPI SparkResult SparkClearStack(SparkStack stack) {
 
 #pragma region ITERATOR
 
-SparkVectorIterator SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector) {
+SPARKAPI SparkVectorIterator SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector) {
 	if (!vector) return NULL;
 
 	SparkVectorIterator it = (SparkVectorIterator)SparkAllocate(sizeof(struct SparkVectorIteratorT));
@@ -4259,13 +4259,13 @@ SparkVectorIterator SparkCreateVectorIterator(SparkIteratorState start_state, Sp
 	return it;
 }
 
-void SparkDestroyVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkVoid SparkDestroyVectorIterator(SparkVectorIterator it) {
 	if (it) {
 		SparkFree(it);
 	}
 }
 
-SparkIteratorState SparkIterateForwardVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkIteratorState SparkIterateForwardVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos < it->vector->size - 1) {
@@ -4282,7 +4282,7 @@ SparkIteratorState SparkIterateForwardVectorIterator(SparkVectorIterator it) {
 	return it->state;
 }
 
-SparkIteratorState SparkIterateBackwardVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkIteratorState SparkIterateBackwardVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos > 0 && it->pos < it->vector->size) {
@@ -4299,7 +4299,7 @@ SparkIteratorState SparkIterateBackwardVectorIterator(SparkVectorIterator it) {
 	return it->state;
 }
 
-SparkIteratorState SparkIsAtBeginningVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtBeginningVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos == 0 && it->vector->size > 0) {
@@ -4316,12 +4316,12 @@ SparkIteratorState SparkIsAtBeginningVectorIterator(SparkVectorIterator it) {
 	}
 }
 
-SparkIteratorState SparkIsAtEndVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtEndVectorIterator(SparkVectorIterator it) {
 	// Functionally identical to SparkIsAtBeginningVectorIterator
 	return SparkIsAtBeginningVectorIterator(it);
 }
 
-SparkHandle SparkGetCurrentVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkHandle SparkGetCurrentVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return NULL;
 
 	if (it->pos < it->vector->size) {
@@ -4331,7 +4331,7 @@ SparkHandle SparkGetCurrentVectorIterator(SparkVectorIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetPreviousVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkHandle SparkGetPreviousVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return NULL;
 
 	if (it->pos > 0 && it->pos <= it->vector->size - 1) {
@@ -4341,7 +4341,7 @@ SparkHandle SparkGetPreviousVectorIterator(SparkVectorIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetNextVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkHandle SparkGetNextVectorIterator(SparkVectorIterator it) {
 	if (!it || !it->vector) return NULL;
 
 	if (it->pos + 1 < it->vector->size) {
@@ -4351,17 +4351,15 @@ SparkHandle SparkGetNextVectorIterator(SparkVectorIterator it) {
 	return NULL;
 }
 
-SparkBool SparkHasNextVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkBool SparkHasNextVectorIterator(SparkVectorIterator it) {
 	return SparkGetNextVectorIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
-SparkBool SparkHasPreviousVectorIterator(SparkVectorIterator it) {
+SPARKAPI SparkBool SparkHasPreviousVectorIterator(SparkVectorIterator it) {
 	return SparkGetPreviousVectorIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
-// SparkList Iterator Functions
-
-SparkListIterator SparkCreateListIterator(SparkIteratorState start_state, SparkList list) {
+SPARKAPI SparkListIterator SparkCreateListIterator(SparkIteratorState start_state, SparkList list) {
 	if (!list) return NULL;
 
 	SparkListIterator it = (SparkListIterator)SparkAllocate(sizeof(struct SparkListIteratorT));
@@ -4391,13 +4389,13 @@ SparkListIterator SparkCreateListIterator(SparkIteratorState start_state, SparkL
 	return it;
 }
 
-void SparkDestroyListIterator(SparkListIterator it) {
+SPARKAPI SparkVoid SparkDestroyListIterator(SparkListIterator it) {
 	if (it) {
 		SparkFree(it);
 	}
 }
 
-SparkIteratorState SparkIterateForwardListIterator(SparkListIterator it) {
+SPARKAPI SparkIteratorState SparkIterateForwardListIterator(SparkListIterator it) {
 	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos < it->list->size - 1) {
@@ -4414,7 +4412,7 @@ SparkIteratorState SparkIterateForwardListIterator(SparkListIterator it) {
 	return it->state;
 }
 
-SparkIteratorState SparkIterateBackwardListIterator(SparkListIterator it) {
+SPARKAPI SparkIteratorState SparkIterateBackwardListIterator(SparkListIterator it) {
 	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos > 0 && it->pos < it->list->size) {
@@ -4431,7 +4429,7 @@ SparkIteratorState SparkIterateBackwardListIterator(SparkListIterator it) {
 	return it->state;
 }
 
-SparkIteratorState SparkIsAtBeginningListIterator(SparkListIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtBeginningListIterator(SparkListIterator it) {
 	if (!it || !it->list) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos == 0 && it->list->size > 0) {
@@ -4448,12 +4446,12 @@ SparkIteratorState SparkIsAtBeginningListIterator(SparkListIterator it) {
 	}
 }
 
-SparkIteratorState SparkIsAtEndListIterator(SparkListIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtEndListIterator(SparkListIterator it) {
 	// Functionally identical to SparkIsAtBeginningListIterator
 	return SparkIsAtBeginningListIterator(it);
 }
 
-SparkHandle SparkGetCurrentListIterator(SparkListIterator it) {
+SPARKAPI SparkHandle SparkGetCurrentListIterator(SparkListIterator it) {
 	if (!it || !it->list) return NULL;
 
 	if (it->pos < it->list->size) {
@@ -4463,7 +4461,7 @@ SparkHandle SparkGetCurrentListIterator(SparkListIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetPreviousListIterator(SparkListIterator it) {
+SPARKAPI SparkHandle SparkGetPreviousListIterator(SparkListIterator it) {
 	if (!it || !it->list) return NULL;
 
 	if (it->pos > 0 && it->pos <= it->list->size - 1) {
@@ -4473,7 +4471,7 @@ SparkHandle SparkGetPreviousListIterator(SparkListIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetNextListIterator(SparkListIterator it) {
+SPARKAPI SparkHandle SparkGetNextListIterator(SparkListIterator it) {
 	if (!it || !it->list) return NULL;
 
 	if (it->pos + 1 < it->list->size) {
@@ -4483,17 +4481,15 @@ SparkHandle SparkGetNextListIterator(SparkListIterator it) {
 	return NULL;
 }
 
-SparkBool SparkHasNextListIterator(SparkListIterator it) {
+SPARKAPI SparkBool SparkHasNextListIterator(SparkListIterator it) {
 	return SparkGetNextListIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
-SparkBool SparkHasPreviousListIterator(SparkListIterator it) {
+SPARKAPI SparkBool SparkHasPreviousListIterator(SparkListIterator it) {
 	return SparkGetPreviousListIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
-// SparkHashMap Iterator Functions
-
-SparkHashMapIterator SparkCreateHashMapIterator(SparkIteratorState start_state, SparkHashMapIteratorType iterator_type, SparkHashMap hash_map) {
+SPARKAPI SparkHashMapIterator SparkCreateHashMapIterator(SparkIteratorState start_state, SparkHashMapIteratorType iterator_type, SparkHashMap hash_map) {
 	if (!hash_map) return NULL;
 
 	SparkHashMapIterator it = (SparkHashMapIterator)SparkAllocate(sizeof(struct SparkHashMapIteratorT));
@@ -4547,7 +4543,7 @@ SparkHashMapIterator SparkCreateHashMapIterator(SparkIteratorState start_state, 
 	return it;
 }
 
-void SparkDestroyHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkVoid SparkDestroyHashMapIterator(SparkHashMapIterator it) {
 	if (it) {
 		if (it->iterator_data) {
 			SparkFree(it->iterator_data);
@@ -4556,7 +4552,7 @@ void SparkDestroyHashMapIterator(SparkHashMapIterator it) {
 	}
 }
 
-SparkIteratorState SparkIterateForwardHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkIteratorState SparkIterateForwardHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos < it->iterator_data->size - 1) {
@@ -4573,7 +4569,7 @@ SparkIteratorState SparkIterateForwardHashMapIterator(SparkHashMapIterator it) {
 	return it->state;
 }
 
-SparkIteratorState SparkIterateBackwardHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkIteratorState SparkIterateBackwardHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos > 0 && it->pos < it->iterator_data->size) {
@@ -4590,7 +4586,7 @@ SparkIteratorState SparkIterateBackwardHashMapIterator(SparkHashMapIterator it) 
 	return it->state;
 }
 
-SparkIteratorState SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return SPARK_ITERATOR_STATE_INVALID;
 
 	if (it->pos == 0 && it->iterator_data->size > 0) {
@@ -4607,12 +4603,12 @@ SparkIteratorState SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it) {
 	}
 }
 
-SparkIteratorState SparkIsAtEndHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkIteratorState SparkIsAtEndHashMapIterator(SparkHashMapIterator it) {
 	// Functionally identical to SparkIsAtBeginningHashMapIterator
 	return SparkIsAtBeginningHashMapIterator(it);
 }
 
-SparkHandle SparkGetCurrentHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkHandle SparkGetCurrentHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return NULL;
 
 	if (it->pos < it->iterator_data->size) {
@@ -4622,7 +4618,7 @@ SparkHandle SparkGetCurrentHashMapIterator(SparkHashMapIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetPreviousHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkHandle SparkGetPreviousHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return NULL;
 
 	if (it->pos > 0 && it->pos <= it->iterator_data->size - 1) {
@@ -4632,7 +4628,7 @@ SparkHandle SparkGetPreviousHashMapIterator(SparkHashMapIterator it) {
 	return NULL;
 }
 
-SparkHandle SparkGetNextHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkHandle SparkGetNextHashMapIterator(SparkHashMapIterator it) {
 	if (!it || !it->iterator_data) return NULL;
 
 	if (it->pos + 1 < it->iterator_data->size) {
@@ -4642,11 +4638,11 @@ SparkHandle SparkGetNextHashMapIterator(SparkHashMapIterator it) {
 	return NULL;
 }
 
-SparkBool SparkHasNextHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkBool SparkHasNextHashMapIterator(SparkHashMapIterator it) {
 	return SparkGetNextHashMapIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
-SparkBool SparkHasPreviousHashMapIterator(SparkHashMapIterator it) {
+SPARKAPI SparkBool SparkHasPreviousHashMapIterator(SparkHashMapIterator it) {
 	return SparkGetPreviousHashMapIterator(it) != NULL ? SPARK_TRUE : SPARK_FALSE;
 }
 
@@ -5028,30 +5024,63 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientHandler(SparkHandle arg) {
 	SparkI8 recv_buffer[SPARK_PACKET_MAX_SIZE];
 	SparkI32 bytes_received;
 
-	while ((bytes_received = recv(client->socket, recv_buffer, SPARK_PACKET_MAX_SIZE, 0)) > 0) {
-		SparkEnvelope envelope;
-		if (SparkDeserializeEnvelope((SparkBuffer)recv_buffer, bytes_received, &envelope) == SPARK_SUCCESS) {
-			/* Call the receive callback */
-			server->receive_callback(server, client, &envelope);
-			/* Clean up envelope data */
-			SparkFree(envelope.packet.data);
+	while (SPARK_TRUE) {
+		bytes_received = recv(client->socket, recv_buffer, SPARK_PACKET_MAX_SIZE, 0);
+		if (bytes_received > 0) {
+			SparkEnvelope envelope;
+			if (SparkDeserializeEnvelope((SparkBuffer)recv_buffer, bytes_received, &envelope) == SPARK_SUCCESS) {
+				/* Call the receive callback */
+				server->receive_callback(server, client, &envelope);
+				/* Clean up envelope data */
+				SparkFree(envelope.packet.data);
+			}
 		}
-	}
-
-	/* Remove client from server's client list */
-	SparkLockMutex(server->mutex);
-	for (SparkSize i = 0; i < server->clients->size; ++i) {
-		SparkClientConnection conn = (SparkClientConnection)SparkGetElementVector(server->clients, i);
-		if (conn == client) {
-			SparkRemoveVector(server->clients, i);
+		else if (bytes_received == 0) {
+			// Connection closed by the client
 			break;
 		}
+		else {
+#ifdef _WIN32
+			SparkI32 error = WSAGetLastError();
+			if (error == WSAEWOULDBLOCK) {
+				// No data available, sleep briefly and continue
+				Sleep(10);
+				continue;
+			}
+			else {
+				/* Failed to receive, could be for a multitude of reasons, probably the server shutting down */
+				break;
+			}
+#else
+			if (errno == EWOULDBLOCK || errno == EAGAIN) {
+				// No data available, sleep briefly and continue
+				usleep(10000);
+				continue;
+			}
+			else {
+				/* Failed to receive, could be for a multitude of reasons, probably the server shutting down */
+				break;
+			}
+#endif
+		}
 	}
-	SparkUnlockMutex(server->mutex);
 
-	// Clean up client resources
-	close(client->socket);
-	SparkFree(client);
+
+
+	///* Remove client from server's client list */
+	//SparkLockMutex(server->mutex);
+	//for (SparkSize i = 0; i < server->clients->size; ++i) {
+	//	SparkClientConnection conn = (SparkClientConnection)SparkGetElementVector(server->clients, i);
+	//	if (conn == client) {
+	//		SparkRemoveVector(server->clients, i);
+	//		break;
+	//	}
+	//}
+	//SparkUnlockMutex(server->mutex);
+
+	//// Clean up client resources
+	//close(client->socket);
+	//SparkFree(client);
 
 	return SPARK_NULL;
 }
@@ -5115,8 +5144,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 				continue;
 			}
 			else {
-				// Handle other errors
-				perror("Accept failed");
+				/* Failed to accept, could be for a multitude of reasons, probably the server shutting down */
 				break;
 			}
 #else
@@ -5126,8 +5154,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 				continue;
 			}
 			else {
-				// Handle other errors
-				perror("Accept failed");
+				/* Failed to accept, could be for a multitude of reasons, probably the server shutting down */
 				break;
 			}
 #endif
@@ -5145,7 +5172,7 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkAcceptConnections(SparkHandle arg) {
 
 		/* Handle client in a separate thread */
 		SparkAddTaskThreadPool(srv->thread_pool, __SparkClientHandler, client, SPARK_FALSE);
-}
+	}
 	return SPARK_NULL;
 }
 
@@ -5211,7 +5238,7 @@ SPARKAPI SparkResult  SparkStartServer(SparkServer server) {
 	SparkAddTaskThreadPool(server->thread_pool, __SparkAcceptConnections, server, SPARK_FALSE);
 
 	return SPARK_SUCCESS;
-	}
+}
 
 SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	if (!server) {
@@ -5232,7 +5259,7 @@ SPARKAPI SparkResult  SparkStopServer(SparkServer server) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope * envelope) {
+SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope) {
 	if (!server || !client || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -5243,7 +5270,7 @@ SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnectio
 		return SPARK_FAILURE;
 	}
 
-	int bytes_sent = send(client->socket, buffer, size, 0);
+	SparkI32 bytes_sent = send(client->socket, buffer, size, 0);
 	SparkFree(buffer);
 	if (bytes_sent < 0) {
 		perror("Send to client failed");
@@ -5253,7 +5280,7 @@ SPARKAPI SparkResult  SparkSendToClient(SparkServer server, SparkClientConnectio
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkBroadcast(SparkServer server, SparkEnvelope * envelope) {
+SPARKAPI SparkResult  SparkBroadcast(SparkServer server, SparkEnvelope* envelope) {
 	if (!server || !envelope) {
 		return SPARK_FAILURE;
 	}
@@ -5297,7 +5324,6 @@ SPARKAPI SPARKSTATIC SparkHandle __SparkClientReceiveHandler(SparkHandle arg) {
 	close(client->socket);
 	return SPARK_NULL;
 }
-
 
 /* Client Functions */
 SPARKAPI SparkClient  SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback) {
@@ -5387,7 +5413,7 @@ SPARKAPI SparkResult  SparkDisconnectClient(SparkClient client) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope * envelope) {
+SPARKAPI SparkResult  SparkSendToServer(SparkClient client, SparkEnvelope* envelope) {
 	if (!client || !envelope || !client->connected) {
 		return SPARK_FAILURE;
 	}
