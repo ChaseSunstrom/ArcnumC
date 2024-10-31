@@ -1,178 +1,176 @@
 /*
-								Apache License
-						   Version 2.0, January 2004
-						http://www.apache.org/licenses/
+                                                                Apache License
+                                                   Version 2.0, January 2004
+                                                http://www.apache.org/licenses/
 
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
    1. Definitions.
 
-	  "License" shall mean the terms and conditions for use, reproduction,
-	  and distribution as defined by Sections 1 through 9 of this document.
+          "License" shall mean the terms and conditions for use, reproduction,
+          and distribution as defined by Sections 1 through 9 of this document.
 
-	  "Licensor" shall mean the copyright owner or entity authorized by
-	  the copyright owner that is granting the License.
+          "Licensor" shall mean the copyright owner or entity authorized by
+          the copyright owner that is granting the License.
 
-	  "Legal Entity" shall mean the union of the acting entity and all
-	  other entities that control, are controlled by, or are under common
-	  control with that entity. For the purposes of this definition,
-	  "control" means (i) the power, direct or indirect, to cause the
-	  direction or management of such entity, whether by contract or
-	  otherwise, or (ii) ownership of fifty percent (50%) or more of the
-	  outstanding shares, or (iii) beneficial ownership of such entity.
+          "Legal Entity" shall mean the union of the acting entity and all
+          other entities that control, are controlled by, or are under common
+          control with that entity. For the purposes of this definition,
+          "control" means (i) the power, direct or indirect, to cause the
+          direction or management of such entity, whether by contract or
+          otherwise, or (ii) ownership of fifty percent (50%) or more of the
+          outstanding shares, or (iii) beneficial ownership of such entity.
 
-	  "You" (or "Your") shall mean an individual or Legal Entity
-	  exercising permissions granted by this License.
+          "You" (or "Your") shall mean an individual or Legal Entity
+          exercising permissions granted by this License.
 
-	  "Source" form shall mean the preferred form for making modifications,
-	  including but not limited to software source code, documentation
-	  source, and configuration files.
+          "Source" form shall mean the preferred form for making modifications,
+          including but not limited to software source code, documentation
+          source, and configuration files.
 
-	  "Object" form shall mean any form resulting from mechanical
-	  transformation or translation of a Source form, including but
-	  not limited to compiled object code, generated documentation,
-	  and conversions to other media types.
+          "Object" form shall mean any form resulting from mechanical
+          transformation or translation of a Source form, including but
+          not limited to compiled object code, generated documentation,
+          and conversions to other media types.
 
-	  "Work" shall mean the work of authorship, whether in Source or
-	  Object form, made available under the License, as indicated by a
-	  copyright notice that is included in or attached to the work
-	  (an example is provided in the Appendix below).
+          "Work" shall mean the work of authorship, whether in Source or
+          Object form, made available under the License, as indicated by a
+          copyright notice that is included in or attached to the work
+          (an example is provided in the Appendix below).
 
-	  "Derivative Works" shall mean any work, whether in Source or Object
-	  form, that is based on (or derived from) the Work and for which the
-	  editorial revisions, annotations, elaborations, or other modifications
-	  represent, as a whole, an original work of authorship. For the purposes
-	  of this License, Derivative Works shall not include works that remain
-	  separable from, or merely link (or bind by name) to the interfaces of,
-	  the Work and Derivative Works thereof.
+          "Derivative Works" shall mean any work, whether in Source or Object
+          form, that is based on (or derived from) the Work and for which the
+          editorial revisions, annotations, elaborations, or other modifications
+          represent, as a whole, an original work of authorship. For the
+   purposes of this License, Derivative Works shall not include works that
+   remain separable from, or merely link (or bind by name) to the interfaces of,
+          the Work and Derivative Works thereof.
 
-	  "Contribution" shall mean any work of authorship, including
-	  the original version of the Work and any modifications or additions
-	  to that Work or Derivative Works thereof, that is intentionally
-	  submitted to Licensor for inclusion in the Work by the copyright owner
-	  or by an individual or Legal Entity authorized to submit on behalf of
-	  the copyright owner. For the purposes of this definition, "submitted"
-	  means any form of electronic, verbal, or written communication sent
-	  to the Licensor or its representatives, including but not limited to
-	  communication on electronic mailing lists, source code control systems,
-	  and issue tracking systems that are managed by, or on behalf of, the
-	  Licensor for the purpose of discussing and improving the Work, but
-	  excluding communication that is conspicuously marked or otherwise
-	  designated in writing by the copyright owner as "Not a Contribution."
+          "Contribution" shall mean any work of authorship, including
+          the original version of the Work and any modifications or additions
+          to that Work or Derivative Works thereof, that is intentionally
+          submitted to Licensor for inclusion in the Work by the copyright owner
+          or by an individual or Legal Entity authorized to submit on behalf of
+          the copyright owner. For the purposes of this definition, "submitted"
+          means any form of electronic, verbal, or written communication sent
+          to the Licensor or its representatives, including but not limited to
+          communication on electronic mailing lists, source code control
+   systems, and issue tracking systems that are managed by, or on behalf of, the
+          Licensor for the purpose of discussing and improving the Work, but
+          excluding communication that is conspicuously marked or otherwise
+          designated in writing by the copyright owner as "Not a Contribution."
 
-	  "Contributor" shall mean Licensor and any individual or Legal Entity
-	  on behalf of whom a Contribution has been received by Licensor and
-	  subsequently incorporated within the Work.
+          "Contributor" shall mean Licensor and any individual or Legal Entity
+          on behalf of whom a Contribution has been received by Licensor and
+          subsequently incorporated within the Work.
 
    2. Grant of Copyright License. Subject to the terms and conditions of
-	  this License, each Contributor hereby grants to You a perpetual,
-	  worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-	  copyright license to reproduce, prepare Derivative Works of,
-	  publicly display, publicly perform, sublicense, and distribute the
-	  Work and such Derivative Works in Source or Object form.
+          this License, each Contributor hereby grants to You a perpetual,
+          worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+          copyright license to reproduce, prepare Derivative Works of,
+          publicly display, publicly perform, sublicense, and distribute the
+          Work and such Derivative Works in Source or Object form.
 
    3. Grant of Patent License. Subject to the terms and conditions of
-	  this License, each Contributor hereby grants to You a perpetual,
-	  worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-	  (except as stated in this section) patent license to make, have made,
-	  use, offer to sell, sell, import, and otherwise transfer the Work,
-	  where such license applies only to those patent claims licensable
-	  by such Contributor that are necessarily infringed by their
-	  Contribution(s) alone or by combination of their Contribution(s)
-	  with the Work to which such Contribution(s) was submitted. If You
-	  institute patent litigation against any entity (including a
-	  cross-claim or counterclaim in a lawsuit) alleging that the Work
-	  or a Contribution incorporated within the Work constitutes direct
-	  or contributory patent infringement, then any patent licenses
-	  granted to You under this License for that Work shall terminate
-	  as of the date such litigation is filed.
+          this License, each Contributor hereby grants to You a perpetual,
+          worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+          (except as stated in this section) patent license to make, have made,
+          use, offer to sell, sell, import, and otherwise transfer the Work,
+          where such license applies only to those patent claims licensable
+          by such Contributor that are necessarily infringed by their
+          Contribution(s) alone or by combination of their Contribution(s)
+          with the Work to which such Contribution(s) was submitted. If You
+          institute patent litigation against any entity (including a
+          cross-claim or counterclaim in a lawsuit) alleging that the Work
+          or a Contribution incorporated within the Work constitutes direct
+          or contributory patent infringement, then any patent licenses
+          granted to You under this License for that Work shall terminate
+          as of the date such litigation is filed.
 
    4. Redistribution. You may reproduce and distribute copies of the
-	  Work or Derivative Works thereof in any medium, with or without
-	  modifications, and in Source or Object form, provided that You
-	  meet the following conditions:
+          Work or Derivative Works thereof in any medium, with or without
+          modifications, and in Source or Object form, provided that You
+          meet the following conditions:
 
-	  (a) You must give any other recipients of the Work or
-		  Derivative Works a copy of this License; and
+          (a) You must give any other recipients of the Work or
+                  Derivative Works a copy of this License; and
 
-	  (b) You must cause any modified files to carry prominent notices
-		  stating that You changed the files; and
+          (b) You must cause any modified files to carry prominent notices
+                  stating that You changed the files; and
 
-	  (c) You must retain, in the Source form of any Derivative Works
-		  that You distribute, all copyright, patent, trademark, and
-		  attribution notices from the Source form of the Work,
-		  excluding those notices that do not pertain to any part of
-		  the Derivative Works; and
+          (c) You must retain, in the Source form of any Derivative Works
+                  that You distribute, all copyright, patent, trademark, and
+                  attribution notices from the Source form of the Work,
+                  excluding those notices that do not pertain to any part of
+                  the Derivative Works; and
 
-	  (d) If the Work includes a "NOTICE" text file as part of its
-		  distribution, then any Derivative Works that You distribute must
-		  include a readable copy of the attribution notices contained
-		  within such NOTICE file, excluding those notices that do not
-		  pertain to any part of the Derivative Works, in at least one
-		  of the following places: within a NOTICE text file distributed
-		  as part of the Derivative Works; within the Source form or
-		  documentation, if provided along with the Derivative Works; or,
-		  within a display generated by the Derivative Works, if and
-		  wherever such third-party notices normally appear. The contents
-		  of the NOTICE file are for informational purposes only and
-		  do not modify the License. You may add Your own attribution
-		  notices within Derivative Works that You distribute, alongside
-		  or as an addendum to the NOTICE text from the Work, provided
-		  that such additional attribution notices cannot be construed
-		  as modifying the License.
+          (d) If the Work includes a "NOTICE" text file as part of its
+                  distribution, then any Derivative Works that You distribute
+   must include a readable copy of the attribution notices contained within such
+   NOTICE file, excluding those notices that do not pertain to any part of the
+   Derivative Works, in at least one of the following places: within a NOTICE
+   text file distributed as part of the Derivative Works; within the Source form
+   or documentation, if provided along with the Derivative Works; or, within a
+   display generated by the Derivative Works, if and wherever such third-party
+   notices normally appear. The contents of the NOTICE file are for
+   informational purposes only and do not modify the License. You may add Your
+   own attribution notices within Derivative Works that You distribute,
+   alongside or as an addendum to the NOTICE text from the Work, provided that
+   such additional attribution notices cannot be construed as modifying the
+   License.
 
-	  You may add Your own copyright statement to Your modifications and
-	  may provide additional or different license terms and conditions
-	  for use, reproduction, or distribution of Your modifications, or
-	  for any such Derivative Works as a whole, provided Your use,
-	  reproduction, and distribution of the Work otherwise complies with
-	  the conditions stated in this License.
+          You may add Your own copyright statement to Your modifications and
+          may provide additional or different license terms and conditions
+          for use, reproduction, or distribution of Your modifications, or
+          for any such Derivative Works as a whole, provided Your use,
+          reproduction, and distribution of the Work otherwise complies with
+          the conditions stated in this License.
 
    5. Submission of Contributions. Unless You explicitly state otherwise,
-	  any Contribution intentionally submitted for inclusion in the Work
-	  by You to the Licensor shall be under the terms and conditions of
-	  this License, without any additional terms or conditions.
-	  Notwithstanding the above, nothing herein shall supersede or modify
-	  the terms of any separate license agreement you may have executed
-	  with Licensor regarding such Contributions.
+          any Contribution intentionally submitted for inclusion in the Work
+          by You to the Licensor shall be under the terms and conditions of
+          this License, without any additional terms or conditions.
+          Notwithstanding the above, nothing herein shall supersede or modify
+          the terms of any separate license agreement you may have executed
+          with Licensor regarding such Contributions.
 
    6. Trademarks. This License does not grant permission to use the trade
-	  names, trademarks, service marks, or product names of the Licensor,
-	  except as required for reasonable and customary use in describing the
-	  origin of the Work and reproducing the content of the NOTICE file.
+          names, trademarks, service marks, or product names of the Licensor,
+          except as required for reasonable and customary use in describing the
+          origin of the Work and reproducing the content of the NOTICE file.
 
    7. Disclaimer of Warranty. Unless required by applicable law or
-	  agreed to in writing, Licensor provides the Work (and each
-	  Contributor provides its Contributions) on an "AS IS" BASIS,
-	  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-	  implied, including, without limitation, any warranties or conditions
-	  of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-	  PARTICULAR PURPOSE. You are solely responsible for determining the
-	  appropriateness of using or redistributing the Work and assume any
-	  risks associated with Your exercise of permissions under this License.
+          agreed to in writing, Licensor provides the Work (and each
+          Contributor provides its Contributions) on an "AS IS" BASIS,
+          WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+          implied, including, without limitation, any warranties or conditions
+          of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+          PARTICULAR PURPOSE. You are solely responsible for determining the
+          appropriateness of using or redistributing the Work and assume any
+          risks associated with Your exercise of permissions under this License.
 
    8. Limitation of Liability. In no event and under no legal theory,
-	  whether in tort (including negligence), contract, or otherwise,
-	  unless required by applicable law (such as deliberate and grossly
-	  negligent acts) or agreed to in writing, shall any Contributor be
-	  liable to You for damages, including any direct, indirect, special,
-	  incidental, or consequential damages of any character arising as a
-	  result of this License or out of the use or inability to use the
-	  Work (including but not limited to damages for loss of goodwill,
-	  work stoppage, computer failure or malfunction, or any and all
-	  other commercial damages or losses), even if such Contributor
-	  has been advised of the possibility of such damages.
+          whether in tort (including negligence), contract, or otherwise,
+          unless required by applicable law (such as deliberate and grossly
+          negligent acts) or agreed to in writing, shall any Contributor be
+          liable to You for damages, including any direct, indirect, special,
+          incidental, or consequential damages of any character arising as a
+          result of this License or out of the use or inability to use the
+          Work (including but not limited to damages for loss of goodwill,
+          work stoppage, computer failure or malfunction, or any and all
+          other commercial damages or losses), even if such Contributor
+          has been advised of the possibility of such damages.
 
    9. Accepting Warranty or Additional Liability. While redistributing
-	  the Work or Derivative Works thereof, You may choose to offer,
-	  and charge a fee for, acceptance of support, warranty, indemnity,
-	  or other liability obligations and/or rights consistent with this
-	  License. However, in accepting such obligations, You may act only
-	  on Your own behalf and on Your sole responsibility, not on behalf
-	  of any other Contributor, and only if You agree to indemnify,
-	  defend, and hold each Contributor harmless for any liability
-	  incurred by, or claims asserted against, such Contributor by reason
-	  of your accepting any such warranty or additional liability.
+          the Work or Derivative Works thereof, You may choose to offer,
+          and charge a fee for, acceptance of support, warranty, indemnity,
+          or other liability obligations and/or rights consistent with this
+          License. However, in accepting such obligations, You may act only
+          on Your own behalf and on Your sole responsibility, not on behalf
+          of any other Contributor, and only if You agree to indemnify,
+          defend, and hold each Contributor harmless for any liability
+          incurred by, or claims asserted against, such Contributor by reason
+          of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
 */
@@ -184,18 +182,18 @@
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0600
+#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <windows.h>
 #pragma comment(lib, "Ws2_32.lib")
 #else
-#include <pthread.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <errno.h>
+#include <netinet/in.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -277,53 +275,56 @@
 #define SPARK_LOG_ERROR(message, ...)
 #endif
 
-#ifdef __STDC_VERSION__ >= 201112L
+#if __STDC_VERSION__ >= 201112L
 
-#define SparkSerializeString(serializer, data) \
-    SparkSerializeData(serializer, (const char*)(unsigned long long)data, strlen((const char*)(unsigned long long)data))
+#define SparkSerializeString(serializer, data)                                 \
+  SparkSerializeData(serializer, (const char *)(unsigned long long)data,       \
+                     strlen((const char *)(unsigned long long)data))
 
-#define SparkSerializeTrivialType(serializer, data) \
-    SparkSerializeTrivial(serializer, &(data), sizeof(data))
+#define SparkSerializeTrivialType(serializer, data)                            \
+  SparkSerializeTrivial(serializer, &(data), sizeof(data))
 
 // SparkSerializeDefault Macro Using _Generic
-#define SparkSerializeDefault(serializer, data) \
-    _Generic((data), \
-        const char* : SparkSerializeString(serializer, data), \
-		char* : SparkSerializeString(serializer, data), \
-		SparkVector: SparkSerializeVector(serializer, (const char*)(unsigned long long)data), \
-        default: SparkSerializeTrivialType(serializer, data) \
-    )
+#define SparkSerializeDefault(serializer, data)                                \
+  _Generic((data),                                                             \
+      const char *: SparkSerializeString(serializer, data),                    \
+      char *: SparkSerializeString(serializer, data),                          \
+      SparkVector: SparkSerializeVector(                                       \
+               serializer, (const char *)(unsigned long long)data),            \
+      default: SparkSerializeTrivialType(serializer, data))
 
 // Serialization Function When Size is Provided
-#define SparkSerializeWithSize(serializer, data, size) \
-    SparkSerializeData(serializer, data, size)
+#define SparkSerializeWithSize(serializer, data, size)                         \
+  SparkSerializeData(serializer, data, size)
 
-// Helper Macro to Select the Appropriate Serialization Function Based on Argument Count
+// Helper Macro to Select the Appropriate Serialization Function Based on
+// Argument Count
 #define GET_SPARKSERIALIZE(_1, _2, _3, NAME, ...) NAME
 
 // Main SparkSerialize Macro
-#define SparkSerialize(...) \
-    GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize, SparkSerializeDefault)(__VA_ARGS__)
+#define SparkSerialize(...)                                                    \
+  GET_SPARKSERIALIZE(__VA_ARGS__, SparkSerializeWithSize,                      \
+                     SparkSerializeDefault)                                    \
+  (__VA_ARGS__)
 
-#define SparkDeserializeDefault(deserializer, data) \
-	_Generic((data), \
-	SparkVector: SparkDeserializeVector(deserializer, &(data)),	\
-	default: SparkDeserializeTrivial(deserializer, &(data), sizeof(data)) \
-	)
+#define SparkDeserializeDefault(deserializer, data)                            \
+  _Generic((data),                                                             \
+      SparkVector: SparkDeserializeVector(deserializer, &(data)),              \
+      default: SparkDeserializeTrivial(deserializer, &(data), sizeof(data)))
 
-#define SparkDeserializeWithSize(deserializer, data, size) \
-	_Generic((data), \
-		char* : SparkDeserializeString(deserializer, &(data), &(size)), \
-		const char* : SparkDeserializeString(deserializer, &(data), &(size)), \
-		default: SparkDeserializeData(deserializer, &(data), &(size)) \
-	)
+#define SparkDeserializeWithSize(deserializer, data, size)                     \
+  _Generic((data),                                                             \
+      char *: SparkDeserializeString(deserializer, &(data), &(size)),          \
+      const char *: SparkDeserializeString(deserializer, &(data), &(size)),    \
+      default: SparkDeserializeData(deserializer, &(data), &(size)))
 #define GET_SPARKDESERIALIZE(_1, _2, _3, NAME, ...) NAME
 
-#define SparkDeserialize(...) \
-	GET_SPARKDESERIALIZE(__VA_ARGS__, SparkDeserializeWithSize, SparkDeserializeDefault)(__VA_ARGS__)
+#define SparkDeserialize(...)                                                  \
+  GET_SPARKDESERIALIZE(__VA_ARGS__, SparkDeserializeWithSize,                  \
+                       SparkDeserializeDefault)                                \
+  (__VA_ARGS__)
 
 #endif
-
 
 /* Clear mask bits */
 #define SPARK_COLOR_BUFFER_BIT 0x00004000
@@ -352,11 +353,11 @@ typedef double SparkF64;
 typedef SparkU8 SparkBool;
 typedef SparkI32 SparkResult;
 typedef void SparkVoid;
-typedef void* SparkHandle;
-typedef char* SparkString;
-typedef const char* SparkConstString;
-typedef SparkU8* SparkBuffer;
-typedef const SparkU8* SparkConstBuffer;
+typedef void *SparkHandle;
+typedef char *SparkString;
+typedef const char *SparkConstString;
+typedef SparkU8 *SparkBuffer;
+typedef const SparkU8 *SparkConstBuffer;
 typedef SparkU64 SparkSize;
 typedef SparkU32 SparkIndex;
 typedef SparkU32 SparkCount;
@@ -432,399 +433,400 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_RESOURCE_TYPE_SCENE "__SCENE_RESOURCE__"
 #define SPARK_RESOURCE_TYPE_AI_BEHAVIOR "__AI_BEHAVIOR_RESOURCE__"
 
-#define SPARK_PI        3.14159265358979323846
-#define SPARK_TWO_PI    6.28318530717958647692
-#define SPARK_HALF_PI   1.57079632679489661923
+#define SPARK_PI 3.14159265358979323846
+#define SPARK_TWO_PI 6.28318530717958647692
+#define SPARK_HALF_PI 1.57079632679489661923
 #define SPARK_QUARTER_PI 0.78539816339744830962
-#define SPARK_E         2.71828182845904523536
-#define SPARK_SQRT2     1.41421356237309504880
-#define SPARK_SQRT3     1.73205080756887729353
-#define SPARK_LN2       0.69314718055994530942
-#define SPARK_LN10      2.30258509299404568402
-#define SPARK_LOG2E     1.44269504088896340736
-#define SPARK_LOG10E    0.43429448190325182765
-#define SPARK_INV_PI    0.31830988618379067154
+#define SPARK_E 2.71828182845904523536
+#define SPARK_SQRT2 1.41421356237309504880
+#define SPARK_SQRT3 1.73205080756887729353
+#define SPARK_LN2 0.69314718055994530942
+#define SPARK_LN10 2.30258509299404568402
+#define SPARK_LOG2E 1.44269504088896340736
+#define SPARK_LOG10E 0.43429448190325182765
+#define SPARK_INV_PI 0.31830988618379067154
 #define SPARK_INV_SQRT_PI 0.56418958354775628694
 #define SPARK_TWO_OVER_PI 0.63661977236758134308
 #define SPARK_TWO_OVER_SQRT_PI 1.12837916709551257390
 #define SPARK_DEG_TO_RAD (SPARK_PI / 180.0f)
 #define SPARK_RAD_TO_DEG (180.0f / SPARK_PI)
 
-#define SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v) \
-(SparkVertex){ \
-	.position = { x, y, z }, \
-	.normal = { nx, ny, nz }, \
-	.texcoord = { u, v } \
-}
+#define SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)                           \
+  (SparkVertex) {                                                              \
+    .position = {x, y, z}, .normal = {nx, ny, nz}, .texcoord = { u, v }        \
+  }
 
-#define SPARK_UNTHREADED (Pair) {SPARK_FALSE, SPARK_FALSE}
+#define SPARK_UNTHREADED                                                       \
+  (Pair) { SPARK_FALSE, SPARK_FALSE }
 // Will block the main thread at the end of the frame until complete
-#define SPARK_BLOCKED_PARRALLELISM (Pair) {SPARK_TRUE, SPARK_TRUE}
+#define SPARK_BLOCKED_PARRALLELISM                                             \
+  (Pair) { SPARK_TRUE, SPARK_TRUE }
 // Will continue running in between frames until complete
 // good for async loading for models etc.
-#define SPARK_UNBLOCKED_PARRALLELISM (Pair) {SPARK_TRUE, SPARK_FALSE}
+#define SPARK_UNBLOCKED_PARRALLELISM                                           \
+  (Pair) { SPARK_TRUE, SPARK_FALSE }
 
 #pragma endregion
 
 #pragma region ENUMS
 
 typedef enum SparkType {
-	SPARK_FALSE = 0,
-	SPARK_TRUE = 1,
-	SPARK_SUCCESS = 1,
-	SPARK_FAILURE = -1,
-	SPARK_ERROR = -2,
-	SPARK_VALID = 1,
-	SPARK_INVALID = -1,
-	SPARK_NULL = 0,
-	SPARK_NONE = 0,
-	SPARK_UNKNOWN = -4,
-	SPARK_PENDING = -5,
-	SPARK_IN_PROGRESS = -6,
-	SPARK_COMPLETE = 2,
-	SPARK_TIMEOUT = -7,
-	SPARK_CANCELLED = -8,
-	SPARK_NOT_IMPLEMENTED = -9,
-	SPARK_ACCESS_DENIED = -10,
-	SPARK_NOT_FOUND = -11,
-	SPARK_BUSY = -12,
-	SPARK_OVERLOADED = -13,
-	SPARK_DISCONNECTED = -14,
-	SPARK_CONNECTED = 3,
-	SPARK_RETRY = -15,
-	SPARK_DEPRECATED = -16,
-	SPARK_UNSUPPORTED = -17,
-	SPARK_INITIALIZED = 4,
-	SPARK_UNINITIALIZED = -18,
-	SPARK_ENABLED = 5,
-	SPARK_DISABLED = -19,
-	SPARK_READ_ONLY = -20,
-	SPARK_WRITE_ONLY = -21,
-	SPARK_READ_WRITE = 6,
-	SPARK_SUCCESS_PARTIAL = -22,
-	SPARK_INVALID_ARGUMENT = -23,
-	SPARK_OUT_OF_MEMORY = -24,
-	SPARK_OVERFLOW = -25,
-	SPARK_UNDERFLOW = -26,
-	SPARK_END_OF_FILE = -27,
-	SPARK_PERMISSION_DENIED = -28,
-	SPARK_BAD_REQUEST = -29,
-	SPARK_CONFLICT = -30,
-	SPARK_PRECONDITION_FAILED = -31
+  SPARK_FALSE = 0,
+  SPARK_TRUE = 1,
+  SPARK_SUCCESS = 1,
+  SPARK_FAILURE = -1,
+  SPARK_ERROR = -2,
+  SPARK_VALID = 1,
+  SPARK_INVALID = -1,
+  SPARK_NULL = 0,
+  SPARK_NONE = 0,
+  SPARK_UNKNOWN = -4,
+  SPARK_PENDING = -5,
+  SPARK_IN_PROGRESS = -6,
+  SPARK_COMPLETE = 2,
+  SPARK_TIMEOUT = -7,
+  SPARK_CANCELLED = -8,
+  SPARK_NOT_IMPLEMENTED = -9,
+  SPARK_ACCESS_DENIED = -10,
+  SPARK_NOT_FOUND = -11,
+  SPARK_BUSY = -12,
+  SPARK_OVERLOADED = -13,
+  SPARK_DISCONNECTED = -14,
+  SPARK_CONNECTED = 3,
+  SPARK_RETRY = -15,
+  SPARK_DEPRECATED = -16,
+  SPARK_UNSUPPORTED = -17,
+  SPARK_INITIALIZED = 4,
+  SPARK_UNINITIALIZED = -18,
+  SPARK_ENABLED = 5,
+  SPARK_DISABLED = -19,
+  SPARK_READ_ONLY = -20,
+  SPARK_WRITE_ONLY = -21,
+  SPARK_READ_WRITE = 6,
+  SPARK_SUCCESS_PARTIAL = -22,
+  SPARK_INVALID_ARGUMENT = -23,
+  SPARK_OUT_OF_MEMORY = -24,
+  SPARK_OVERFLOW = -25,
+  SPARK_UNDERFLOW = -26,
+  SPARK_END_OF_FILE = -27,
+  SPARK_PERMISSION_DENIED = -28,
+  SPARK_BAD_REQUEST = -29,
+  SPARK_CONFLICT = -30,
+  SPARK_PRECONDITION_FAILED = -31
 } SparkType;
 
 typedef enum SparkError {
-	SPARK_ERROR_NONE = 0,
-	SPARK_ERROR_UNKNOWN = -1,
-	SPARK_ERROR_INVALID = -2,
-	SPARK_ERROR_NULL = -3,
-	SPARK_ERROR_NOT_FOUND = -4,
-	SPARK_ERROR_NOT_IMPLEMENTED = -5,
-	SPARK_ERROR_ACCESS_DENIED = -6,
-	SPARK_ERROR_BUSY = -7,
-	SPARK_ERROR_OVERLOADED = -8,
-	SPARK_ERROR_DISCONNECTED = -9,
-	SPARK_ERROR_TIMEOUT = -10,
-	SPARK_ERROR_CANCELLED = -11,
-	SPARK_ERROR_RETRY = -12,
-	SPARK_ERROR_UNSUPPORTED = -13,
-	SPARK_ERROR_DEPRECATED = -14,
-	SPARK_ERROR_UNINITIALIZED = -15,
-	SPARK_ERROR_DISABLED = -16,
-	SPARK_ERROR_READ_ONLY = -17,
-	SPARK_ERROR_WRITE_ONLY = -18,
-	SPARK_ERROR_OUT_OF_MEMORY = -19,
-	SPARK_ERROR_OVERFLOW = -20,
-	SPARK_ERROR_UNDERFLOW = -21,
-	SPARK_ERROR_END_OF_FILE = -22,
-	SPARK_ERROR_PERMISSION_DENIED = -23,
-	SPARK_ERROR_BAD_REQUEST = -24,
-	SPARK_ERROR_CONFLICT = -25,
-	SPARK_ERROR_PRECONDITION_FAILED = -26,
-	SPARK_ERROR_INVALID_ARGUMENT = -27,
-	SPARK_ERROR_INVALID_STATE = -28,
-	SPARK_ERROR_INVALID_FUNCTION_CALL = -29,
+  SPARK_ERROR_NONE = 0,
+  SPARK_ERROR_UNKNOWN = -1,
+  SPARK_ERROR_INVALID = -2,
+  SPARK_ERROR_NULL = -3,
+  SPARK_ERROR_NOT_FOUND = -4,
+  SPARK_ERROR_NOT_IMPLEMENTED = -5,
+  SPARK_ERROR_ACCESS_DENIED = -6,
+  SPARK_ERROR_BUSY = -7,
+  SPARK_ERROR_OVERLOADED = -8,
+  SPARK_ERROR_DISCONNECTED = -9,
+  SPARK_ERROR_TIMEOUT = -10,
+  SPARK_ERROR_CANCELLED = -11,
+  SPARK_ERROR_RETRY = -12,
+  SPARK_ERROR_UNSUPPORTED = -13,
+  SPARK_ERROR_DEPRECATED = -14,
+  SPARK_ERROR_UNINITIALIZED = -15,
+  SPARK_ERROR_DISABLED = -16,
+  SPARK_ERROR_READ_ONLY = -17,
+  SPARK_ERROR_WRITE_ONLY = -18,
+  SPARK_ERROR_OUT_OF_MEMORY = -19,
+  SPARK_ERROR_OVERFLOW = -20,
+  SPARK_ERROR_UNDERFLOW = -21,
+  SPARK_ERROR_END_OF_FILE = -22,
+  SPARK_ERROR_PERMISSION_DENIED = -23,
+  SPARK_ERROR_BAD_REQUEST = -24,
+  SPARK_ERROR_CONFLICT = -25,
+  SPARK_ERROR_PRECONDITION_FAILED = -26,
+  SPARK_ERROR_INVALID_ARGUMENT = -27,
+  SPARK_ERROR_INVALID_STATE = -28,
+  SPARK_ERROR_INVALID_FUNCTION_CALL = -29,
 } SparkError;
 
 typedef enum SparkAccess {
-	SPARK_ACCESS_NONE = 0,
-	SPARK_ACCESS_READ = 1,
-	SPARK_ACCESS_WRITE = 2,
-	SPARK_ACCESS_READ_WRITE = 3
+  SPARK_ACCESS_NONE = 0,
+  SPARK_ACCESS_READ = 1,
+  SPARK_ACCESS_WRITE = 2,
+  SPARK_ACCESS_READ_WRITE = 3
 } SparkAccess;
 
 typedef enum SparkMouseButtonT {
-	SPARK_MOUSE_BUTTON_1 = 0,
-	SPARK_MOUSE_BUTTON_2 = 1,
-	SPARK_MOUSE_BUTTON_3 = 2,
-	SPARK_MOUSE_BUTTON_4 = 3,
-	SPARK_MOUSE_BUTTON_5 = 4,
-	SPARK_MOUSE_BUTTON_6 = 5,
-	SPARK_MOUSE_BUTTON_7 = 6,
-	SPARK_MOUSE_BUTTON_8 = 7,
-	SPARK_MOUSE_BUTTON_LAST = SPARK_MOUSE_BUTTON_8,
-	SPARK_MOUSE_BUTTON_LEFT = SPARK_MOUSE_BUTTON_1,
-	SPARK_MOUSE_BUTTON_RIGHT = SPARK_MOUSE_BUTTON_2,
-	SPARK_MOUSE_BUTTON_MIDDLE = SPARK_MOUSE_BUTTON_3
+  SPARK_MOUSE_BUTTON_1 = 0,
+  SPARK_MOUSE_BUTTON_2 = 1,
+  SPARK_MOUSE_BUTTON_3 = 2,
+  SPARK_MOUSE_BUTTON_4 = 3,
+  SPARK_MOUSE_BUTTON_5 = 4,
+  SPARK_MOUSE_BUTTON_6 = 5,
+  SPARK_MOUSE_BUTTON_7 = 6,
+  SPARK_MOUSE_BUTTON_8 = 7,
+  SPARK_MOUSE_BUTTON_LAST = SPARK_MOUSE_BUTTON_8,
+  SPARK_MOUSE_BUTTON_LEFT = SPARK_MOUSE_BUTTON_1,
+  SPARK_MOUSE_BUTTON_RIGHT = SPARK_MOUSE_BUTTON_2,
+  SPARK_MOUSE_BUTTON_MIDDLE = SPARK_MOUSE_BUTTON_3
 } SparkMouseButton;
 
 typedef enum SparkKeyT {
-	SPARK_KEY_UNKNOWN = -1,
-	SPARK_KEY_SPACE = 32,
-	SPARK_KEY_APOSTROPHE = 39, /* ' */
-	SPARK_KEY_COMMA = 44,      /* , */
-	SPARK_KEY_MINUS = 45,      /* - */
-	SPARK_KEY_PERIOD = 46,     /* . */
-	SPARK_KEY_SLASH = 47,      /* / */
-	SPARK_KEY_0 = 48,
-	SPARK_KEY_1 = 49,
-	SPARK_KEY_2 = 50,
-	SPARK_KEY_3 = 51,
-	SPARK_KEY_4 = 52,
-	SPARK_KEY_5 = 53,
-	SPARK_KEY_6 = 54,
-	SPARK_KEY_7 = 55,
-	SPARK_KEY_8 = 56,
-	SPARK_KEY_9 = 57,
-	SPARK_KEY_SEMICOLON = 59, /* ; */
-	SPARK_KEY_EQUAL = 61,     /* = */
-	SPARK_KEY_A = 65,
-	SPARK_KEY_B = 66,
-	SPARK_KEY_C = 67,
-	SPARK_KEY_D = 68,
-	SPARK_KEY_E = 69,
-	SPARK_KEY_F = 70,
-	SPARK_KEY_G = 71,
-	SPARK_KEY_H = 72,
-	SPARK_KEY_I = 73,
-	SPARK_KEY_J = 74,
-	SPARK_KEY_K = 75,
-	SPARK_KEY_L = 76,
-	SPARK_KEY_M = 77,
-	SPARK_KEY_N = 78,
-	SPARK_KEY_O = 79,
-	SPARK_KEY_P = 80,
-	SPARK_KEY_Q = 81,
-	SPARK_KEY_R = 82,
-	SPARK_KEY_S = 83,
-	SPARK_KEY_T = 84,
-	SPARK_KEY_U = 85,
-	SPARK_KEY_V = 86,
-	SPARK_KEY_W = 87,
-	SPARK_KEY_X = 88,
-	SPARK_KEY_Y = 89,
-	SPARK_KEY_Z = 90,
-	SPARK_KEY_LEFT_BRACKET = 91,  /* [ */
-	SPARK_KEY_BACKSLASH = 92,     /* \ */
-	SPARK_KEY_RIGHT_BRACKET = 93, /* ] */
-	SPARK_KEY_GRAVE_ACCENT = 96,  /* ` */
-	SPARK_KEY_WORLD_1 = 161,      /* non-US #1 */
-	SPARK_KEY_WORLD_2 = 162,      /* non-US #2 */
+  SPARK_KEY_UNKNOWN = -1,
+  SPARK_KEY_SPACE = 32,
+  SPARK_KEY_APOSTROPHE = 39, /* ' */
+  SPARK_KEY_COMMA = 44,      /* , */
+  SPARK_KEY_MINUS = 45,      /* - */
+  SPARK_KEY_PERIOD = 46,     /* . */
+  SPARK_KEY_SLASH = 47,      /* / */
+  SPARK_KEY_0 = 48,
+  SPARK_KEY_1 = 49,
+  SPARK_KEY_2 = 50,
+  SPARK_KEY_3 = 51,
+  SPARK_KEY_4 = 52,
+  SPARK_KEY_5 = 53,
+  SPARK_KEY_6 = 54,
+  SPARK_KEY_7 = 55,
+  SPARK_KEY_8 = 56,
+  SPARK_KEY_9 = 57,
+  SPARK_KEY_SEMICOLON = 59, /* ; */
+  SPARK_KEY_EQUAL = 61,     /* = */
+  SPARK_KEY_A = 65,
+  SPARK_KEY_B = 66,
+  SPARK_KEY_C = 67,
+  SPARK_KEY_D = 68,
+  SPARK_KEY_E = 69,
+  SPARK_KEY_F = 70,
+  SPARK_KEY_G = 71,
+  SPARK_KEY_H = 72,
+  SPARK_KEY_I = 73,
+  SPARK_KEY_J = 74,
+  SPARK_KEY_K = 75,
+  SPARK_KEY_L = 76,
+  SPARK_KEY_M = 77,
+  SPARK_KEY_N = 78,
+  SPARK_KEY_O = 79,
+  SPARK_KEY_P = 80,
+  SPARK_KEY_Q = 81,
+  SPARK_KEY_R = 82,
+  SPARK_KEY_S = 83,
+  SPARK_KEY_T = 84,
+  SPARK_KEY_U = 85,
+  SPARK_KEY_V = 86,
+  SPARK_KEY_W = 87,
+  SPARK_KEY_X = 88,
+  SPARK_KEY_Y = 89,
+  SPARK_KEY_Z = 90,
+  SPARK_KEY_LEFT_BRACKET = 91,  /* [ */
+  SPARK_KEY_BACKSLASH = 92,     /* \ */
+  SPARK_KEY_RIGHT_BRACKET = 93, /* ] */
+  SPARK_KEY_GRAVE_ACCENT = 96,  /* ` */
+  SPARK_KEY_WORLD_1 = 161,      /* non-US #1 */
+  SPARK_KEY_WORLD_2 = 162,      /* non-US #2 */
 
-	/* Function keys */
-	SPARK_KEY_ESCAPE = 256,
-	SPARK_KEY_ENTER = 257,
-	SPARK_KEY_TAB = 258,
-	SPARK_KEY_BACKSPACE = 259,
-	SPARK_KEY_INSERT = 260,
-	SPARK_KEY_DELETE = 261,
-	SPARK_KEY_RIGHT = 262,
-	SPARK_KEY_LEFT = 263,
-	SPARK_KEY_DOWN = 264,
-	SPARK_KEY_UP = 265,
-	SPARK_KEY_PAGE_UP = 266,
-	SPARK_KEY_PAGE_DOWN = 267,
-	SPARK_KEY_HOME = 268,
-	SPARK_KEY_END = 269,
-	SPARK_KEY_CAPS_LOCK = 280,
-	SPARK_KEY_SCROLL_LOCK = 281,
-	SPARK_KEY_NUM_LOCK = 282,
-	SPARK_KEY_PRINT_SCREEN = 283,
-	SPARK_KEY_PAUSE = 284,
-	SPARK_KEY_F1 = 290,
-	SPARK_KEY_F2 = 291,
-	SPARK_KEY_F3 = 292,
-	SPARK_KEY_F4 = 293,
-	SPARK_KEY_F5 = 294,
-	SPARK_KEY_F6 = 295,
-	SPARK_KEY_F7 = 296,
-	SPARK_KEY_F8 = 297,
-	SPARK_KEY_F9 = 298,
-	SPARK_KEY_F10 = 299,
-	SPARK_KEY_F11 = 300,
-	SPARK_KEY_F12 = 301,
-	SPARK_KEY_F13 = 302,
-	SPARK_KEY_F14 = 303,
-	SPARK_KEY_F15 = 304,
-	SPARK_KEY_F16 = 305,
-	SPARK_KEY_F17 = 306,
-	SPARK_KEY_F18 = 307,
-	SPARK_KEY_F19 = 308,
-	SPARK_KEY_F20 = 309,
-	SPARK_KEY_F21 = 310,
-	SPARK_KEY_F22 = 311,
-	SPARK_KEY_F23 = 312,
-	SPARK_KEY_F24 = 313,
-	SPARK_KEY_F25 = 314,
-	SPARK_KEY_KP_0 = 320,
-	SPARK_KEY_KP_1 = 321,
-	SPARK_KEY_KP_2 = 322,
-	SPARK_KEY_KP_3 = 323,
-	SPARK_KEY_KP_4 = 324,
-	SPARK_KEY_KP_5 = 325,
-	SPARK_KEY_KP_6 = 326,
-	SPARK_KEY_KP_7 = 327,
-	SPARK_KEY_KP_8 = 328,
-	SPARK_KEY_KP_9 = 329,
-	SPARK_KEY_KP_DECIMAL = 330,
-	SPARK_KEY_KP_DIVIDE = 331,
-	SPARK_KEY_KP_MULTIPLY = 332,
-	SPARK_KEY_KP_SUBTRACT = 333,
-	SPARK_KEY_KP_ADD = 334,
-	SPARK_KEY_KP_ENTER = 335,
-	SPARK_KEY_KP_EQUAL = 336,
-	SPARK_KEY_LEFT_SHIFT = 340,
-	SPARK_KEY_LEFT_CONTROL = 341,
-	SPARK_KEY_LEFT_ALT = 342,
-	SPARK_KEY_LEFT_SUPER = 343,
-	SPARK_KEY_RIGHT_SHIFT = 344,
-	SPARK_KEY_RIGHT_CONTROL = 345,
-	SPARK_KEY_RIGHT_ALT = 346,
-	SPARK_KEY_RIGHT_SUPER = 347,
-	SPARK_KEY_MENU = 348
+  /* Function keys */
+  SPARK_KEY_ESCAPE = 256,
+  SPARK_KEY_ENTER = 257,
+  SPARK_KEY_TAB = 258,
+  SPARK_KEY_BACKSPACE = 259,
+  SPARK_KEY_INSERT = 260,
+  SPARK_KEY_DELETE = 261,
+  SPARK_KEY_RIGHT = 262,
+  SPARK_KEY_LEFT = 263,
+  SPARK_KEY_DOWN = 264,
+  SPARK_KEY_UP = 265,
+  SPARK_KEY_PAGE_UP = 266,
+  SPARK_KEY_PAGE_DOWN = 267,
+  SPARK_KEY_HOME = 268,
+  SPARK_KEY_END = 269,
+  SPARK_KEY_CAPS_LOCK = 280,
+  SPARK_KEY_SCROLL_LOCK = 281,
+  SPARK_KEY_NUM_LOCK = 282,
+  SPARK_KEY_PRINT_SCREEN = 283,
+  SPARK_KEY_PAUSE = 284,
+  SPARK_KEY_F1 = 290,
+  SPARK_KEY_F2 = 291,
+  SPARK_KEY_F3 = 292,
+  SPARK_KEY_F4 = 293,
+  SPARK_KEY_F5 = 294,
+  SPARK_KEY_F6 = 295,
+  SPARK_KEY_F7 = 296,
+  SPARK_KEY_F8 = 297,
+  SPARK_KEY_F9 = 298,
+  SPARK_KEY_F10 = 299,
+  SPARK_KEY_F11 = 300,
+  SPARK_KEY_F12 = 301,
+  SPARK_KEY_F13 = 302,
+  SPARK_KEY_F14 = 303,
+  SPARK_KEY_F15 = 304,
+  SPARK_KEY_F16 = 305,
+  SPARK_KEY_F17 = 306,
+  SPARK_KEY_F18 = 307,
+  SPARK_KEY_F19 = 308,
+  SPARK_KEY_F20 = 309,
+  SPARK_KEY_F21 = 310,
+  SPARK_KEY_F22 = 311,
+  SPARK_KEY_F23 = 312,
+  SPARK_KEY_F24 = 313,
+  SPARK_KEY_F25 = 314,
+  SPARK_KEY_KP_0 = 320,
+  SPARK_KEY_KP_1 = 321,
+  SPARK_KEY_KP_2 = 322,
+  SPARK_KEY_KP_3 = 323,
+  SPARK_KEY_KP_4 = 324,
+  SPARK_KEY_KP_5 = 325,
+  SPARK_KEY_KP_6 = 326,
+  SPARK_KEY_KP_7 = 327,
+  SPARK_KEY_KP_8 = 328,
+  SPARK_KEY_KP_9 = 329,
+  SPARK_KEY_KP_DECIMAL = 330,
+  SPARK_KEY_KP_DIVIDE = 331,
+  SPARK_KEY_KP_MULTIPLY = 332,
+  SPARK_KEY_KP_SUBTRACT = 333,
+  SPARK_KEY_KP_ADD = 334,
+  SPARK_KEY_KP_ENTER = 335,
+  SPARK_KEY_KP_EQUAL = 336,
+  SPARK_KEY_LEFT_SHIFT = 340,
+  SPARK_KEY_LEFT_CONTROL = 341,
+  SPARK_KEY_LEFT_ALT = 342,
+  SPARK_KEY_LEFT_SUPER = 343,
+  SPARK_KEY_RIGHT_SHIFT = 344,
+  SPARK_KEY_RIGHT_CONTROL = 345,
+  SPARK_KEY_RIGHT_ALT = 346,
+  SPARK_KEY_RIGHT_SUPER = 347,
+  SPARK_KEY_MENU = 348
 } SparkKey;
 
 typedef enum SparkModifierT {
-	SPARK_MOD_SHIFT = 0x0001,
-	SPARK_MOD_CONTROL = 0x0002,
-	SPARK_MOD_ALT = 0x0004,
-	SPARK_MOD_SUPER = 0x0008
+  SPARK_MOD_SHIFT = 0x0001,
+  SPARK_MOD_CONTROL = 0x0002,
+  SPARK_MOD_ALT = 0x0004,
+  SPARK_MOD_SUPER = 0x0008
 } SparkModifier;
 
 typedef enum SparkActionT {
-	SPARK_RELEASE = 0,
-	SPARK_PRESS = 1,
-	SPARK_REPEAT = 2
+  SPARK_RELEASE = 0,
+  SPARK_PRESS = 1,
+  SPARK_REPEAT = 2
 } SparkAction;
 
 typedef enum SparkCursorT {
-	SPARK_CURSOR_ARROW = 0,
-	SPARK_CURSOR_IBEAM = 1,
-	SPARK_CURSOR_CROSSHAIR = 2,
-	SPARK_CURSOR_HAND = 3,
-	SPARK_CURSOR_HRESIZE = 4,
-	SPARK_CURSOR_VRESIZE = 5
+  SPARK_CURSOR_ARROW = 0,
+  SPARK_CURSOR_IBEAM = 1,
+  SPARK_CURSOR_CROSSHAIR = 2,
+  SPARK_CURSOR_HAND = 3,
+  SPARK_CURSOR_HRESIZE = 4,
+  SPARK_CURSOR_VRESIZE = 5
 } SparkCursor;
 
 /* Shader types */
 typedef enum SparkShaderTypeT {
-	SPARK_SHADER_VERTEX = 0,
-	SPARK_SHADER_FRAGMENT,
-	SPARK_SHADER_GEOMETRY,
-	SPARK_SHADER_TESSELLATION_CONTROL,
-	SPARK_SHADER_TESSELLATION_EVALUATION,
-	SPARK_SHADER_COMPUTE
+  SPARK_SHADER_VERTEX = 0,
+  SPARK_SHADER_FRAGMENT,
+  SPARK_SHADER_GEOMETRY,
+  SPARK_SHADER_TESSELLATION_CONTROL,
+  SPARK_SHADER_TESSELLATION_EVALUATION,
+  SPARK_SHADER_COMPUTE
 } SparkShaderType;
 
 /* Primitive types */
 typedef enum SparkPrimitiveTypeT {
-	SPARK_PRIMITIVE_POINTS = 0,
-	SPARK_PRIMITIVE_LINES,
-	SPARK_PRIMITIVE_LINE_STRIP,
-	SPARK_PRIMITIVE_TRIANGLES,
-	SPARK_PRIMITIVE_TRIANGLE_STRIP,
-	SPARK_PRIMITIVE_TRIANGLE_FAN
+  SPARK_PRIMITIVE_POINTS = 0,
+  SPARK_PRIMITIVE_LINES,
+  SPARK_PRIMITIVE_LINE_STRIP,
+  SPARK_PRIMITIVE_TRIANGLES,
+  SPARK_PRIMITIVE_TRIANGLE_STRIP,
+  SPARK_PRIMITIVE_TRIANGLE_FAN
 } SparkPrimitiveType;
 
 /* Blend modes */
 typedef enum SparkBlendModeT {
-	SPARK_BLEND_ZERO = 0,
-	SPARK_BLEND_ONE,
-	SPARK_BLEND_SRC_COLOR,
-	SPARK_BLEND_ONE_MINUS_SRC_COLOR,
-	SPARK_BLEND_DST_COLOR,
-	SPARK_BLEND_ONE_MINUS_DST_COLOR,
-	SPARK_BLEND_SRC_ALPHA,
-	SPARK_BLEND_ONE_MINUS_SRC_ALPHA,
-	SPARK_BLEND_DST_ALPHA,
-	SPARK_BLEND_ONE_MINUS_DST_ALPHA,
-	SPARK_BLEND_CONSTANT_COLOR,
-	SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR,
-	SPARK_BLEND_CONSTANT_ALPHA,
-	SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA,
-	SPARK_BLEND_SRC_ALPHA_SATURATE
+  SPARK_BLEND_ZERO = 0,
+  SPARK_BLEND_ONE,
+  SPARK_BLEND_SRC_COLOR,
+  SPARK_BLEND_ONE_MINUS_SRC_COLOR,
+  SPARK_BLEND_DST_COLOR,
+  SPARK_BLEND_ONE_MINUS_DST_COLOR,
+  SPARK_BLEND_SRC_ALPHA,
+  SPARK_BLEND_ONE_MINUS_SRC_ALPHA,
+  SPARK_BLEND_DST_ALPHA,
+  SPARK_BLEND_ONE_MINUS_DST_ALPHA,
+  SPARK_BLEND_CONSTANT_COLOR,
+  SPARK_BLEND_ONE_MINUS_CONSTANT_COLOR,
+  SPARK_BLEND_CONSTANT_ALPHA,
+  SPARK_BLEND_ONE_MINUS_CONSTANT_ALPHA,
+  SPARK_BLEND_SRC_ALPHA_SATURATE
 } SparkBlendMode;
 
 /* Texture filtering options */
 typedef enum SparkTextureFilterT {
-	SPARK_TEXTURE_FILTER_NEAREST = 0,
-	SPARK_TEXTURE_FILTER_LINEAR,
-	SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST,
-	SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST,
-	SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR,
-	SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR
+  SPARK_TEXTURE_FILTER_NEAREST = 0,
+  SPARK_TEXTURE_FILTER_LINEAR,
+  SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST,
+  SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST,
+  SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR,
+  SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR
 } SparkTextureFilter;
 
 /* Log levels */
 typedef enum SparkLogLevelT {
-	SPARK_LOG_LEVEL_TRACE = 0,
-	SPARK_LOG_LEVEL_DEBUG,
-	SPARK_LOG_LEVEL_INFO,
-	SPARK_LOG_LEVEL_WARN,
-	SPARK_LOG_LEVEL_ERROR,
-	SPARK_LOG_LEVEL_FATAL
+  SPARK_LOG_LEVEL_TRACE = 0,
+  SPARK_LOG_LEVEL_DEBUG,
+  SPARK_LOG_LEVEL_INFO,
+  SPARK_LOG_LEVEL_WARN,
+  SPARK_LOG_LEVEL_ERROR,
+  SPARK_LOG_LEVEL_FATAL
 } SparkLogLevel;
 
 /* Render APIs */
 typedef enum SparkRenderAPIT {
-	SPARK_RENDER_API_NONE = 0,
-	SPARK_RENDER_API_OPENGL,
-	SPARK_RENDER_API_VULKAN,
-	SPARK_RENDER_API_DIRECTX,
-	SPARK_RENDER_API_METAL
+  SPARK_RENDER_API_NONE = 0,
+  SPARK_RENDER_API_OPENGL,
+  SPARK_RENDER_API_VULKAN,
+  SPARK_RENDER_API_DIRECTX,
+  SPARK_RENDER_API_METAL
 } SparkRenderAPI;
 
 /* Shader data types */
 typedef enum SparkShaderDataTypeT {
-	SPARK_SHADER_DATA_TYPE_FLOAT,
-	SPARK_SHADER_DATA_TYPE_VEC2,
-	SPARK_SHADER_DATA_TYPE_VEC3,
-	SPARK_SHADER_DATA_TYPE_VEC4,
-	SPARK_SHADER_DATA_TYPE_INT,
-	SPARK_SHADER_DATA_TYPE_IVEC2,
-	SPARK_SHADER_DATA_TYPE_IVEC3,
-	SPARK_SHADER_DATA_TYPE_IVEC4,
-	SPARK_SHADER_DATA_TYPE_MAT2,
-	SPARK_SHADER_DATA_TYPE_MAT3,
-	SPARK_SHADER_DATA_TYPE_MAT4,
-	SPARK_SHADER_DATA_TYPE_SAMPLER2D
+  SPARK_SHADER_DATA_TYPE_FLOAT,
+  SPARK_SHADER_DATA_TYPE_VEC2,
+  SPARK_SHADER_DATA_TYPE_VEC3,
+  SPARK_SHADER_DATA_TYPE_VEC4,
+  SPARK_SHADER_DATA_TYPE_INT,
+  SPARK_SHADER_DATA_TYPE_IVEC2,
+  SPARK_SHADER_DATA_TYPE_IVEC3,
+  SPARK_SHADER_DATA_TYPE_IVEC4,
+  SPARK_SHADER_DATA_TYPE_MAT2,
+  SPARK_SHADER_DATA_TYPE_MAT3,
+  SPARK_SHADER_DATA_TYPE_MAT4,
+  SPARK_SHADER_DATA_TYPE_SAMPLER2D
 } SparkShaderDataType;
 
 typedef enum SparkEnvelopeTypeT {
-	SPARK_ENVELOPE_TYPE_DATA = 0,
-	SPARK_ENVELOPE_TYPE_COMMAND,
-	SPARK_ENVELOPE_TYPE_RESPONSE,
+  SPARK_ENVELOPE_TYPE_DATA = 0,
+  SPARK_ENVELOPE_TYPE_COMMAND,
+  SPARK_ENVELOPE_TYPE_RESPONSE,
 } SparkEnvelopeType;
 
 typedef enum SparkIteratorStateT {
-	SPARK_ITERATOR_STATE_INVALID = -1,
-	SPARK_ITERATOR_STATE_NONE = 0,
-	SPARK_ITERATOR_STATE_ITERATING,
-	SPARK_ITERATOR_STATE_BEGIN,
-	SPARK_ITERATOR_STATE_END,
+  SPARK_ITERATOR_STATE_INVALID = -1,
+  SPARK_ITERATOR_STATE_NONE = 0,
+  SPARK_ITERATOR_STATE_ITERATING,
+  SPARK_ITERATOR_STATE_BEGIN,
+  SPARK_ITERATOR_STATE_END,
 } SparkIteratorState;
 
 typedef enum SparkIteratorTypeT {
-	SPARK_ITERATOR_TYPE_INVALID = 0,
-	SPARK_ITERATOR_TYPE_VECTOR,
-	SPARK_ITERATOR_TYPE_HASHMAP,
-	SPARK_ITERATOR_TYPE_LIST,
+  SPARK_ITERATOR_TYPE_INVALID = 0,
+  SPARK_ITERATOR_TYPE_VECTOR,
+  SPARK_ITERATOR_TYPE_HASHMAP,
+  SPARK_ITERATOR_TYPE_LIST,
 } SparkIteratorType;
 
 typedef enum SparkHashMapIteratorTypeT {
-	SPARK_HASHMAP_ITERATOR_TYPE_KEY,
-	SPARK_HASHMAP_ITERATOR_TYPE_VALUE,
-	SPARK_HASHMAP_ITERATOR_TYPE_PAIR,
+  SPARK_HASHMAP_ITERATOR_TYPE_KEY,
+  SPARK_HASHMAP_ITERATOR_TYPE_VALUE,
+  SPARK_HASHMAP_ITERATOR_TYPE_PAIR,
 } SparkHashMapIteratorType;
 
 #pragma endregion
@@ -832,35 +834,35 @@ typedef enum SparkHashMapIteratorTypeT {
 #pragma region STRUCTS
 
 typedef struct SparkEventDataKeyPressedT {
-	SparkKey key;
-	SparkI32 repeat;
+  SparkKey key;
+  SparkI32 repeat;
 } *SparkEventDataKeyPressed;
 
 typedef struct SparkEventDataKeyReleasedT {
-	SparkKey key;
+  SparkKey key;
 } *SparkEventDataKeyReleased;
 
 typedef struct SparkEventDataMouseMovedT {
-	SparkF64 xpos;
-	SparkF64 ypos;
+  SparkF64 xpos;
+  SparkF64 ypos;
 } *SparkEventDataMouseMoved;
 
 typedef struct SparkEventDataMouseButtonPressedT {
-	SparkMouseButton button;
+  SparkMouseButton button;
 } *SparkEventDataMouseButtonPressed;
 
 typedef struct SparkEventDataMouseButtonReleasedT {
-	SparkMouseButton button;
+  SparkMouseButton button;
 } *SparkEventDataMouseButtonReleased;
 
 typedef struct SparkEventDataMouseScrolledT {
-	SparkF64 x;
-	SparkF64 y;
+  SparkF64 x;
+  SparkF64 y;
 } *SparkEventDataMouseScrolled;
 
 typedef struct SparkEventDataWindowResizedT {
-	SparkI32 width;
-	SparkI32 height;
+  SparkI32 width;
+  SparkI32 height;
 } *SparkEventDataWindowResized;
 
 typedef SparkF32 SparkScalar;
@@ -870,670 +872,679 @@ typedef SparkI32 SparkIScalar;
 struct SparkEcsT;
 
 typedef struct SparkVector2T {
-	SparkScalar x;
-	SparkScalar y;
+  SparkScalar x;
+  SparkScalar y;
 } SparkVec2;
 
 typedef struct SparkVector3T {
-	SparkScalar x;
-	SparkScalar y;
-	SparkScalar z;
+  SparkScalar x;
+  SparkScalar y;
+  SparkScalar z;
 } SparkVec3;
 
 typedef struct SparkVector4T {
-	SparkScalar x;
-	SparkScalar y;
-	SparkScalar z;
-	SparkScalar w;
+  SparkScalar x;
+  SparkScalar y;
+  SparkScalar z;
+  SparkScalar w;
 } SparkVec4;
 
 typedef struct SparkMatrix2T {
-	SparkScalar m00, m01;
-	SparkScalar m10, m11;
+  SparkScalar m00, m01;
+  SparkScalar m10, m11;
 } SparkMat2;
 
 typedef struct SparkMatrix3T {
-	SparkScalar m00, m01, m02;
-	SparkScalar m10, m11, m12;
-	SparkScalar m20, m21, m22;
+  SparkScalar m00, m01, m02;
+  SparkScalar m10, m11, m12;
+  SparkScalar m20, m21, m22;
 } SparkMat3;
 
 typedef struct SparkMatrix4T {
-	SparkScalar m00, m01, m02, m03;
-	SparkScalar m10, m11, m12, m13;
-	SparkScalar m20, m21, m22, m23;
-	SparkScalar m30, m31, m32, m33;
+  SparkScalar m00, m01, m02, m03;
+  SparkScalar m10, m11, m12, m13;
+  SparkScalar m20, m21, m22, m23;
+  SparkScalar m30, m31, m32, m33;
 } SparkMat4;
 
 typedef struct SparkQuaternionT {
-	SparkScalar x;
-	SparkScalar y;
-	SparkScalar z;
-	SparkScalar w;
+  SparkScalar x;
+  SparkScalar y;
+  SparkScalar z;
+  SparkScalar w;
 } SparkQuat;
 
 typedef struct SparkIVector2T {
-	SparkIScalar x;
-	SparkIScalar y;
+  SparkIScalar x;
+  SparkIScalar y;
 } SparkIVec2;
 
 typedef struct SparkIVector3T {
-	SparkIScalar x;
-	SparkIScalar y;
-	SparkIScalar z;
+  SparkIScalar x;
+  SparkIScalar y;
+  SparkIScalar z;
 } SparkIVec3;
 
 typedef struct SparkIVector4T {
-	SparkIScalar x;
-	SparkIScalar y;
-	SparkIScalar z;
-	SparkIScalar w;
+  SparkIScalar x;
+  SparkIScalar y;
+  SparkIScalar z;
+  SparkIScalar w;
 } SparkIVec4;
 
 typedef struct SparkColorT {
-	SparkScalar r;
-	SparkScalar g;
-	SparkScalar b;
-	SparkScalar a;
+  SparkScalar r;
+  SparkScalar g;
+  SparkScalar b;
+  SparkScalar a;
 } SparkColor;
 
 typedef struct SparkRectT {
-	SparkScalar x;
-	SparkScalar y;
-	SparkScalar width;
-	SparkScalar height;
+  SparkScalar x;
+  SparkScalar y;
+  SparkScalar width;
+  SparkScalar height;
 } SparkRect;
 
 typedef struct SparkCircleT {
-	SparkScalar x;
-	SparkScalar y;
-	SparkScalar radius;
+  SparkScalar x;
+  SparkScalar y;
+  SparkScalar radius;
 } SparkCircle;
 
 typedef struct SparkLineT {
-	SparkScalar x1;
-	SparkScalar y1;
-	SparkScalar x2;
-	SparkScalar y2;
+  SparkScalar x1;
+  SparkScalar y1;
+  SparkScalar x2;
+  SparkScalar y2;
 } SparkLine;
 
 typedef struct SparkTriangleT {
-	SparkScalar x1;
-	SparkScalar y1;
-	SparkScalar x2;
-	SparkScalar y2;
-	SparkScalar x3;
-	SparkScalar y3;
+  SparkScalar x1;
+  SparkScalar y1;
+  SparkScalar x2;
+  SparkScalar y2;
+  SparkScalar x3;
+  SparkScalar y3;
 } SparkTriangle;
 
 typedef struct SparkQuadT {
-	SparkScalar x1;
-	SparkScalar y1;
-	SparkScalar x2;
-	SparkScalar y2;
-	SparkScalar x3;
-	SparkScalar y3;
-	SparkScalar x4;
-	SparkScalar y4;
+  SparkScalar x1;
+  SparkScalar y1;
+  SparkScalar x2;
+  SparkScalar y2;
+  SparkScalar x3;
+  SparkScalar y3;
+  SparkScalar x4;
+  SparkScalar y4;
 } SparkQuad;
 
-typedef SparkHandle(*SparkAllocateFunction)(SparkSize size);
-typedef SparkHandle(*SparkReallocateFunction)(SparkHandle handle,
-	SparkSize size);
-typedef SparkVoid(*SparkFreeFunction)(SparkHandle handle);
-typedef SparkSize(*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
-typedef SparkResult(*SparkSystemStartFunction)(struct SparkEcsT* ecs);
-typedef SparkResult(*SparkSystemUpdateFunction)(struct SparkEcsT* ecs,
-	SparkF32 delta);
-typedef SparkResult(*SparkSystemStopFunction)(struct SparkEcsT* ecs);
-typedef SparkI32(*SparkCompareFunction)(SparkHandle a, SparkSize a_size,
-	SparkHandle b, SparkSize b_size);
-typedef SparkHandle(*SparkThreadFunction)(SparkHandle arg);
+typedef SparkHandle (*SparkAllocateFunction)(SparkSize size);
+typedef SparkHandle (*SparkReallocateFunction)(SparkHandle handle,
+                                               SparkSize size);
+typedef SparkVoid (*SparkFreeFunction)(SparkHandle handle);
+typedef SparkSize (*SparkHashFunction)(SparkConstBuffer buf, SparkSize length);
+typedef SparkResult (*SparkSystemStartFunction)(struct SparkEcsT *ecs);
+typedef SparkResult (*SparkSystemUpdateFunction)(struct SparkEcsT *ecs,
+                                                 SparkF32 delta);
+typedef SparkResult (*SparkSystemStopFunction)(struct SparkEcsT *ecs);
+typedef SparkI32 (*SparkCompareFunction)(SparkHandle a, SparkSize a_size,
+                                         SparkHandle b, SparkSize b_size);
+typedef SparkHandle (*SparkThreadFunction)(SparkHandle arg);
 
-typedef SparkVoid(*SparkApplicationStartFunction)(
-	struct SparkApplicationT* app);
-typedef SparkVoid(*SparkApplicationUpdateFunction)(
-	struct SparkApplicationT* app);
-typedef SparkVoid(*SparkApplicationStopFunction)(
-	struct SparkApplicationT* app);
-typedef SparkVoid(*SparkApplicationEventFunction)(
-	struct SparkApplicationT* app, struct SparkEventT event);
-typedef SparkVoid(*SparkApplicationQueryFunction)(
-	struct SparkApplicationT* app, struct SparkVectorT* query);
-typedef SparkVoid(*SparkApplicationQueryEventFunction)(
-	struct ApplicationT* app, struct SparkVectorT* query,
-	struct SparkEventT event);
-typedef SparkVoid(*SparkServerReceiveCallback)(struct SparkServerT* server, struct SparkClientConnectionT* client, struct SparkEnvelopeT* envelope);
-typedef SparkVoid(*SparkClientReceiveCallback)(struct SparkClientT* client, struct SparkEnvelopeT* envelope);
-typedef SparkVoid(*SparkThreadPoolShutdownCallback)(SparkHandle arg);
+typedef SparkVoid (*SparkApplicationStartFunction)(
+    struct SparkApplicationT *app);
+typedef SparkVoid (*SparkApplicationUpdateFunction)(
+    struct SparkApplicationT *app);
+typedef SparkVoid (*SparkApplicationStopFunction)(
+    struct SparkApplicationT *app);
+typedef SparkVoid (*SparkApplicationEventFunction)(
+    struct SparkApplicationT *app, struct SparkEventT event);
+typedef SparkVoid (*SparkApplicationQueryFunction)(
+    struct SparkApplicationT *app, struct SparkVectorT *query);
+typedef SparkVoid (*SparkApplicationQueryEventFunction)(
+    struct ApplicationT *app, struct SparkVectorT *query,
+    struct SparkEventT event);
+typedef SparkVoid (*SparkServerReceiveCallback)(
+    struct SparkServerT *server, struct SparkClientConnectionT *client,
+    struct SparkEnvelopeT *envelope);
+typedef SparkVoid (*SparkClientReceiveCallback)(
+    struct SparkClientT *client, struct SparkEnvelopeT *envelope);
+typedef SparkVoid (*SparkThreadPoolShutdownCallback)(SparkHandle arg);
 
-typedef SparkIteratorState(*SparkIteratorIterateForward)(struct SparkIteratorT* it);
-typedef SparkIteratorState(*SparkIteratorIterateBackward)(struct SparkIteratorT* it);
-typedef SparkIteratorState(*SparkIteratorIsAtBeginningFunction)(struct SparkIteratorT* it);
-typedef SparkIteratorState(*SparkIteratorIsAtEndFunction)(struct SparkIteratorT* it);
-typedef SparkHandle(*SparkIteratorGetCurrentFunction)(struct SparkIteratorT* it);
-typedef SparkHandle(*SparkIteratorGetPreviousFunction)(struct SparkIteratorT* it);
-typedef SparkHandle(*SparkIteratorGetNextFunction)(struct SparkIteratorT* it);
-typedef SparkBool(*SparkIteratorHasNextFunction)(struct SparkIteratorT* it);
-typedef SparkBool(*SparkIteratorHasPreviousFunction)(struct SparkIteratorT* it);
-typedef SparkVoid(*SparkIteratorFreeFunction)(struct SparkIteratorT* it);
+typedef SparkIteratorState (*SparkIteratorIterateForward)(
+    struct SparkIteratorT *it);
+typedef SparkIteratorState (*SparkIteratorIterateBackward)(
+    struct SparkIteratorT *it);
+typedef SparkIteratorState (*SparkIteratorIsAtBeginningFunction)(
+    struct SparkIteratorT *it);
+typedef SparkIteratorState (*SparkIteratorIsAtEndFunction)(
+    struct SparkIteratorT *it);
+typedef SparkHandle (*SparkIteratorGetCurrentFunction)(
+    struct SparkIteratorT *it);
+typedef SparkHandle (*SparkIteratorGetPreviousFunction)(
+    struct SparkIteratorT *it);
+typedef SparkHandle (*SparkIteratorGetNextFunction)(struct SparkIteratorT *it);
+typedef SparkBool (*SparkIteratorHasNextFunction)(struct SparkIteratorT *it);
+typedef SparkBool (*SparkIteratorHasPreviousFunction)(
+    struct SparkIteratorT *it);
+typedef SparkVoid (*SparkIteratorFreeFunction)(struct SparkIteratorT *it);
 
 typedef struct SparkAllocatorT {
-	SparkAllocateFunction allocate;
-	SparkReallocateFunction reallocate;
-	SparkFreeFunction free;
+  SparkAllocateFunction allocate;
+  SparkReallocateFunction reallocate;
+  SparkFreeFunction free;
 } *SparkAllocator;
 
 typedef struct SparkPairT {
-	SparkHandle first;
-	SparkHandle second;
+  SparkHandle first;
+  SparkHandle second;
 } SparkPair;
 
 typedef struct SparkVectorT {
-	SparkSize size;
-	SparkSize capacity;
-	/* Destructor to be called on each element */
-	SparkFreeFunction destructor;
-	SparkHandle* elements;
-	SparkAllocator allocator;
-	SparkBool external_allocator;
+  SparkSize size;
+  SparkSize capacity;
+  /* Destructor to be called on each element */
+  SparkFreeFunction destructor;
+  SparkHandle *elements;
+  SparkAllocator allocator;
+  SparkBool external_allocator;
 } *SparkVector;
 
 typedef struct SparkVectorIteratorT {
-	SparkIteratorState state;
-	SparkVector vector;
-	SparkSize pos;
+  SparkIteratorState state;
+  SparkVector vector;
+  SparkSize pos;
 } *SparkVectorIterator;
 
 typedef struct SparkListNodeT {
-	SparkHandle data;
-	struct SparkListNodeT* next;
+  SparkHandle data;
+  struct SparkListNodeT *next;
 } *SparkListNode;
 
 typedef struct SparkListT {
-	SparkSize size;
-	/* Destructor to be called on each element */
-	SparkFreeFunction destructor;
-	SparkListNode head;
-	SparkListNode tail;
-	SparkAllocator allocator;
-	SparkBool external_allocator;
+  SparkSize size;
+  /* Destructor to be called on each element */
+  SparkFreeFunction destructor;
+  SparkListNode head;
+  SparkListNode tail;
+  SparkAllocator allocator;
+  SparkBool external_allocator;
 } *SparkList;
 
 typedef struct SparkListIteratorT {
-	SparkIteratorState state;
-	SparkList list;
-	SparkSize pos;
+  SparkIteratorState state;
+  SparkList list;
+  SparkSize pos;
 } *SparkListIterator;
 
 typedef struct SparkHashMapNodeT {
-	SparkHandle key;
-	SparkHandle value;
-	SparkSize key_size;
-	SparkSize hash;
-	struct SparkHashMapNodeT* next;
+  SparkHandle key;
+  SparkHandle value;
+  SparkSize key_size;
+  SparkSize hash;
+  struct SparkHashMapNodeT *next;
 } *SparkHashMapNode;
 
 typedef struct SparkHashMapT {
-	SparkAllocator allocator;
-	SparkSize capacity;
-	SparkSize size;
-	SparkHashMapNode* buckets;
-	SparkHashFunction hash_function;
-	SparkCompareFunction compare_function;
-	SparkFreeFunction key_destructor;
-	SparkFreeFunction value_destructor;
-	SparkBool external_allocator;
+  SparkAllocator allocator;
+  SparkSize capacity;
+  SparkSize size;
+  SparkHashMapNode *buckets;
+  SparkHashFunction hash_function;
+  SparkCompareFunction compare_function;
+  SparkFreeFunction key_destructor;
+  SparkFreeFunction value_destructor;
+  SparkBool external_allocator;
 } *SparkHashMap;
 
 typedef struct SparkHashMapIteratorT {
-	SparkIteratorState state;
-	SparkHashMap hash_map;
-	SparkHashMapIteratorType iterator_type;
-	/* Allocated data that gets constructed while iterating the HashMap */
-	SparkVector iterator_data;
-	SparkSize pos;
+  SparkIteratorState state;
+  SparkHashMap hash_map;
+  SparkHashMapIteratorType iterator_type;
+  /* Allocated data that gets constructed while iterating the HashMap */
+  SparkVector iterator_data;
+  SparkSize pos;
 } *SparkHashMapIterator;
 
 typedef struct SparkMapT {
-	SparkSize size;
-	SparkHandle root;
-	SparkAllocator allocator;
+  SparkSize size;
+  SparkHandle root;
+  SparkAllocator allocator;
 } *SparkMap;
 
 typedef struct SparkSetT {
-	SparkAllocator allocator;
-	SparkSize capacity;
-	SparkSize size;
-	SparkFreeFunction destructor;
-	SparkHandle* elements;
-	SparkBool external_allocator;
+  SparkAllocator allocator;
+  SparkSize capacity;
+  SparkSize size;
+  SparkFreeFunction destructor;
+  SparkHandle *elements;
+  SparkBool external_allocator;
 } *SparkSet;
 
 typedef struct SparkHashSetT {
-	SparkAllocator allocator;
-	SparkSize capacity;
-	SparkSize size;
-	SparkSize element_size;
-	SparkFreeFunction destructor;
-	SparkHandle* elements;
-	SparkSize* hashes;
-	SparkHashFunction hash_function;
-	SparkBool external_allocator;
+  SparkAllocator allocator;
+  SparkSize capacity;
+  SparkSize size;
+  SparkSize element_size;
+  SparkFreeFunction destructor;
+  SparkHandle *elements;
+  SparkSize *hashes;
+  SparkHashFunction hash_function;
+  SparkBool external_allocator;
 } *SparkHashSet;
 
 typedef struct SparkQueueT {
-	SparkAllocator allocator;
-	SparkSize capacity;
-	SparkSize size;
-	SparkSize front;
-	SparkSize rear;
-	SparkFreeFunction destructor;
-	SparkHandle* elements;
-	SparkBool external_allocator;
+  SparkAllocator allocator;
+  SparkSize capacity;
+  SparkSize size;
+  SparkSize front;
+  SparkSize rear;
+  SparkFreeFunction destructor;
+  SparkHandle *elements;
+  SparkBool external_allocator;
 } *SparkQueue;
 
 typedef struct SparkStackT {
-	SparkAllocator allocator;
-	SparkSize capacity;
-	SparkSize size;
-	SparkFreeFunction destructor;
-	SparkHandle* elements;
-	SparkBool external_allocator;
+  SparkAllocator allocator;
+  SparkSize capacity;
+  SparkSize size;
+  SparkFreeFunction destructor;
+  SparkHandle *elements;
+  SparkBool external_allocator;
 } *SparkStack;
 
 typedef struct SparkIteratorT {
-	SparkIteratorIterateForward iterate_forward;
-	SparkIteratorIterateBackward iterate_backward;
-	SparkIteratorIsAtBeginningFunction is_at_beginning;
-	SparkIteratorIsAtEndFunction is_at_end;
-	SparkIteratorGetCurrentFunction get_current;
-	SparkIteratorGetPreviousFunction get_previous;
-	SparkIteratorGetNextFunction get_next;
-	SparkIteratorHasNextFunction has_next;
-	SparkIteratorHasPreviousFunction has_previous;
-	SparkIteratorFreeFunction free;
-	SparkIteratorType iterator_type;
-	union {
-		SparkVectorIterator vector_iterator;
-		SparkListIterator list_iterator;
-		SparkHashMapIterator hash_map_iterator;
-	};
+  SparkIteratorIterateForward iterate_forward;
+  SparkIteratorIterateBackward iterate_backward;
+  SparkIteratorIsAtBeginningFunction is_at_beginning;
+  SparkIteratorIsAtEndFunction is_at_end;
+  SparkIteratorGetCurrentFunction get_current;
+  SparkIteratorGetPreviousFunction get_previous;
+  SparkIteratorGetNextFunction get_next;
+  SparkIteratorHasNextFunction has_next;
+  SparkIteratorHasPreviousFunction has_previous;
+  SparkIteratorFreeFunction free;
+  SparkIteratorType iterator_type;
+  union {
+    SparkVectorIterator vector_iterator;
+    SparkListIterator list_iterator;
+    SparkHashMapIterator hash_map_iterator;
+  };
 } *SparkIterator;
 
 typedef struct SparkTaskT {
-	SparkThreadFunction function;
-	SparkHandle arg;
-	SparkHandle result;
-	struct SparkTaskT* next;
-	SparkMutex mutex;
-	SparkCondition cond;
-	/* Wait for this task to finish before continuing the next update frame */
-	SparkBool wait_on_update;
-	SparkI32 is_done;
+  SparkThreadFunction function;
+  SparkHandle arg;
+  SparkHandle result;
+  struct SparkTaskT *next;
+  SparkMutex mutex;
+  SparkCondition cond;
+  /* Wait for this task to finish before continuing the next update frame */
+  SparkBool wait_on_update;
+  SparkI32 is_done;
 } *SparkTaskHandle;
 
 typedef struct SparkThreadPoolT {
-	SparkThread* threads;
-	SparkSize thread_count;
-	SparkTaskHandle task_queue_head;
-	SparkTaskHandle task_queue_tail;
-	SparkMutex mutex;
-	SparkCondition condition;
-	SparkSize pending_task_count;
-	SparkMutex pending_task_mutex;
-	SparkCondition pending_task_cond;
-	volatile SparkI32 stop;
-	volatile SparkI32 shutdown;
-	/* SparkVector <SparkThreadPoolShutdownCallback */
-	SparkVector shutdown_callbacks;
-	/* SparkVector <SparkHandle> */
-	SparkVector shutdown_callback_args;
+  SparkThread *threads;
+  SparkSize thread_count;
+  SparkTaskHandle task_queue_head;
+  SparkTaskHandle task_queue_tail;
+  SparkMutex mutex;
+  SparkCondition condition;
+  SparkSize pending_task_count;
+  SparkMutex pending_task_mutex;
+  SparkCondition pending_task_cond;
+  volatile SparkI32 stop;
+  volatile SparkI32 shutdown;
+  /* SparkVector <SparkThreadPoolShutdownCallback */
+  SparkVector shutdown_callbacks;
+  /* SparkVector <SparkHandle> */
+  SparkVector shutdown_callback_args;
 } *SparkThreadPool;
 
 typedef struct SparkEventT {
-	SparkEventType type;
-	SparkHandle data;
-	SparkConstString timestamp;
-	SparkFreeFunction destructor;
-	/* Atomic counter */
-	volatile SparkSize* ref_count;
+  SparkEventType type;
+  SparkHandle data;
+  SparkConstString timestamp;
+  SparkFreeFunction destructor;
+  /* Atomic counter */
+  volatile SparkSize *ref_count;
 } SparkEvent;
 
 typedef struct SparkEventHandlerFunctionT {
-	SparkEventType event_type;
-	SparkApplicationEventFunction function;
-	SparkPair thread_settings;
+  SparkEventType event_type;
+  SparkApplicationEventFunction function;
+  SparkPair thread_settings;
 } *SparkEventHandlerFunction;
 
 typedef struct SparkQueryEventHandlerFunctionT {
-	SparkEventType event_type;
-	SparkConstString component_type;
-	SparkApplicationQueryEventFunction function;
-	SparkPair thread_settings;
+  SparkEventType event_type;
+  SparkConstString component_type;
+  SparkApplicationQueryEventFunction function;
+  SparkPair thread_settings;
 } *SparkQueryEventHandlerFunction;
 
 typedef struct SparkQueryHandlerFunctionT {
-	SparkConstString component_type;
-	SparkApplicationQueryFunction function;
-	SparkPair thread_settings;
+  SparkConstString component_type;
+  SparkApplicationQueryFunction function;
+  SparkPair thread_settings;
 } *SparkQueryHandlerFunction;
 
 typedef struct SparkUpdateHandlerFunctionT {
-	SparkApplicationUpdateFunction function;
-	SparkPair thread_settings;
+  SparkApplicationUpdateFunction function;
+  SparkPair thread_settings;
 } *SparkUpdateHandlerFunction;
 
 typedef struct SparkStartHandlerFunctionT {
-	SparkApplicationStartFunction function;
-	SparkPair thread_settings;
+  SparkApplicationStartFunction function;
+  SparkPair thread_settings;
 } *SparkStartHandlerFunction;
 
 typedef struct SparkStopHandlerFunctionT {
-	SparkApplicationStopFunction function;
-	SparkPair thread_settings;
+  SparkApplicationStopFunction function;
+  SparkPair thread_settings;
 } *SparkStopHandlerFunction;
 
 typedef struct SparkEventHandlerT {
-	/* Vector <SparkEventHandlerFunction> */
-	SparkVector event_functions;
-	/* HashMap <SparkConstString, SparkVector <SparkQueryEventHandlerFunction>> */
-	SparkHashMap query_functions;
-	struct SparkApplicationT* application;
-	struct SparkEcsT* ecs;
+  /* Vector <SparkEventHandlerFunction> */
+  SparkVector event_functions;
+  /* HashMap <SparkConstString, SparkVector <SparkQueryEventHandlerFunction>> */
+  SparkHashMap query_functions;
+  struct SparkApplicationT *application;
+  struct SparkEcsT *ecs;
 } *SparkEventHandler;
 
 typedef SparkI32 SparkEntity;
 
 typedef struct SparkComponentT {
-	SparkConstString type;
-	SparkConstString name;
-	SparkHandle data;
-	SparkFreeFunction destructor;
-	/* Parent entity of this component */
-	SparkEntity entity;
+  SparkConstString type;
+  SparkConstString name;
+  SparkHandle data;
+  SparkFreeFunction destructor;
+  /* Parent entity of this component */
+  SparkEntity entity;
 } *SparkComponent;
 
 typedef struct SparkComponentArrayT {
-	SparkHashMap entity_to_component; // HashMap of entity IDs to components
+  SparkHashMap entity_to_component; // HashMap of entity IDs to components
 } *SparkComponentArray;
 
 typedef struct SparkSystemT {
-	SparkSystemStartFunction start;
-	SparkSystemUpdateFunction update;
-	SparkSystemStopFunction stop;
-	SparkEventHandler event_handler;
-	SparkHandle system_data;
+  SparkSystemStartFunction start;
+  SparkSystemUpdateFunction update;
+  SparkSystemStopFunction stop;
+  SparkEventHandler event_handler;
+  SparkHandle system_data;
 } *SparkSystem;
 
 typedef struct SparkEcsT {
-	SparkAllocator allocator;
-	/* Vector <SparkEntity> */
-	SparkVector entities;
-	/* Vector <SparkSystem> */
-	SparkVector systems;
-	/* HashMap <SparkString, SparkComponentArray> */
-	SparkHashMap components;
-	/* Stack <SparkI32> */
-	SparkStack recycled_ids;
-	SparkEventHandler event_handler;
+  SparkAllocator allocator;
+  /* Vector <SparkEntity> */
+  SparkVector entities;
+  /* Vector <SparkSystem> */
+  SparkVector systems;
+  /* HashMap <SparkString, SparkComponentArray> */
+  SparkHashMap components;
+  /* Stack <SparkI32> */
+  SparkStack recycled_ids;
+  SparkEventHandler event_handler;
 } *SparkEcs;
 
 typedef struct SparkResourceT {
-	SparkHandle data;
-	SparkConstString name;
-	SparkConstString type;
-	SparkFreeFunction destructor;
+  SparkHandle data;
+  SparkConstString name;
+  SparkConstString type;
+  SparkFreeFunction destructor;
 } *SparkResource;
 
 typedef struct SparkResourceLoaderT {
-	SparkConstString type;
-	SparkHandle(*load)(SparkConstString path);
-	SparkResult(*unload)(SparkHandle handle);
+  SparkConstString type;
+  SparkHandle (*load)(SparkConstString path);
+  SparkResult (*unload)(SparkHandle handle);
 } *SparkResourceLoader;
 
 typedef struct SparkResourceManagerT {
-	/* HashMap <SparkString, SparkResourceLoader> */
-	SparkHashMap loaders;
-	/* Type to be inserted into all SparkResources */
-	SparkConstString type;
-	/* HashMap <SparkString, SparkResource> */
-	SparkHashMap resources;
-	SparkFreeFunction resource_destructor;
+  /* HashMap <SparkString, SparkResourceLoader> */
+  SparkHashMap loaders;
+  /* Type to be inserted into all SparkResources */
+  SparkConstString type;
+  /* HashMap <SparkString, SparkResource> */
+  SparkHashMap resources;
+  SparkFreeFunction resource_destructor;
 } *SparkResourceManager;
 
 typedef struct SparkWindowDataT {
-	SparkConstString title;
-	SparkI32 width;
-	SparkI32 height;
-	SparkBool vsync;
-	SparkEventHandler event_handler;
+  SparkConstString title;
+  SparkI32 width;
+  SparkI32 height;
+  SparkBool vsync;
+  SparkEventHandler event_handler;
 } *SparkWindowData;
 
 typedef struct SparkRendererT {
-	SparkI8 not_implemented;
+  SparkI8 not_implemented;
 } *SparkRenderer;
 
 /* Physics-related declarations */
 typedef struct SparkRigidBodyT {
-	SparkVec3 position;
-	SparkVec3 velocity;
-	SparkVec3 acceleration;
-	SparkQuat rotation;
-	SparkScalar mass;
-	SparkScalar friction;
-	SparkScalar restitution; \
+  SparkVec3 position;
+  SparkVec3 velocity;
+  SparkVec3 acceleration;
+  SparkQuat rotation;
+  SparkScalar mass;
+  SparkScalar friction;
+  SparkScalar restitution;
 } *SparkRigidBody;
 
 typedef struct SparkColliderT {
-	enum {
-		SPARK_COLLIDER_TYPE_BOX,
-		SPARK_COLLIDER_TYPE_SPHERE,
-		SPARK_COLLIDER_TYPE_CAPSULE,
-		SPARK_COLLIDER_TYPE_MESH,
-	} type;
-	// Collider-specific data
-	union {
-		struct {
-			SparkVec3 half_extents;
-		} box;
-		struct {
-			SparkScalar radius;
-		} sphere;
-	} data;
+  enum {
+    SPARK_COLLIDER_TYPE_BOX,
+    SPARK_COLLIDER_TYPE_SPHERE,
+    SPARK_COLLIDER_TYPE_CAPSULE,
+    SPARK_COLLIDER_TYPE_MESH,
+  } type;
+  // Collider-specific data
+  union {
+    struct {
+      SparkVec3 half_extents;
+    } box;
+    struct {
+      SparkScalar radius;
+    } sphere;
+  } data;
 } *SparkCollider;
 
 /* Input handling declarations */
 typedef struct SparkInputT {
-	SparkBool keys[1024];
-	SparkBool mouseButtons[32];
-	SparkScalar mousex;
-	SparkScalar mousey;
+  SparkBool keys[1024];
+  SparkBool mouseButtons[32];
+  SparkScalar mousex;
+  SparkScalar mousey;
 } *SparkInput;
 
 typedef struct SparkAudioBufferT {
-	SparkU32 bufferid;        // OpenAL buffer identifier
-	SparkI32 format;          // Audio data format (e.g., AL_FORMAT_MONO16)
-	SparkFrequency frequency; // Sampling frequency (e.g., 44100 Hz)
-	SparkSize size;           // Size of the audio data in bytes
-	SparkHandle data;
+  SparkU32 bufferid;        // OpenAL buffer identifier
+  SparkI32 format;          // Audio data format (e.g., AL_FORMAT_MONO16)
+  SparkFrequency frequency; // Sampling frequency (e.g., 44100 Hz)
+  SparkSize size;           // Size of the audio data in bytes
+  SparkHandle data;
 } *SparkAudioBuffer;
 
 typedef struct SparkAudioT {
-	SparkU32 sourceid;           // OpenAL source identifier
-	SparkVec3 position;       // Source position in 3D space
-	SparkVec3 velocity;       // Source velocity in 3D space
-	SparkVec3 direction;      // Source direction vector
-	SparkBool looping;        // Looping flag (AL_TRUE or AL_FALSE)
-	SparkF32 gain;            // Volume gain (default is 1.0)
-	SparkF32 pitch;           // Pitch shift (default is 1.0)
-	SparkAudioBuffer buffer;  // Associated audio buffer
+  SparkU32 sourceid;       // OpenAL source identifier
+  SparkVec3 position;      // Source position in 3D space
+  SparkVec3 velocity;      // Source velocity in 3D space
+  SparkVec3 direction;     // Source direction vector
+  SparkBool looping;       // Looping flag (AL_TRUE or AL_FALSE)
+  SparkF32 gain;           // Volume gain (default is 1.0)
+  SparkF32 pitch;          // Pitch shift (default is 1.0)
+  SparkAudioBuffer buffer; // Associated audio buffer
 } *SparkAudio;
 
 typedef struct SparkVertexT {
-	SparkVec3 position;
-	SparkVec3 normal;
-	SparkVec2 texcoord;
+  SparkVec3 position;
+  SparkVec3 normal;
+  SparkVec2 texcoord;
 } SparkVertex;
 
 typedef struct SparkStaticMeshT {
-	SparkVertex* vertices;
-	SparkU32* indices;
-	SparkU32 vertex_count;
-	SparkU32 index_count;
+  SparkVertex *vertices;
+  SparkU32 *indices;
+  SparkU32 vertex_count;
+  SparkU32 index_count;
 } *SparkStaticMesh;
 
 typedef struct SparkDynamicMeshT {
-	SparkVertex* vertices;
-	SparkU32* indices;
-	SparkU32 vertex_count;
-	SparkU32 index_count;
-}*SparkDynamicMesh;
-
+  SparkVertex *vertices;
+  SparkU32 *indices;
+  SparkU32 vertex_count;
+  SparkU32 index_count;
+} *SparkDynamicMesh;
 
 typedef struct SparkMaterialT {
-	SparkI8 not_implemented;
-}*SparkMaterial;
+  SparkI8 not_implemented;
+} *SparkMaterial;
 
 typedef struct SparkStaticModelT {
-	SparkStaticMesh mesh;
-	SparkMaterial material;
-}*SparkStaticModel;
+  SparkStaticMesh mesh;
+  SparkMaterial material;
+} *SparkStaticModel;
 
 typedef struct SparkDynamicModelT {
-	SparkDynamicMesh mesh;
-	SparkMaterial material;
-}*SparkDynamicModel;
+  SparkDynamicMesh mesh;
+  SparkMaterial material;
+} *SparkDynamicModel;
 
 /* Scene management declarations */
 typedef struct SparkSceneNodeT {
-	SparkEntity entity;
-	struct SparkSceneNodeT* parent;
-	SparkVector children; // Vector of SparkSceneNode
+  SparkEntity entity;
+  struct SparkSceneNodeT *parent;
+  SparkVector children; // Vector of SparkSceneNode
 } *SparkSceneNode;
 
 typedef struct SparkSceneT {
-	SparkSceneNode root;
+  SparkSceneNode root;
 } *SparkScene;
 
 /* Animation declarations */
 typedef struct SparkAnimationT {
-	SparkI8 unimplemented;
+  SparkI8 unimplemented;
 } *SparkAnimation;
 
 /* GUI declarations */
-typedef struct SparkGuiElementT* SparkGuiElement;
-typedef struct SparkGuiStyleT* SparkGuiStyle;
+typedef struct SparkGuiElementT *SparkGuiElement;
+typedef struct SparkGuiStyleT *SparkGuiStyle;
 
 typedef struct SparkAIBehaviorT {
-	SparkU8 not_implemented;
-}*SparkAIBehavior;
+  SparkU8 not_implemented;
+} *SparkAIBehavior;
 
 /* Particle system declarations */
-typedef struct SparkParticleEmitterT* SparkParticleEmitter;
+typedef struct SparkParticleEmitterT *SparkParticleEmitter;
 
 /* Font and text rendering declarations */
-typedef struct SparkFontT* SparkFont;
+typedef struct SparkFontT *SparkFont;
 typedef struct SparkTextT {
-	SparkConstString content;
-	SparkFont font;
-	SparkScalar size;
-	SparkColor color;
-	SparkVec2 position;
+  SparkConstString content;
+  SparkFont font;
+  SparkScalar size;
+  SparkColor color;
+  SparkVec2 position;
 } SparkText;
 
 /* Packet Structure */
 typedef struct SparkPacketT {
-	SparkSize size;
-	SparkBuffer data;
+  SparkSize size;
+  SparkBuffer data;
 } SparkPacket;
 
 /* Envelope Structure */
 typedef struct SparkEnvelopeT {
-	SparkEnvelopeType type;
-	SparkPacket packet;
+  SparkEnvelopeType type;
+  SparkPacket packet;
 } SparkEnvelope;
 
 /* Forward declarations */
-typedef struct SparkServerT* SparkServer;
-typedef struct SparkClientT* SparkClient;
-typedef struct SparkClientConnectionT* SparkClientConnection;
+typedef struct SparkServerT *SparkServer;
+typedef struct SparkClientT *SparkClient;
+typedef struct SparkClientConnectionT *SparkClientConnection;
 
 typedef struct SparkFileDeserializerT {
-	SparkU8* data;
-	SparkU64 size;
-	SparkU64 capacity;
-	SparkConstString path;
-	SparkU64 curr_off;
-	FILE* file;
+  SparkU8 *data;
+  SparkU64 size;
+  SparkU64 capacity;
+  SparkConstString path;
+  SparkU64 curr_off;
+  FILE *file;
 } *SparkFileDeserializer;
 
 typedef struct SparkFileSerializerT {
-	SparkU8* data;
-	SparkU64 size;
-	SparkU64 capacity;
-	SparkConstString path;
-	FILE* file;
+  SparkU8 *data;
+  SparkU64 size;
+  SparkU64 capacity;
+  SparkConstString path;
+  FILE *file;
 } *SparkFileSerializer;
 
 typedef struct SparkWindowT {
-	SparkWindowData window_data;
-	SparkRenderer renderer;
-	SparkBool should_close;
+  SparkWindowData window_data;
+  SparkRenderer renderer;
+  SparkBool should_close;
 #ifdef SPARK_IMPLEMENTATION
-	struct GLFWwindow* window;
-	struct VkInstance_T* instance;
-	struct VkDebugUtilsMessengerEXT_T* debug_messenger;
-	struct VkPhysicalDevice_T* physical_device;
-	struct VkDevice_T* device;
-	struct VkQueue_T* graphics_queue;
-	struct VkQueue_T* present_queue;
-	struct VkSufraceKHR_T* surface;
-	struct VkSwapchainKHR_T* swap_chain;
-	struct VkImage_T** swap_chain_images;
-	struct VkImageView_T** swap_chain_image_views;
-	struct VkExtent2D* swap_chain_extent;
-	struct VkFramebuffer_T** swap_chain_framebuffers;
-	struct VkPipelineLayout_T* pipeline_layout;
-	struct VkRenderPass_T* render_pass;
-	struct VkPipeline_T* graphics_pipeline;
-	struct VkCommandPool_T* command_pool;
-	struct VkCommandBuffer_T** command_buffers;
-	struct VkSemaphore_T** image_available_semaphores;
-	struct VkSemaphore_T** render_finished_semaphores;
-	struct VkFence_T** in_flight_fences;
-	enum VkFormat swap_chain_image_format;
-	SparkU32 current_frame;
-	SparkU32 swap_chain_images_size;
-	SparkU32 swap_chain_image_views_size;
-	SparkU32 command_buffers_size;
-	SparkU32 image_available_semaphores_size;
-	SparkU32 render_finished_semaphores_size;
-	SparkU32 in_flight_fences_size;
-	SparkBool framebuffer_resized;
+  struct GLFWwindow *window;
+  struct VkInstance_T *instance;
+  struct VkDebugUtilsMessengerEXT_T *debug_messenger;
+  struct VkPhysicalDevice_T *physical_device;
+  struct VkDevice_T *device;
+  struct VkQueue_T *graphics_queue;
+  struct VkQueue_T *present_queue;
+  struct VkSufraceKHR_T *surface;
+  struct VkSwapchainKHR_T *swap_chain;
+  struct VkImage_T **swap_chain_images;
+  struct VkImageView_T **swap_chain_image_views;
+  struct VkExtent2D *swap_chain_extent;
+  struct VkFramebuffer_T **swap_chain_framebuffers;
+  struct VkPipelineLayout_T *pipeline_layout;
+  struct VkRenderPass_T *render_pass;
+  struct VkPipeline_T *graphics_pipeline;
+  struct VkCommandPool_T *command_pool;
+  struct VkCommandBuffer_T **command_buffers;
+  struct VkSemaphore_T **image_available_semaphores;
+  struct VkSemaphore_T **render_finished_semaphores;
+  struct VkFence_T **in_flight_fences;
+  enum VkFormat swap_chain_image_format;
+  SparkU32 current_frame;
+  SparkU32 swap_chain_images_size;
+  SparkU32 swap_chain_image_views_size;
+  SparkU32 command_buffers_size;
+  SparkU32 image_available_semaphores_size;
+  SparkU32 render_finished_semaphores_size;
+  SparkU32 in_flight_fences_size;
+  SparkBool framebuffer_resized;
 #endif
 } *SparkWindow;
 
 typedef struct SparkApplicationT {
-	SparkWindow window;
-	SparkEcs ecs;
-	SparkHashMap resource_manager;
-	SparkEventHandler event_handler;
-	/* Vector <SparkApplicationStartFunction> */
-	SparkVector start_functions;
-	/* Vector <SparkApplicationUpdateFunction> */
-	SparkVector update_functions;
-	/* Vector <SparkApplicationStopFunction> */
-	SparkVector stop_functions;
-	/* Vector <SparkApplicationEventFunction> */
-	SparkVector event_functions;
-	/* HashMap <SparkConstString, SparkVector <SparkApplicationQueryFunction>> */
-	SparkHashMap query_functions;
-	/* Vector <SparkApplicationQueryEventFunction> */
-	SparkVector query_event_functions;
-	SparkThreadPool thread_pool;
-	SparkMutex mutex;
-	SparkF32 delta_time;
+  SparkWindow window;
+  SparkEcs ecs;
+  SparkHashMap resource_manager;
+  SparkEventHandler event_handler;
+  /* Vector <SparkApplicationStartFunction> */
+  SparkVector start_functions;
+  /* Vector <SparkApplicationUpdateFunction> */
+  SparkVector update_functions;
+  /* Vector <SparkApplicationStopFunction> */
+  SparkVector stop_functions;
+  /* Vector <SparkApplicationEventFunction> */
+  SparkVector event_functions;
+  /* HashMap <SparkConstString, SparkVector <SparkApplicationQueryFunction>> */
+  SparkHashMap query_functions;
+  /* Vector <SparkApplicationQueryEventFunction> */
+  SparkVector query_event_functions;
+  SparkThreadPool thread_pool;
+  SparkMutex mutex;
+  SparkF32 delta_time;
 } *SparkApplication;
 
 #pragma endregion
@@ -1548,38 +1559,53 @@ SPARKAPI SparkConstString SPARKCALL SparkResultToString(SparkResult result);
 SPARKAPI SparkResult SPARKCALL SparkStringToResult(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkAccessToString(SparkAccess access);
 SPARKAPI SparkAccess SPARKCALL SparkStringToAccess(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkMouseButtonToString(SparkMouseButton button);
-SPARKAPI SparkMouseButton SPARKCALL SparkStringToMouseButton(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkMouseButtonToString(SparkMouseButton button);
+SPARKAPI SparkMouseButton SPARKCALL
+SparkStringToMouseButton(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkKeyToString(SparkKey key);
 SPARKAPI SparkKey SPARKCALL SparkStringToKey(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkModifierToString(SparkModifier modifier);
+SPARKAPI SparkConstString SPARKCALL
+SparkModifierToString(SparkModifier modifier);
 SPARKAPI SparkModifier SPARKCALL SparkStringToModifier(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkActionToString(SparkAction action);
 SPARKAPI SparkAction SPARKCALL SparkStringToAction(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkCursorToString(SparkCursor cursor);
 SPARKAPI SparkCursor SPARKCALL SparkStringToCursor(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkEventTypeToString(SparkEventType eventType);
-SPARKAPI SparkEventType SPARKCALL SparkStringToEventType(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkShaderTypeToString(SparkShaderType shaderType);
-SPARKAPI SparkShaderType SPARKCALL SparkStringToShaderType(SparkConstString string);
-SPARKAPI SparkConstString
-SPARKCALL SparkPrimitiveTypeToString(SparkPrimitiveType primitiveType);
-SPARKAPI SparkPrimitiveType SPARKCALL SparkStringToPrimitiveType(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkBlendModeToString(SparkBlendMode blendMode);
-SPARKAPI SparkBlendMode SPARKCALL SparkStringToBlendMode(SparkConstString string);
-SPARKAPI SparkConstString SPARKCALL SparkTextureFilterToString(SparkTextureFilter filter);
-SPARKAPI SparkTextureFilter SPARKCALL SparkStringToTextureFilter(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkEventTypeToString(SparkEventType eventType);
+SPARKAPI SparkEventType SPARKCALL
+SparkStringToEventType(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkShaderTypeToString(SparkShaderType shaderType);
+SPARKAPI SparkShaderType SPARKCALL
+SparkStringToShaderType(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkPrimitiveTypeToString(SparkPrimitiveType primitiveType);
+SPARKAPI SparkPrimitiveType SPARKCALL
+SparkStringToPrimitiveType(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkBlendModeToString(SparkBlendMode blendMode);
+SPARKAPI SparkBlendMode SPARKCALL
+SparkStringToBlendMode(SparkConstString string);
+SPARKAPI SparkConstString SPARKCALL
+SparkTextureFilterToString(SparkTextureFilter filter);
+SPARKAPI SparkTextureFilter SPARKCALL
+SparkStringToTextureFilter(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkLogLevelToString(SparkLogLevel level);
 SPARKAPI SparkLogLevel SPARKCALL SparkStringToLogLevel(SparkConstString string);
 SPARKAPI SparkConstString SPARKCALL SparkRenderAPIToString(SparkRenderAPI api);
-SPARKAPI SparkRenderAPI SPARKCALL SparkStringToRenderAPI(SparkConstString string);
+SPARKAPI SparkRenderAPI SPARKCALL
+SparkStringToRenderAPI(SparkConstString string);
 
-SPARKAPI SparkConstString SPARKCALL SparkFormatString(SparkConstString format, ...);
+SPARKAPI SparkConstString SPARKCALL SparkFormatString(SparkConstString format,
+                                                      ...);
 SPARKAPI SparkConstString SPARKCALL SparkGetTime();
-SPARKAPI SparkConstString SPARKCALL SparkGetFileExtension(SparkConstString filename);
+SPARKAPI SparkConstString SPARKCALL
+SparkGetFileExtension(SparkConstString filename);
 
-SPARKAPI SparkVoid SPARKCALL SparkLog(SparkLogLevel log_level, SparkConstString format,
-	...);
+SPARKAPI SparkVoid SPARKCALL SparkLog(SparkLogLevel log_level,
+                                      SparkConstString format, ...);
 
 #pragma region MATH
 
@@ -1590,7 +1616,6 @@ SPARKAPI SparkVoid SPARKCALL SparkLog(SparkLogLevel log_level, SparkConstString 
 #ifdef far
 #undef far
 #endif
-
 
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Add(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Subtract(SparkVec2 a, SparkVec2 b);
@@ -1604,7 +1629,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec2Distance(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Negate(SparkVec2 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec2Angle(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Reflect(SparkVec2 v, SparkVec2 n);
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b, SparkScalar t);
+SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b,
+                                           SparkScalar t);
 
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Add(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Subtract(SparkVec3 a, SparkVec3 b);
@@ -1619,7 +1645,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec3Distance(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Negate(SparkVec3 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec3Angle(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Reflect(SparkVec3 v, SparkVec3 n);
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b, SparkScalar t);
+SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b,
+                                           SparkScalar t);
 
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Add(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Subtract(SparkVec4 a, SparkVec4 b);
@@ -1631,7 +1658,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec4Length(SparkVec4 a);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Normalize(SparkVec4 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec4Distance(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Negate(SparkVec4 a);
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b, SparkScalar t);
+SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b,
+                                           SparkScalar t);
 
 SPARKAPI SparkMat2 SPARKCALL SparkMat2Add(SparkMat2 a, SparkMat2 b);
 SPARKAPI SparkMat2 SPARKCALL SparkMat2Subtract(SparkMat2 a, SparkMat2 b);
@@ -1667,12 +1695,14 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateX(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateY(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateZ(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
-	SparkVec3 up);
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy, SparkScalar aspect,
-	SparkScalar near, SparkScalar far);
+                                             SparkVec3 up);
+SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy,
+                                                  SparkScalar aspect,
+                                                  SparkScalar near,
+                                                  SparkScalar far);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Ortho(SparkScalar left, SparkScalar right,
-	SparkScalar bottom, SparkScalar top,
-	SparkScalar near, SparkScalar far);
+                                            SparkScalar bottom, SparkScalar top,
+                                            SparkScalar near, SparkScalar far);
 
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Transform(SparkVec3 v, SparkMat4 m);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Transform(SparkVec4 v, SparkMat4 m);
@@ -1681,11 +1711,13 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatMultiply(SparkQuat a, SparkQuat b);
 SPARKAPI SparkQuat SPARKCALL SparkQuatConjugate(SparkQuat q);
 SPARKAPI SparkQuat SPARKCALL SparkQuatInverse(SparkQuat q);
 SPARKAPI SparkQuat SPARKCALL SparkQuatNormalize(SparkQuat q);
-SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis, SparkScalar angle);
-SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3* axis,
-	SparkScalar* angle);
+SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis,
+                                                    SparkScalar angle);
+SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3 *axis,
+                                                  SparkScalar *angle);
 SPARKAPI SparkMat4 SPARKCALL SparkQuatToMat4(SparkQuat q);
-SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t);
+SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b,
+                                            SparkScalar t);
 
 SPARKAPI SparkScalar SPARKCALL SparkRadians(SparkScalar degrees);
 SPARKAPI SparkScalar SPARKCALL SparkDegrees(SparkScalar radians);
@@ -1705,18 +1737,21 @@ SPARKAPI SparkScalar SPARKCALL SparkLogs(SparkScalar value);
 SPARKAPI SparkScalar SPARKCALL SparkAbs(SparkScalar value);
 SPARKAPI SparkScalar SPARKCALL SparkFloor(SparkScalar value);
 SPARKAPI SparkScalar SPARKCALL SparkCeil(SparkScalar value);
-SPARKAPI SparkScalar SPARKCALL SparkMix(SparkScalar a, SparkScalar b, SparkScalar t);
+SPARKAPI SparkScalar SPARKCALL SparkMix(SparkScalar a, SparkScalar b,
+                                        SparkScalar t);
 
 /* General math function declarations */
 
 SPARKAPI SparkScalar SPARKCALL SparkMinS(SparkScalar a, SparkScalar b);
 SPARKAPI SparkScalar SPARKCALL SparkMaxS(SparkScalar a, SparkScalar b);
 SPARKAPI SparkScalar SPARKCALL SparkClampS(SparkScalar x, SparkScalar min_val,
-	SparkScalar max_val);
-SPARKAPI SparkScalar SPARKCALL SparkMixS(SparkScalar x, SparkScalar y, SparkScalar t);
+                                           SparkScalar max_val);
+SPARKAPI SparkScalar SPARKCALL SparkMixS(SparkScalar x, SparkScalar y,
+                                         SparkScalar t);
 SPARKAPI SparkScalar SPARKCALL SparkStepS(SparkScalar edge, SparkScalar x);
-SPARKAPI SparkScalar SPARKCALL SparkSmoothStepS(SparkScalar edge0, SparkScalar edge1,
-	SparkScalar x);
+SPARKAPI SparkScalar SPARKCALL SparkSmoothStepS(SparkScalar edge0,
+                                                SparkScalar edge1,
+                                                SparkScalar x);
 SPARKAPI SparkScalar SPARKCALL SparkSign(SparkScalar x);
 SPARKAPI SparkScalar SPARKCALL SparkMod(SparkScalar x, SparkScalar y);
 
@@ -1748,7 +1783,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec2Distance(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Negate(SparkVec2 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec2Angle(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Reflect(SparkVec2 v, SparkVec2 n);
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b, SparkScalar t);
+SPARKAPI SparkVec2 SPARKCALL SparkVec2Lerp(SparkVec2 a, SparkVec2 b,
+                                           SparkScalar t);
 
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Add(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Subtract(SparkVec3 a, SparkVec3 b);
@@ -1763,7 +1799,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec3Distance(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Negate(SparkVec3 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec3Angle(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Reflect(SparkVec3 v, SparkVec3 n);
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b, SparkScalar t);
+SPARKAPI SparkVec3 SPARKCALL SparkVec3Lerp(SparkVec3 a, SparkVec3 b,
+                                           SparkScalar t);
 
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Add(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Subtract(SparkVec4 a, SparkVec4 b);
@@ -1775,7 +1812,8 @@ SPARKAPI SparkScalar SPARKCALL SparkVec4Length(SparkVec4 a);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Normalize(SparkVec4 a);
 SPARKAPI SparkScalar SPARKCALL SparkVec4Distance(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Negate(SparkVec4 a);
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b, SparkScalar t);
+SPARKAPI SparkVec4 SPARKCALL SparkVec4Lerp(SparkVec4 a, SparkVec4 b,
+                                           SparkScalar t);
 
 /* Matrix functions */
 
@@ -1813,12 +1851,14 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateX(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateY(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateZ(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
-	SparkVec3 up);
-SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy, SparkScalar aspect,
-	SparkScalar near, SparkScalar far);
+                                             SparkVec3 up);
+SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy,
+                                                  SparkScalar aspect,
+                                                  SparkScalar near,
+                                                  SparkScalar far);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Ortho(SparkScalar left, SparkScalar right,
-	SparkScalar bottom, SparkScalar top,
-	SparkScalar near, SparkScalar far);
+                                            SparkScalar bottom, SparkScalar top,
+                                            SparkScalar near, SparkScalar far);
 
 /* Quaternion functions */
 
@@ -1826,11 +1866,13 @@ SPARKAPI SparkQuat SPARKCALL SparkQuatMultiply(SparkQuat a, SparkQuat b);
 SPARKAPI SparkQuat SPARKCALL SparkQuatConjugate(SparkQuat q);
 SPARKAPI SparkQuat SPARKCALL SparkQuatInverse(SparkQuat q);
 SPARKAPI SparkQuat SPARKCALL SparkQuatNormalize(SparkQuat q);
-SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis, SparkScalar angle);
-SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3* axis,
-	SparkScalar* angle);
+SPARKAPI SparkQuat SPARKCALL SparkQuatFromAxisAngle(SparkVec3 axis,
+                                                    SparkScalar angle);
+SPARKAPI SparkVoid SPARKCALL SparkQuatToAxisAngle(SparkQuat q, SparkVec3 *axis,
+                                                  SparkScalar *angle);
 SPARKAPI SparkMat4 SPARKCALL SparkQuatToMat4(SparkQuat q);
-SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t);
+SPARKAPI SparkQuat SPARKCALL SparkQuatSlerp(SparkQuat a, SparkQuat b,
+                                            SparkScalar t);
 
 /* Trigonometric functions */
 
@@ -1861,36 +1903,40 @@ SPARKAPI SparkScalar SPARKCALL SparkLength(SparkVec3 v);
 SPARKAPI SparkVec3 SPARKCALL SparkNormalize(SparkVec3 v);
 SPARKAPI SparkScalar SPARKCALL SparkDot(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkReflect(SparkVec3 v, SparkVec3 n);
-SPARKAPI SparkVec3 SPARKCALL SparkRefract(SparkVec3 v, SparkVec3 n, SparkScalar eta);
+SPARKAPI SparkVec3 SPARKCALL SparkRefract(SparkVec3 v, SparkVec3 n,
+                                          SparkScalar eta);
 
 /* Component-wise vector operations */
 
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Min(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Max(SparkVec2 a, SparkVec2 b);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Clamp(SparkVec2 v, SparkVec2 min_val,
-	SparkVec2 max_val);
-SPARKAPI SparkVec2 SPARKCALL SparkVec2Mix(SparkVec2 a, SparkVec2 b, SparkScalar t);
+                                            SparkVec2 max_val);
+SPARKAPI SparkVec2 SPARKCALL SparkVec2Mix(SparkVec2 a, SparkVec2 b,
+                                          SparkScalar t);
 SPARKAPI SparkVec2 SPARKCALL SparkVec2Step(SparkVec2 edge, SparkVec2 x);
-SPARKAPI SparkVec2 SPARKCALL SparkVec2SmoothStep(SparkVec2 edge0, SparkVec2 edge1,
-	SparkVec2 x);
+SPARKAPI SparkVec2 SPARKCALL SparkVec2SmoothStep(SparkVec2 edge0,
+                                                 SparkVec2 edge1, SparkVec2 x);
 
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Min(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Max(SparkVec3 a, SparkVec3 b);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Clamp(SparkVec3 v, SparkVec3 min_val,
-	SparkVec3 max_val);
-SPARKAPI SparkVec3 SPARKCALL SparkVec3Mix(SparkVec3 a, SparkVec3 b, SparkScalar t);
+                                            SparkVec3 max_val);
+SPARKAPI SparkVec3 SPARKCALL SparkVec3Mix(SparkVec3 a, SparkVec3 b,
+                                          SparkScalar t);
 SPARKAPI SparkVec3 SPARKCALL SparkVec3Step(SparkVec3 edge, SparkVec3 x);
-SPARKAPI SparkVec3 SPARKCALL SparkVec3SmoothStep(SparkVec3 edge0, SparkVec3 edge1,
-	SparkVec3 x);
+SPARKAPI SparkVec3 SPARKCALL SparkVec3SmoothStep(SparkVec3 edge0,
+                                                 SparkVec3 edge1, SparkVec3 x);
 
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Min(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Max(SparkVec4 a, SparkVec4 b);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Clamp(SparkVec4 v, SparkVec4 min_val,
-	SparkVec4 max_val);
-SPARKAPI SparkVec4 SPARKCALL SparkVec4Mix(SparkVec4 a, SparkVec4 b, SparkScalar t);
+                                            SparkVec4 max_val);
+SPARKAPI SparkVec4 SPARKCALL SparkVec4Mix(SparkVec4 a, SparkVec4 b,
+                                          SparkScalar t);
 SPARKAPI SparkVec4 SPARKCALL SparkVec4Step(SparkVec4 edge, SparkVec4 x);
-SPARKAPI SparkVec4 SPARKCALL SparkVec4SmoothStep(SparkVec4 edge0, SparkVec4 edge1,
-	SparkVec4 x);
+SPARKAPI SparkVec4 SPARKCALL SparkVec4SmoothStep(SparkVec4 edge0,
+                                                 SparkVec4 edge1, SparkVec4 x);
 
 #ifdef __STDC_VERSION__ >= 201112L
 
@@ -2184,132 +2230,157 @@ SPARKAPI SparkSize SPARKCALL JenkinsHash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize SPARKCALL Murmur2Hash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize SPARKCALL SipHash(SparkConstBuffer buf, SparkSize size);
 SPARKAPI SparkSize SPARKCALL XXHash(SparkConstBuffer buf, SparkSize size);
-SPARKAPI SparkSize SPARKCALL SparkStringHash(SparkConstBuffer key, SparkSize key_size);
-SPARKAPI SparkSize SPARKCALL SparkIntegerHash(SparkConstBuffer key, SparkSize key_size);
-SPARKAPI SparkI32 SPARKCALL SparkStringCompare(SparkConstBuffer a, SparkSize a_size,
-	SparkConstBuffer b, SparkSize b_size);
-SPARKAPI SparkI32 SPARKCALL SparkIntegerCompare(SparkConstBuffer a, SparkSize a_size,
-	SparkConstBuffer b, SparkSize b_size);
+SPARKAPI SparkSize SPARKCALL SparkStringHash(SparkConstBuffer key,
+                                             SparkSize key_size);
+SPARKAPI SparkSize SPARKCALL SparkIntegerHash(SparkConstBuffer key,
+                                              SparkSize key_size);
+SPARKAPI SparkI32 SPARKCALL SparkStringCompare(SparkConstBuffer a,
+                                               SparkSize a_size,
+                                               SparkConstBuffer b,
+                                               SparkSize b_size);
+SPARKAPI SparkI32 SPARKCALL SparkIntegerCompare(SparkConstBuffer a,
+                                                SparkSize a_size,
+                                                SparkConstBuffer b,
+                                                SparkSize b_size);
 
 SPARKAPI SparkHandle SPARKCALL SparkAllocate(SparkSize size);
-SPARKAPI SparkHandle SPARKCALL SparkReallocate(SparkHandle handle, SparkSize size);
+SPARKAPI SparkHandle SPARKCALL SparkReallocate(SparkHandle handle,
+                                               SparkSize size);
 SPARKAPI SparkVoid SPARKCALL SparkFree(SparkHandle handle);
 SPARKAPI SparkAllocator SPARKCALL SparkDefaultAllocator();
-SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(SparkAllocateFunction allocate,
-	SparkReallocateFunction reallocate,
-	SparkFreeFunction free);
+SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(
+    SparkAllocateFunction allocate, SparkReallocateFunction reallocate,
+    SparkFreeFunction free);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocator(SparkAllocator allocator);
 
-SPARKAPI SparkPair* SPARKCALL SparkCreatePair(SparkHandle first, SparkHandle second);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyPair(SparkPair* pair);
+SPARKAPI SparkPair *SPARKCALL SparkCreatePair(SparkHandle first,
+                                              SparkHandle second);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyPair(SparkPair *pair);
 
 SPARKAPI SparkVector SPARKCALL SparkDefaultVector();
 SPARKAPI SparkVector SPARKCALL SparkCreateVector(SparkSize capacity,
-	SparkAllocator allocator,
-	SparkFreeFunction destructor);
+                                                 SparkAllocator allocator,
+                                                 SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyVector(SparkVector vector);
 SPARKAPI SparkVector SPARKCALL SparkCopyVector(SparkVector vector);
 SPARKAPI SparkHandle SPARKCALL SparkGetElementVector(SparkVector vector,
-	SparkIndex index);
+                                                     SparkIndex index);
 SPARKAPI SparkResult SPARKCALL SparkPushBackVector(SparkVector vector,
-	SparkHandle element);
+                                                   SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkPopBackVector(SparkVector vector);
-SPARKAPI SparkResult SPARKCALL SparkInsertVector(SparkVector vector, SparkIndex index,
-	SparkHandle element);
-SPARKAPI SparkResult SPARKCALL SparkRemoveVector(SparkVector vector, SparkIndex index);
-SPARKAPI SparkResult SPARKCALL SparkRemoveNoShiftVector(SparkVector vector, SparkSize index);
+SPARKAPI SparkResult SPARKCALL SparkInsertVector(SparkVector vector,
+                                                 SparkIndex index,
+                                                 SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkRemoveVector(SparkVector vector,
+                                                 SparkIndex index);
+SPARKAPI SparkResult SPARKCALL SparkRemoveNoShiftVector(SparkVector vector,
+                                                        SparkSize index);
 SPARKAPI SparkResult SPARKCALL SparkCompressVector(SparkVector vector);
-SPARKAPI SparkResult SPARKCALL SparkEraseVector(SparkVector vector, SparkIndex start,
-	SparkIndex end);
-SPARKAPI SparkResult SPARKCALL SparkSetVector(SparkVector vector, SparkIndex index,
-	SparkHandle element);
-SPARKAPI SparkResult SPARKCALL SparkResizeVector(SparkVector vector, SparkSize capacity);
-SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
+SPARKAPI SparkResult SPARKCALL SparkEraseVector(SparkVector vector,
+                                                SparkIndex start,
+                                                SparkIndex end);
+SPARKAPI SparkResult SPARKCALL SparkSetVector(SparkVector vector,
+                                              SparkIndex index,
+                                              SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkResizeVector(SparkVector vector,
+                                                 SparkSize capacity);
+SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(
+    SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
 SPARKAPI SparkResult SPARKCALL SparkClearVector(SparkVector vector);
 
 SPARKAPI SparkList SPARKCALL SparkDefaultList();
 SPARKAPI SparkList SPARKCALL SparkCreateList(SparkAllocator allocator,
-	SparkFreeFunction destructor);
+                                             SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyList(SparkList list);
-SPARKAPI SparkHandle SPARKCALL SparkGetElementList(SparkList list, SparkIndex index);
-SPARKAPI SparkResult SPARKCALL SparkPushBackList(SparkList list, SparkHandle element);
-SPARKAPI SparkResult SPARKCALL SparkPopBackList(SparkList list, SparkBuffer element);
+SPARKAPI SparkHandle SPARKCALL SparkGetElementList(SparkList list,
+                                                   SparkIndex index);
+SPARKAPI SparkResult SPARKCALL SparkPushBackList(SparkList list,
+                                                 SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkPopBackList(SparkList list,
+                                                SparkBuffer element);
 SPARKAPI SparkResult SPARKCALL SparkInsertList(SparkList list, SparkIndex index,
-	SparkHandle element);
-SPARKAPI SparkResult SPARKCALL SparkRemoveList(SparkList list, SparkIndex index);
+                                               SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkRemoveList(SparkList list,
+                                               SparkIndex index);
 SPARKAPI SparkResult SPARKCALL SparkSetList(SparkList list, SparkIndex index,
-	SparkHandle element);
+                                            SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkClearList(SparkList list);
 
 SPARKAPI SparkMap SPARKCALL SparkDefaultMap();
 SPARKAPI SparkMap SPARKCALL SparkCreateMap(SparkAllocator allocator);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyMap(SparkMap map);
-SPARKAPI SparkHandle SPARKCALL SparkGetElementMap(SparkMap map, SparkConstBuffer key);
-SPARKAPI SparkResult SPARKCALL SparkInsertMap(SparkMap map, SparkConstBuffer key,
-	SparkConstBuffer value);
-SPARKAPI SparkResult SPARKCALL SparkRemoveMap(SparkMap map, SparkConstBuffer key);
+SPARKAPI SparkHandle SPARKCALL SparkGetElementMap(SparkMap map,
+                                                  SparkConstBuffer key);
+SPARKAPI SparkResult SPARKCALL SparkInsertMap(SparkMap map,
+                                              SparkConstBuffer key,
+                                              SparkConstBuffer value);
+SPARKAPI SparkResult SPARKCALL SparkRemoveMap(SparkMap map,
+                                              SparkConstBuffer key);
 SPARKAPI SparkResult SPARKCALL SparkSetMap(SparkMap map, SparkConstBuffer key,
-	SparkConstBuffer value);
+                                           SparkConstBuffer value);
 SPARKAPI SparkResult SPARKCALL SparkClearMap(SparkMap map);
 
 SPARKAPI SparkHashMap SPARKCALL SparkDefaultHashMap();
-SPARKAPI SparkHashMap SPARKCALL SparkCreateHashMap(SparkSize capacity,
-	SparkHashFunction hash_function,
-	SparkCompareFunction compare_function,
-	SparkAllocator allocator,
-	SparkFreeFunction key_destructor,
-	SparkFreeFunction value_destructor);
+SPARKAPI SparkHashMap SPARKCALL SparkCreateHashMap(
+    SparkSize capacity, SparkHashFunction hash_function,
+    SparkCompareFunction compare_function, SparkAllocator allocator,
+    SparkFreeFunction key_destructor, SparkFreeFunction value_destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyHashMap(SparkHashMap hashmap);
-SPARKAPI SparkResult SPARKCALL SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key,
-	SparkSize key_size, SparkHandle value);
+SPARKAPI SparkResult SPARKCALL SparkInsertHashMap(SparkHashMap hashmap,
+                                                  SparkHandle key,
+                                                  SparkSize key_size,
+                                                  SparkHandle value);
 SPARKAPI SparkHandle SPARKCALL SparkGetElementHashMap(SparkHashMap hashmap,
-	SparkHandle key,
-	SparkSize key_size);
-SPARKAPI SparkBool SPARKCALL SparkContainsHashMap(SparkHashMap hashmap, SparkHandle key,
-	SparkSize key_size);
-SPARKAPI SparkResult SPARKCALL SparkRemoveHashMap(SparkHashMap hashmap, SparkHandle key,
-	SparkSize key_size);
+                                                      SparkHandle key,
+                                                      SparkSize key_size);
+SPARKAPI SparkBool SPARKCALL SparkContainsHashMap(SparkHashMap hashmap,
+                                                  SparkHandle key,
+                                                  SparkSize key_size);
+SPARKAPI SparkResult SPARKCALL SparkRemoveHashMap(SparkHashMap hashmap,
+                                                  SparkHandle key,
+                                                  SparkSize key_size);
 SPARKAPI SparkVector SPARKCALL SparkGetAllKeysHashMap(SparkHashMap hashmap);
 SPARKAPI SparkVector SPARKCALL SparkGetAllValuesHashMap(SparkHashMap hashmap);
 SPARKAPI SparkVector SPARKCALL SparkGetAllPairsHashMap(SparkHashMap hasmap);
 
 SPARKAPI SparkSet SPARKCALL SparkDefaultSet();
-SPARKAPI SparkSet SPARKCALL SparkCreateSet(SparkSize capacity, SparkAllocator allocator,
-	SparkFreeFunction destructor);
+SPARKAPI SparkSet SPARKCALL SparkCreateSet(SparkSize capacity,
+                                           SparkAllocator allocator,
+                                           SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroySet(SparkSet set);
-SPARKAPI SparkHandle SPARKCALL SparkGetElementSet(SparkSet set, SparkSize index);
+SPARKAPI SparkHandle SPARKCALL SparkGetElementSet(SparkSet set,
+                                                  SparkSize index);
 SPARKAPI SparkBool SPARKCALL SparkContainsSet(SparkSet set, SparkHandle element,
-	SparkCompareFunction compare);
+                                              SparkCompareFunction compare);
 SPARKAPI SparkResult SPARKCALL SparkInsertSet(SparkSet set, SparkHandle element,
-	SparkCompareFunction compare);
+                                              SparkCompareFunction compare);
 SPARKAPI SparkResult SPARKCALL SparkRemoveSet(SparkSet set, SparkHandle element,
-	SparkCompareFunction compare);
+                                              SparkCompareFunction compare);
 SPARKAPI SparkResult SPARKCALL SparkClearSet(SparkSet set);
 
 SPARKAPI SparkHashSet SPARKCALL SparkDefaultHashSet();
-SPARKAPI SparkHashSet SPARKCALL SparkCreateHashSet(SparkSize capacity,
-	SparkSize element_size,
-	SparkHashFunction hash,
-	SparkAllocator allocator,
-	SparkFreeFunction destructor);
+SPARKAPI SparkHashSet SPARKCALL SparkCreateHashSet(
+    SparkSize capacity, SparkSize element_size, SparkHashFunction hash,
+    SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyHashSet(SparkHashSet hashset);
 SPARKAPI SparkBool SPARKCALL SparkContainsHashSet(SparkHashSet hashset,
-	SparkHandle element,
-	SparkSize element_size);
+                                                  SparkHandle element,
+                                                  SparkSize element_size);
 SPARKAPI SparkResult SPARKCALL SparkInsertHashSet(SparkHashSet hashset,
-	SparkHandle element,
-	SparkSize element_size);
+                                                  SparkHandle element,
+                                                  SparkSize element_size);
 SPARKAPI SparkResult SPARKCALL SparkRemoveHashSet(SparkHashSet hashset,
-	SparkHandle element,
-	SparkSize element_size);
+                                                  SparkHandle element,
+                                                  SparkSize element_size);
 SPARKAPI SparkResult SPARKCALL SparkClearHashSet(SparkHashSet hashset);
 
 SPARKAPI SparkQueue SPARKCALL SparkDefaultQueue();
 SPARKAPI SparkQueue SPARKCALL SparkCreateQueue(SparkSize capacity,
-	SparkAllocator allocator,
-	SparkFreeFunction destructor);
+                                               SparkAllocator allocator,
+                                               SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyQueue(SparkQueue queue);
-SPARKAPI SparkResult SPARKCALL SparkEnqueueQueue(SparkQueue queue, SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkEnqueueQueue(SparkQueue queue,
+                                                 SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkDequeueQueue(SparkQueue queue);
 SPARKAPI SparkHandle SPARKCALL SparkGetFrontQueue(SparkQueue queue);
 SPARKAPI SparkHandle SPARKCALL SparkGetBackQueue(SparkQueue queue);
@@ -2317,55 +2388,88 @@ SPARKAPI SparkResult SPARKCALL SparkClearQueue(SparkQueue queue);
 
 SPARKAPI SparkStack SPARKCALL SparkDefaultStack();
 SPARKAPI SparkStack SPARKCALL SparkCreateStack(SparkSize capacity,
-	SparkAllocator allocator,
-	SparkFreeFunction destructor);
+                                               SparkAllocator allocator,
+                                               SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyStack(SparkStack stack);
-SPARKAPI SparkResult SPARKCALL SparkPushStack(SparkStack stack, SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkPushStack(SparkStack stack,
+                                              SparkHandle element);
 SPARKAPI SparkResult SPARKCALL SparkPopStack(SparkStack stack);
 SPARKAPI SparkHandle SPARKCALL SparkGetTopStack(SparkStack stack);
 SPARKAPI SparkResult SPARKCALL SparkClearStack(SparkStack stack);
 
-SPARKAPI SparkVectorIterator SPARKCALL SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector);
+SPARKAPI SparkVectorIterator SPARKCALL
+SparkCreateVectorIterator(SparkIteratorState start_state, SparkVector vector);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetCurrentVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetPreviousVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetNextVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateForwardVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateBackwardVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtBeginningVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtEndVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetCurrentVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetPreviousVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetNextVectorIterator(SparkVectorIterator it);
 SPARKAPI SparkBool SPARKCALL SparkHasNextVectorIterator(SparkVectorIterator it);
-SPARKAPI SparkBool SPARKCALL SparkHasPreviousVectorIterator(SparkVectorIterator it);
+SPARKAPI SparkBool SPARKCALL
+SparkHasPreviousVectorIterator(SparkVectorIterator it);
 
-SPARKAPI SparkListIterator SPARKCALL SparkCreateListIterator(SparkIteratorState start_state, SparkList list);
+SPARKAPI SparkListIterator SPARKCALL
+SparkCreateListIterator(SparkIteratorState start_state, SparkList list);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyListIterator(SparkListIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardListIterator(SparkListIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardListIterator(SparkListIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningListIterator(SparkListIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndListIterator(SparkListIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetCurrentListIterator(SparkListIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetPreviousListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateForwardListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateBackwardListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtBeginningListIterator(SparkListIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtEndListIterator(SparkListIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetCurrentListIterator(SparkListIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetPreviousListIterator(SparkListIterator it);
 SPARKAPI SparkHandle SPARKCALL SparkGetNextListIterator(SparkListIterator it);
 SPARKAPI SparkBool SPARKCALL SparkHasNextListIterator(SparkListIterator it);
 SPARKAPI SparkBool SPARKCALL SparkHasPreviousListIterator(SparkListIterator it);
 
-SPARKAPI SparkHashMapIterator SPARKCALL SparkCreateHashMapIterator(SparkIteratorState start_state, SparkHashMapIteratorType iterator_type, SparkHashMap hash_map);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetCurrentHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetPreviousHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkHandle SPARKCALL SparkGetNextHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkBool SPARKCALL SparkHasNextHashMapIterator(SparkHashMapIterator it);
-SPARKAPI SparkBool SPARKCALL SparkHasPreviousHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHashMapIterator SPARKCALL SparkCreateHashMapIterator(
+    SparkIteratorState start_state, SparkHashMapIteratorType iterator_type,
+    SparkHashMap hash_map);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateForwardHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateBackwardHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtBeginningHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtEndHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetCurrentHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetPreviousHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkHandle SPARKCALL
+SparkGetNextHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkBool SPARKCALL
+SparkHasNextHashMapIterator(SparkHashMapIterator it);
+SPARKAPI SparkBool SPARKCALL
+SparkHasPreviousHashMapIterator(SparkHashMapIterator it);
 
-SPARKAPI SparkIterator SPARKCALL SparkCreateIterator(SparkIteratorType iterator_type, SparkHandle collection);
+SPARKAPI SparkIterator SPARKCALL
+SparkCreateIterator(SparkIteratorType iterator_type, SparkHandle collection);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyIterator(SparkIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateForwardIterator(SparkIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIterateBackwardIterator(SparkIterator it);
-SPARKAPI SparkIteratorState SPARKCALL SparkIsAtBeginningIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateForwardIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIterateBackwardIterator(SparkIterator it);
+SPARKAPI SparkIteratorState SPARKCALL
+SparkIsAtBeginningIterator(SparkIterator it);
 SPARKAPI SparkIteratorState SPARKCALL SparkIsAtEndIterator(SparkIterator it);
 SPARKAPI SparkHandle SPARKCALL SparkGetCurrentIterator(SparkIterator it);
 SPARKAPI SparkHandle SPARKCALL SparkGetPreviousIterator(SparkIterator it);
@@ -2373,22 +2477,21 @@ SPARKAPI SparkHandle SPARKCALL SparkGetNextIterator(SparkIterator it);
 SPARKAPI SparkBool SPARKCALL SparkHasNextIterator(SparkIterator it);
 SPARKAPI SparkBool SPARKCALL SparkHasPreviousIterator(SparkIterator it);
 
-
 /* Shader-related function declarations */
 
-typedef struct SparkShaderT* SparkShader;
-typedef struct SparkProgramT* SparkProgram;
+typedef struct SparkShaderT *SparkShader;
+typedef struct SparkProgramT *SparkProgram;
 
 /* Shader creation and deletion */
 SPARKAPI SparkShader SPARKCALL SparkCreateShader(SparkShaderType type,
-	SparkConstString source);
+                                                 SparkConstString source);
 SPARKAPI SparkResult SPARKCALL SparkCompileShader(SparkShader shader);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader);
 
 /* Program creation, linking, and deletion */
 SPARKAPI SparkProgram SPARKCALL SparkCreateProgram();
 SPARKAPI SparkResult SPARKCALL SparkAttachShader(SparkProgram program,
-	SparkShader shader);
+                                                 SparkShader shader);
 SPARKAPI SparkResult SPARKCALL SparkLinkProgram(SparkProgram program);
 SPARKAPI SparkVoid SPARKCALL SparkDeleteProgram(SparkProgram program);
 
@@ -2397,44 +2500,53 @@ SPARKAPI SparkResult SPARKCALL SparkUseProgram(SparkProgram program);
 
 /* Uniform setting functions */
 SPARKAPI SparkResult SPARKCALL SparkSetUniform1f(SparkProgram program,
-	SparkConstString name, SparkF32 v0);
+                                                 SparkConstString name,
+                                                 SparkF32 v0);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform2f(SparkProgram program,
-	SparkConstString name, SparkF32 v0,
-	SparkF32 v1);
+                                                 SparkConstString name,
+                                                 SparkF32 v0, SparkF32 v1);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform3f(SparkProgram program,
-	SparkConstString name, SparkF32 v0,
-	SparkF32 v1, SparkF32 v2);
+                                                 SparkConstString name,
+                                                 SparkF32 v0, SparkF32 v1,
+                                                 SparkF32 v2);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform4f(SparkProgram program,
-	SparkConstString name, SparkF32 v0,
-	SparkF32 v1, SparkF32 v2, SparkF32 v3);
+                                                 SparkConstString name,
+                                                 SparkF32 v0, SparkF32 v1,
+                                                 SparkF32 v2, SparkF32 v3);
 
 SPARKAPI SparkResult SPARKCALL SparkSetUniform1i(SparkProgram program,
-	SparkConstString name, SparkI32 v0);
+                                                 SparkConstString name,
+                                                 SparkI32 v0);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform2i(SparkProgram program,
-	SparkConstString name, SparkI32 v0,
-	SparkI32 v1);
+                                                 SparkConstString name,
+                                                 SparkI32 v0, SparkI32 v1);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform3i(SparkProgram program,
-	SparkConstString name, SparkI32 v0,
-	SparkI32 v1, SparkI32 v2);
+                                                 SparkConstString name,
+                                                 SparkI32 v0, SparkI32 v1,
+                                                 SparkI32 v2);
 SPARKAPI SparkResult SPARKCALL SparkSetUniform4i(SparkProgram program,
-	SparkConstString name, SparkI32 v0,
-	SparkI32 v1, SparkI32 v2, SparkI32 v3);
+                                                 SparkConstString name,
+                                                 SparkI32 v0, SparkI32 v1,
+                                                 SparkI32 v2, SparkI32 v3);
 
 /* Uniform setting functions for matrices */
 SPARKAPI SparkResult SPARKCALL SparkSetUniformMat2(SparkProgram program,
-	SparkConstString name, SparkMat2 mat);
+                                                   SparkConstString name,
+                                                   SparkMat2 mat);
 SPARKAPI SparkResult SPARKCALL SparkSetUniformMat3(SparkProgram program,
-	SparkConstString name, SparkMat3 mat);
+                                                   SparkConstString name,
+                                                   SparkMat3 mat);
 SPARKAPI SparkResult SPARKCALL SparkSetUniformMat4(SparkProgram program,
-	SparkConstString name, SparkMat4 mat);
+                                                   SparkConstString name,
+                                                   SparkMat4 mat);
 
 /* Attribute location functions */
 SPARKAPI SparkResult SPARKCALL SparkBindAttribLocation(SparkProgram program,
-	SparkIndex index,
-	SparkConstString name);
+                                                       SparkIndex index,
+                                                       SparkConstString name);
 SPARKAPI SparkResult SPARKCALL SparkGetAttribLocation(SparkProgram program,
-	SparkConstString name,
-	SparkIndex* location);
+                                                      SparkConstString name,
+                                                      SparkIndex *location);
 
 /* Error handling */
 SPARKAPI SparkConstString SPARKCALL SparkGetShaderLog(SparkShader shader);
@@ -2442,87 +2554,103 @@ SPARKAPI SparkConstString SPARKCALL SparkGetProgramLog(SparkProgram program);
 
 /* Shader reflection functions */
 SPARKAPI SparkResult SPARKCALL SparkGetUniformLocation(SparkProgram program,
-	SparkConstString name,
-	SparkIndex* location);
+                                                       SparkConstString name,
+                                                       SparkIndex *location);
 
 /* Shader utility functions */
-SPARKAPI SparkResult SPARKCALL SparkLoadShaderFromFile(SparkShader shader,
-	SparkConstString file_path);
+SPARKAPI SparkResult SPARKCALL
+SparkLoadShaderFromFile(SparkShader shader, SparkConstString file_path);
 SPARKAPI SparkResult SPARKCALL SparkSetShaderSource(SparkShader shader,
-	SparkConstString source);
+                                                    SparkConstString source);
 
 /* Uniform Buffer Object (UBO) functions */
-typedef struct SparkUniformBufferT* SparkUniformBuffer;
-SPARKAPI SparkUniformBuffer SPARKCALL SparkCreateUniformBuffer(SparkSize size,
-	SparkConstBuffer data);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteUniformBuffer(SparkUniformBuffer buffer);
-SPARKAPI SparkResult SPARKCALL SparkBindUniformBuffer(SparkProgram program,
-	SparkConstString name,
-	SparkUniformBuffer buffer);
+typedef struct SparkUniformBufferT *SparkUniformBuffer;
+SPARKAPI SparkUniformBuffer SPARKCALL
+SparkCreateUniformBuffer(SparkSize size, SparkConstBuffer data);
+SPARKAPI SparkVoid SPARKCALL
+SparkDeleteUniformBuffer(SparkUniformBuffer buffer);
+SPARKAPI SparkResult SPARKCALL SparkBindUniformBuffer(
+    SparkProgram program, SparkConstString name, SparkUniformBuffer buffer);
 
 /* Vertex Buffer functions */
-typedef struct SparkVertexBufferT* SparkVertexBuffer;
-SPARKAPI SparkVertexBuffer SPARKCALL SparkCreateVertexBuffer(SparkSize size,
-	SparkConstBuffer data);
+typedef struct SparkVertexBufferT *SparkVertexBuffer;
+SPARKAPI SparkVertexBuffer SPARKCALL
+SparkCreateVertexBuffer(SparkSize size, SparkConstBuffer data);
 SPARKAPI SparkVoid SPARKCALL SparkDeleteVertexBuffer(SparkVertexBuffer buffer);
 SPARKAPI SparkResult SPARKCALL SparkBindVertexBuffer(SparkVertexBuffer buffer);
 SPARKAPI SparkResult SPARKCALL SparkSetVertexAttribPointer(
-	SparkIndex index, SparkI32 size, SparkShaderDataType type,
-	SparkBool normalized, SparkSize stride, SparkSize offset);
+    SparkIndex index, SparkI32 size, SparkShaderDataType type,
+    SparkBool normalized, SparkSize stride, SparkSize offset);
 
 /* Index Buffer functions */
-typedef struct SparkIndexBufferT* SparkIndexBuffer;
-SPARKAPI SparkIndexBuffer SPARKCALL SparkCreateIndexBuffer(SparkSize size,
-	SparkConstBuffer data);
+typedef struct SparkIndexBufferT *SparkIndexBuffer;
+SPARKAPI SparkIndexBuffer SPARKCALL
+SparkCreateIndexBuffer(SparkSize size, SparkConstBuffer data);
 SPARKAPI SparkVoid SPARKCALL SparkDeleteIndexBuffer(SparkIndexBuffer buffer);
 SPARKAPI SparkResult SPARKCALL SparkBindIndexBuffer(SparkIndexBuffer buffer);
 
 /* Drawing functions */
-SPARKAPI SparkResult SPARKCALL SparkDrawArrays(SparkPrimitiveType mode, SparkIndex first,
-	SparkSize count);
-SPARKAPI SparkResult SPARKCALL SparkDrawElements(SparkPrimitiveType mode, SparkSize count,
-	SparkShaderDataType type,
-	SparkSize offset);
+SPARKAPI SparkResult SPARKCALL SparkDrawArrays(SparkPrimitiveType mode,
+                                               SparkIndex first,
+                                               SparkSize count);
+SPARKAPI SparkResult SPARKCALL SparkDrawElements(SparkPrimitiveType mode,
+                                                 SparkSize count,
+                                                 SparkShaderDataType type,
+                                                 SparkSize offset);
 
 /* Texture functions */
-typedef struct SparkTextureT* SparkTexture;
+typedef struct SparkTextureT *SparkTexture;
 SPARKAPI SparkTexture SPARKCALL SparkCreateTexture(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyTexture(SparkTexture texture);
-SPARKAPI SparkResult SPARKCALL SparkBindTexture(SparkTexture texture, SparkI32 unit);
+SPARKAPI SparkResult SPARKCALL SparkBindTexture(SparkTexture texture,
+                                                SparkI32 unit);
 SPARKAPI SparkResult SPARKCALL SparkSetTextureParameter(SparkTexture texture,
-	SparkI32 pname, SparkI32 param);
+                                                        SparkI32 pname,
+                                                        SparkI32 param);
 
 /* Framebuffer functions */
-typedef struct SparkFramebufferT* SparkFramebuffer;
+typedef struct SparkFramebufferT *SparkFramebuffer;
 SPARKAPI SparkFramebuffer SPARKCALL SparkCreateFramebuffer();
-SPARKAPI SparkVoid SPARKCALL SparkDeleteFramebuffer(SparkFramebuffer framebuffer);
-SPARKAPI SparkResult SPARKCALL SparkBindFramebuffer(SparkFramebuffer framebuffer);
-SPARKAPI SparkResult SPARKCALL SparkFramebufferTexture2D(SparkFramebuffer framebuffer,
-	SparkTexture texture);
+SPARKAPI SparkVoid SPARKCALL
+SparkDeleteFramebuffer(SparkFramebuffer framebuffer);
+SPARKAPI SparkResult SPARKCALL
+SparkBindFramebuffer(SparkFramebuffer framebuffer);
+SPARKAPI SparkResult SPARKCALL
+SparkFramebufferTexture2D(SparkFramebuffer framebuffer, SparkTexture texture);
 
 /* Renderbuffer functions */
-typedef struct SparkRenderbufferT* SparkRenderbuffer;
+typedef struct SparkRenderbufferT *SparkRenderbuffer;
 SPARKAPI SparkRenderbuffer SPARKCALL SparkCreateRenderbuffer(SparkI32 width,
-	SparkI32 height);
-SPARKAPI SparkVoid SPARKCALL SparkDeleteRenderbuffer(SparkRenderbuffer renderbuffer);
-SPARKAPI SparkResult SPARKCALL SparkBindRenderbuffer(SparkRenderbuffer renderbuffer);
+                                                             SparkI32 height);
+SPARKAPI SparkVoid SPARKCALL
+SparkDeleteRenderbuffer(SparkRenderbuffer renderbuffer);
+SPARKAPI SparkResult SPARKCALL
+SparkBindRenderbuffer(SparkRenderbuffer renderbuffer);
 SPARKAPI SparkResult SPARKCALL SparkFramebufferRenderbuffer(
-	SparkFramebuffer framebuffer, SparkRenderbuffer renderbuffer);
+    SparkFramebuffer framebuffer, SparkRenderbuffer renderbuffer);
 
-SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[], SparkU32 vertices_size);
-SPARKAPI SparkStaticMesh SPARKCALL SparkCreateStaticMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size);
+SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[],
+                                               SparkU32 vertices_size);
+SPARKAPI SparkStaticMesh SPARKCALL
+SparkCreateStaticMeshI(SparkVertex vertices[], SparkU32 vertices_size,
+                       SparkU32 indices[], SparkU32 indices_size);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticMesh(SparkStaticMesh mesh);
 
-SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[], SparkU32 vertices_size);
-SPARKAPI SparkDynamicMesh SPARKCALL SparkCreateDynamicMeshI(SparkVertex vertices[], SparkU32 vertices_size, SparkU32 indices[], SparkU32 indices_size);
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[],
+                                                 SparkU32 vertices_size);
+SPARKAPI SparkDynamicMesh SPARKCALL
+SparkCreateDynamicMeshI(SparkVertex vertices[], SparkU32 vertices_size,
+                        SparkU32 indices[], SparkU32 indices_size);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicMesh(SparkDynamicMesh mesh);
 
 /* Render loop functions */
 SPARKAPI SparkResult SPARKCALL SparkClear(SparkU32 mask);
 SPARKAPI SparkResult SPARKCALL SparkSetClearColor(SparkF32 red, SparkF32 green,
-	SparkF32 blue, SparkF32 alpha);
-SPARKAPI SparkResult SPARKCALL SparkSetViewport(SparkI32 x, SparkI32 y, SparkI32 width,
-	SparkI32 height);
+                                                  SparkF32 blue,
+                                                  SparkF32 alpha);
+SPARKAPI SparkResult SPARKCALL SparkSetViewport(SparkI32 x, SparkI32 y,
+                                                SparkI32 width,
+                                                SparkI32 height);
 
 /* State setting functions */
 SPARKAPI SparkResult SPARKCALL SparkEnable(SparkU32 capability);
@@ -2530,22 +2658,26 @@ SPARKAPI SparkResult SPARKCALL SparkDisable(SparkU32 capability);
 
 /* Blend functions */
 SPARKAPI SparkResult SPARKCALL SparkBlendFunc(SparkBlendMode sfactor,
-	SparkBlendMode dfactor);
+                                              SparkBlendMode dfactor);
 
 SPARKAPI SparkError SPARKCALL SparkGetError();
 SPARKAPI SparkConstString SPARKCALL SparkGetErrorString(SparkError error);
 
-SPARKAPI SparkResult SPARKCALL SparkAddRigidBody(SparkEcs ecs, SparkEntity entity, SparkRigidBody rigidBody);
-SPARKAPI SparkResult SPARKCALL SparkAddCollider(SparkEcs ecs, SparkEntity entity, SparkCollider collider);
+SPARKAPI SparkResult SPARKCALL SparkAddRigidBody(SparkEcs ecs,
+                                                 SparkEntity entity,
+                                                 SparkRigidBody rigidBody);
+SPARKAPI SparkResult SPARKCALL SparkAddCollider(SparkEcs ecs,
+                                                SparkEntity entity,
+                                                SparkCollider collider);
 
 SPARKAPI SparkInput SPARKCALL SparkCreateInput();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyInput(SparkInput input);
 SPARKAPI SparkVoid SPARKCALL SparkUpdateInput(SparkInput input);
 
-
 SPARKAPI SparkBool SPARKCALL SparkInitAudio();
 SPARKAPI SparkVoid SPARKCALL SparkShutdownAudio();
-SPARKAPI SparkAudioBuffer SPARKCALL SparkCreateAudioBuffer(SparkConstString file_path);
+SPARKAPI SparkAudioBuffer SPARKCALL
+SparkCreateAudioBuffer(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAudioBuffer(SparkAudioBuffer buffer);
 SPARKAPI SparkAudio SPARKCALL SparkCreateAudio(SparkAudioBuffer buffer);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAudio(SparkAudio source);
@@ -2553,198 +2685,267 @@ SPARKAPI SparkVoid SPARKCALL SparkPlayAudio(SparkAudio source);
 SPARKAPI SparkVoid SPARKCALL SparkStopAudio(SparkAudio source);
 SPARKAPI SparkVoid SPARKCALL SparkPauseAudio(SparkAudio source);
 SPARKAPI SparkVoid SPARKCALL SparkRewindAudio(SparkAudio source);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioPosition(SparkAudio source, SparkVec3 pos);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioGain(SparkAudio source, SparkF32 gain);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioPitch(SparkAudio source, SparkF32 pitch);
-SPARKAPI SparkVoid SPARKCALL SparkSetAudioLooping(SparkAudio source, SparkBool loop);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioPosition(SparkAudio source,
+                                                   SparkVec3 pos);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioGain(SparkAudio source,
+                                               SparkF32 gain);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioPitch(SparkAudio source,
+                                                SparkF32 pitch);
+SPARKAPI SparkVoid SPARKCALL SparkSetAudioLooping(SparkAudio source,
+                                                  SparkBool loop);
 
-SPARKAPI SparkFileSerializer SPARKCALL SparkCreateFileSerializer(SparkConstString path);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyFileSerializer(SparkFileSerializer serializer);
-SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
-SPARKAPI SparkResult SPARKCALL SparkSerializeData(SparkFileSerializer serializer, SparkHandle data, SparkSize size);
-SPARKAPI SparkResult SPARKCALL SparkSerializeHeader(SparkFileSerializer serializer);
-SPARKAPI SparkResult SPARKCALL SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector);
-SPARKAPI SparkFileDeserializer SPARKCALL SparkCreateFileDeserializer(SparkConstString path);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeHeader(SparkFileDeserializer deserializer);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeString(SparkFileDeserializer deserializer, SparkBuffer* data, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
+SPARKAPI SparkFileSerializer SPARKCALL
+SparkCreateFileSerializer(SparkConstString path);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyFileSerializer(SparkFileSerializer serializer);
+SPARKAPI SparkResult SPARKCALL SparkSerializeRawData(
+    SparkFileSerializer serializer, SparkHandle data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkSerializeData(
+    SparkFileSerializer serializer, SparkHandle data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL
+SparkSerializeHeader(SparkFileSerializer serializer);
+SPARKAPI SparkResult SPARKCALL
+SparkSerializeVector(SparkFileSerializer serializer, SparkVector vector);
+SPARKAPI SparkFileDeserializer SPARKCALL
+SparkCreateFileDeserializer(SparkConstString path);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyFileDeserializer(SparkFileDeserializer deserializer);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(
+    SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeData(
+    SparkFileDeserializer deserializer, SparkHandle *data, SparkSize *size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(
+    SparkFileDeserializer deserializer, SparkHandle *data, SparkSize size);
+SPARKAPI SparkResult SPARKCALL
+SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector *vector);
+SPARKAPI SparkResult SPARKCALL
+SparkDeserializeHeader(SparkFileDeserializer deserializer);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeString(
+    SparkFileDeserializer deserializer, SparkBuffer *data, SparkSize *size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(
+    SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 
 SPARKAPI SparkScene SPARKCALL SparkCreateScene();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene);
-SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene, SparkEntity entity, SparkSceneNode parent);
-SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene, SparkEntity entity);
+SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene,
+                                                     SparkEntity entity,
+                                                     SparkSceneNode parent);
+SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene,
+                                                          SparkEntity entity);
 
-SPARKAPI SparkResourceManager SPARKCALL SparkCreateResourceManager(SparkConstString type, SparkFreeFunction resource_free);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyResourceManager(SparkResourceManager manager);
-SPARKAPI SparkResult SPARKCALL SparkAddResource(SparkResourceManager manager, SparkResource resource);
-SPARKAPI SparkResult SPARKCALL SparkRemoveResource(SparkResourceManager manager, SparkConstString name);
-SPARKAPI SparkHandle SPARKCALL SparkCreateResourceData(SparkConstString type, ...);
-SPARKAPI SparkResource SPARKCALL SparkCreateResource(SparkResourceManager manager, SparkConstString name, SparkHandle data);
-SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceManager manager, SparkConstString name);
+SPARKAPI SparkResourceManager SPARKCALL SparkCreateResourceManager(
+    SparkConstString type, SparkFreeFunction resource_free);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyResourceManager(SparkResourceManager manager);
+SPARKAPI SparkResult SPARKCALL SparkAddResource(SparkResourceManager manager,
+                                                SparkResource resource);
+SPARKAPI SparkResult SPARKCALL SparkRemoveResource(SparkResourceManager manager,
+                                                   SparkConstString name);
+SPARKAPI SparkHandle SPARKCALL SparkCreateResourceData(SparkConstString type,
+                                                       ...);
+SPARKAPI SparkResource SPARKCALL SparkCreateResource(
+    SparkResourceManager manager, SparkConstString name, SparkHandle data);
+SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceManager manager,
+                                                  SparkConstString name);
 
-SPARKAPI SparkAnimation SPARKCALL SparkCreateAnimation(SparkConstString file_path);
+SPARKAPI SparkAnimation SPARKCALL
+SparkCreateAnimation(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAnimation(SparkAnimation animation);
-SPARKAPI SparkResult SPARKCALL SparkPlayAnimation(SparkEntity entity, SparkAnimation animation);
+SPARKAPI SparkResult SPARKCALL SparkPlayAnimation(SparkEntity entity,
+                                                  SparkAnimation animation);
 
 SPARKAPI SparkGuiElement SPARKCALL SparkCreateGuiElement(SparkConstString type);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyGuiElement(SparkGuiElement element);
-SPARKAPI SparkResult SPARKCALL SparkSetGuiElementProperty(SparkGuiElement element, SparkConstString property, SparkHandle value);
+SPARKAPI SparkResult SPARKCALL SparkSetGuiElementProperty(
+    SparkGuiElement element, SparkConstString property, SparkHandle value);
 SPARKAPI SparkVoid SPARKCALL SparkRenderGui(SparkGuiElement root);
 
 SPARKAPI SparkAIBehavior SPARKCALL SparkCreateAIBehavior(SparkConstString type);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAIBehavior(SparkAIBehavior behavior);
-SPARKAPI SparkResult SPARKCALL SparkSetAIBehavior(SparkEntity entity, SparkAIBehavior behavior);
+SPARKAPI SparkResult SPARKCALL SparkSetAIBehavior(SparkEntity entity,
+                                                  SparkAIBehavior behavior);
 
 SPARKAPI SparkParticleEmitter SPARKCALL SparkCreateParticleEmitter();
-SPARKAPI SparkVoid SPARKCALL SparkDestroyParticleEmitter(SparkParticleEmitter emitter);
-SPARKAPI SparkResult SPARKCALL SparkSetParticleEmitterProperties(SparkParticleEmitter emitter /* properties */);
-SPARKAPI SparkVoid SPARKCALL SparkEmitParticles(SparkParticleEmitter emitter, SparkSize count);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyParticleEmitter(SparkParticleEmitter emitter);
+SPARKAPI SparkResult SPARKCALL SparkSetParticleEmitterProperties(
+    SparkParticleEmitter emitter /* properties */);
+SPARKAPI SparkVoid SPARKCALL SparkEmitParticles(SparkParticleEmitter emitter,
+                                                SparkSize count);
 
-SPARKAPI SparkFont SPARKCALL SparkCreateFont(SparkConstString file_path, SparkScalar size);
+SPARKAPI SparkFont SPARKCALL SparkCreateFont(SparkConstString file_path,
+                                             SparkScalar size);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyFont(SparkFont font);
-SPARKAPI SparkVoid SPARKCALL SparkRenderText(SparkText* text);
+SPARKAPI SparkVoid SPARKCALL SparkRenderText(SparkText *text);
 
 SPARKAPI SparkMaterial SPARKCALL SparkCreateMaterial();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyMaterial(SparkMaterial material);
 
-SPARKAPI SparkStaticModel SPARKCALL SparkCreateStaticModel(SparkStaticMesh mesh, SparkMaterial material);
+SPARKAPI SparkStaticModel SPARKCALL
+SparkCreateStaticModel(SparkStaticMesh mesh, SparkMaterial material);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticModel(SparkStaticModel model);
 
-SPARKAPI SparkDynamicModel SPARKCALL SparkCreateDynamicModel(SparkDynamicMesh mesh, SparkMaterial material);
+SPARKAPI SparkDynamicModel SPARKCALL
+SparkCreateDynamicModel(SparkDynamicMesh mesh, SparkMaterial material);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicModel(SparkDynamicModel model);
 
 /* Miscellaneous utility functions */
-SPARKAPI SparkVoid SPARKCALL SparkSetWindowTitle(SparkWindow window, SparkConstString title);
-SPARKAPI SparkVoid SPARKCALL SparkSetWindowSize(SparkWindow window, SparkI32 width, SparkI32 height);
-SPARKAPI SparkVoid SPARKCALL SparkGetWindowSize(SparkWindow window, SparkI32* width, SparkI32* height);
+SPARKAPI SparkVoid SPARKCALL SparkSetWindowTitle(SparkWindow window,
+                                                 SparkConstString title);
+SPARKAPI SparkVoid SPARKCALL SparkSetWindowSize(SparkWindow window,
+                                                SparkI32 width,
+                                                SparkI32 height);
+SPARKAPI SparkVoid SPARKCALL SparkGetWindowSize(SparkWindow window,
+                                                SparkI32 *width,
+                                                SparkI32 *height);
 
 SPARKAPI SparkEcs SPARKCALL SparkCreateEcs();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SPARKCALL SparkCreateEntity(SparkEcs ecs);
-SPARKAPI SparkResult SPARKCALL SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id);
-SPARKAPI SparkComponent SPARKCALL SparkCreateComponent(SparkConstString type,
-	SparkConstString name,
-	SparkHandle data,
-	SparkFreeFunction destructor);
-SPARKAPI SparkResult SPARKCALL SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkComponent component);
-SPARKAPI SparkResult SPARKCALL SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkConstString component_type,
-	SparkConstString component_name);
-SPARKAPI SparkComponent SPARKCALL SparkGetComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkConstString component_type,
-	SparkConstString component_name);
-SPARKAPI SparkVector SPARKCALL SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString component_type);
-SPARKAPI SparkVector SPARKCALL SparkGetAllComponentsByEntity(SparkEcs ecs,
-	SparkEntity entity_id);
+SPARKAPI SparkResult SPARKCALL SparkDestroyEntity(SparkEcs ecs,
+                                                  SparkEntity entity_id);
+SPARKAPI SparkComponent SPARKCALL
+SparkCreateComponent(SparkConstString type, SparkConstString name,
+                     SparkHandle data, SparkFreeFunction destructor);
+SPARKAPI SparkResult SPARKCALL SparkAddComponent(SparkEcs ecs,
+                                                 SparkEntity entity_id,
+                                                 SparkComponent component);
+SPARKAPI SparkResult SPARKCALL SparkRemoveComponent(
+    SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type,
+    SparkConstString component_name);
+SPARKAPI SparkComponent SPARKCALL SparkGetComponent(
+    SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type,
+    SparkConstString component_name);
+SPARKAPI SparkVector SPARKCALL
+SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString component_type);
+SPARKAPI SparkVector SPARKCALL
+SparkGetAllComponentsByEntity(SparkEcs ecs, SparkEntity entity_id);
 SPARKAPI SparkResult SPARKCALL SparkAddSystem(SparkEcs ecs, SparkSystem system);
-SPARKAPI SparkResult SPARKCALL SparkRemoveSystem(SparkEcs ecs, SparkSystem system);
+SPARKAPI SparkResult SPARKCALL SparkRemoveSystem(SparkEcs ecs,
+                                                 SparkSystem system);
 SPARKAPI SparkResult SPARKCALL SparkStartEcs(SparkEcs ecs);
 SPARKAPI SparkResult SPARKCALL SparkUpdateEcs(SparkEcs ecs, SparkF32 delta);
 SPARKAPI SparkResult SPARKCALL SparkStopEcs(SparkEcs ecs);
-SPARKAPI SparkResult SPARKCALL SparkRemoveAllEntityComponents(SparkEcs ecs,
-	SparkEntity entity_id);
+SPARKAPI SparkResult SPARKCALL
+SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id);
 
 SPARKAPI SparkEventHandler SPARKCALL SparkDefaultEventHandler();
 SPARKAPI SparkEventHandler SPARKCALL SparkCreateEventHandler(
-	SparkEventHandlerFunction functions[], SparkSize function_count);
-SPARKAPI SparkResult SPARKCALL SparkDestroyEventHandler(SparkEventHandler event_handler);
+    SparkEventHandlerFunction functions[], SparkSize function_count);
+SPARKAPI SparkResult SPARKCALL
+SparkDestroyEventHandler(SparkEventHandler event_handler);
 SPARKAPI SparkResult SPARKCALL SparkAddEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkApplicationEventFunction function, SparkPair thread_settings);
+    SparkEventHandler event_handler, SparkEventType event_type,
+    SparkApplicationEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkRemoveEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkApplicationEventFunction function);
+    SparkEventHandler event_handler, SparkEventType event_type,
+    SparkApplicationEventFunction function);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
+    SparkEventHandler event_handler, SparkEventType event_type,
+    SparkConstString component_type,
+    SparkApplicationQueryEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkRemoveQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function);
-SPARKAPI SparkResult SPARKCALL SparkDispatchEvent(SparkEventHandler event_handler,
-	SparkEvent event);
+    SparkEventHandler event_handler, SparkEventType event_type,
+    SparkConstString component_type,
+    SparkApplicationQueryEventFunction function);
+SPARKAPI SparkResult SPARKCALL
+SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event);
 SPARKAPI SparkEvent SPARKCALL SparkCreateEvent(SparkEventType event_type,
-	SparkHandle event_data,
-	SparkFreeFunction destructor);
+                                               SparkHandle event_data,
+                                               SparkFreeFunction destructor);
 SPARKAPI SparkEvent SPARKCALL SparkCreateEventT(SparkEventType event_type,
-	SparkHandle event_data,
-	SparkFreeFunction destructor,
-	SparkConstString time_stamp);
+                                                SparkHandle event_data,
+                                                SparkFreeFunction destructor,
+                                                SparkConstString time_stamp);
 SPARKAPI SparkResult SPARKCALL SparkDestroyEvent(SparkEvent event);
 
 SPARKAPI SparkWindowData SPARKCALL SparkCreateWindowData(SparkConstString title,
-	SparkI32 width, SparkI32 height,
-	SparkBool vsync);
-SPARKAPI SparkVoid SPARKCALL SparkDestroyWindowData(SparkWindowData window_data);
+                                                         SparkI32 width,
+                                                         SparkI32 height,
+                                                         SparkBool vsync);
+SPARKAPI SparkVoid SPARKCALL
+SparkDestroyWindowData(SparkWindowData window_data);
 SPARKAPI SparkWindow SPARKCALL SparkCreateWindow(SparkWindowData window_data);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyWindow(SparkWindow window);
 
 SPARKAPI SparkRenderer SPARKCALL SparkCreateRenderer();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyRenderer(SparkRenderer renderer);
 
-SPARKAPI SparkThreadPool SPARKCALL SparkCreateThreadPool(SparkSize thread_count);
+SPARKAPI SparkThreadPool SPARKCALL
+SparkCreateThreadPool(SparkSize thread_count);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyThreadPool(SparkThreadPool pool);
 SPARKAPI SparkVoid SPARKCALL SparkWaitThreadPool(SparkThreadPool pool);
-SPARKAPI SparkTaskHandle SPARKCALL SparkAddTaskThreadPool(SparkThreadPool pool,
-	SparkThreadFunction function,
-	SparkHandle arg);
+SPARKAPI SparkTaskHandle SPARKCALL SparkAddTaskThreadPool(
+    SparkThreadPool pool, SparkThreadFunction function, SparkHandle arg);
 SPARKAPI SparkBool SPARKCALL SparkIsTaskDone(SparkTaskHandle task);
 SPARKAPI SparkResult SPARKCALL SparkWaitTask(SparkTaskHandle task);
 SPARKAPI SparkVoid SPARKCALL SparkTaskDestroy(SparkTaskHandle task);
 SPARKAPI SparkVoid SparkAddShutdownCallbackThreadPool(
-	SparkThreadPool pool,
-	SparkThreadPoolShutdownCallback callback,
-	SparkHandle arg
-);
+    SparkThreadPool pool, SparkThreadPoolShutdownCallback callback,
+    SparkHandle arg);
 
-SPARKAPI SparkServer SPARKCALL SparkCreateServer(SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback);
+SPARKAPI SparkServer SPARKCALL SparkCreateServer(
+    SparkThreadPool tp, SparkU16 port, SparkServerReceiveCallback callback);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyServer(SparkServer server);
 SPARKAPI SparkResult SPARKCALL SparkStartServer(SparkServer server);
-SPARKAPI SparkResult SPARKCALL  SparkStopServer(SparkServer server);
-SPARKAPI SparkResult SPARKCALL SparkSendToClient(SparkServer server, SparkClientConnection client, SparkEnvelope* envelope);
-SPARKAPI SparkResult SPARKCALL SparkBroadcast(SparkServer server, SparkEnvelope* envelope);
+SPARKAPI SparkResult SPARKCALL SparkStopServer(SparkServer server);
+SPARKAPI SparkResult SPARKCALL SparkSendToClient(SparkServer server,
+                                                 SparkClientConnection client,
+                                                 SparkEnvelope *envelope);
+SPARKAPI SparkResult SPARKCALL SparkBroadcast(SparkServer server,
+                                              SparkEnvelope *envelope);
 
-SPARKAPI SparkClient SPARKCALL SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port, SparkClientReceiveCallback callback);
+SPARKAPI SparkClient SPARKCALL
+SparkCreateClient(SparkThreadPool tp, SparkConstString address, SparkU16 port,
+                  SparkClientReceiveCallback callback);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyClient(SparkClient client);
 SPARKAPI SparkResult SPARKCALL SparkConnectClient(SparkClient client);
 SPARKAPI SparkResult SPARKCALL SparkDisconnectClient(SparkClient client);
-SPARKAPI SparkResult SPARKCALL SparkSendToServer(SparkClient client, SparkEnvelope* envelope);
+SPARKAPI SparkResult SPARKCALL SparkSendToServer(SparkClient client,
+                                                 SparkEnvelope *envelope);
 
-SPARKAPI SparkResult SPARKCALL SparkSerializeEnvelope(SparkEnvelope* envelope, SparkBuffer* buffer, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(SparkBuffer buffer, SparkSize size, SparkEnvelope* envelope);
+SPARKAPI SparkResult SPARKCALL SparkSerializeEnvelope(SparkEnvelope *envelope,
+                                                      SparkBuffer *buffer,
+                                                      SparkSize *size);
+SPARKAPI SparkResult SPARKCALL SparkDeserializeEnvelope(
+    SparkBuffer buffer, SparkSize size, SparkEnvelope *envelope);
 
-SPARKAPI SparkApplication SPARKCALL SparkCreateApplication(SparkWindow window, SparkSize thread_count);
+SPARKAPI SparkApplication SPARKCALL
+SparkCreateApplication(SparkWindow window, SparkSize thread_count);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyApplication(SparkApplication app);
-SPARKAPI SparkResult SPARKCALL SparkDispatchEventApplication(SparkApplication app,
-	SparkEvent event);
+SPARKAPI SparkResult SPARKCALL
+SparkDispatchEventApplication(SparkApplication app, SparkEvent event);
 SPARKAPI SparkResult SPARKCALL SparkAddStartFunctionApplication(
-	SparkApplication app, SparkApplicationStartFunction function, SparkPair thread_settings);
+    SparkApplication app, SparkApplicationStartFunction function,
+    SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddUpdateFunctionApplication(
-	SparkApplication app, SparkApplicationUpdateFunction function, SparkPair thread_settings);
+    SparkApplication app, SparkApplicationUpdateFunction function,
+    SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddStopFunctionApplication(
-	SparkApplication app, SparkApplicationStopFunction function, SparkPair thread_settings);
+    SparkApplication app, SparkApplicationStopFunction function,
+    SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddEventFunctionApplication(
-	SparkApplication app, SparkEventType event_type,
-	SparkApplicationEventFunction function, SparkPair thread_settings);
+    SparkApplication app, SparkEventType event_type,
+    SparkApplicationEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryFunctionApplication(
-	SparkApplication app, SparkConstString component_type,
-	SparkApplicationQueryFunction function, SparkPair thread_settings);
+    SparkApplication app, SparkConstString component_type,
+    SparkApplicationQueryFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventFunctionApplication(
-	SparkApplication app, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
-SPARKAPI SparkResource SPARKCALL SparkCreateResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name, SparkHandle data);
-SPARKAPI SparkResource SPARKCALL SparkGetResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
-SPARKAPI SparkResult SPARKCALL SparkAddResourceApplication(SparkApplication app, SparkConstString type, SparkResource resource);
-SPARKAPI SparkResult SPARKCALL SparkRemoveResourceApplication(SparkApplication app, SparkConstString type, SparkConstString name);
-SPARKAPI SparkResult SPARKCALL SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type, SparkFreeFunction resource_destructor);
+    SparkApplication app, SparkEventType event_type,
+    SparkConstString component_type,
+    SparkApplicationQueryEventFunction function, SparkPair thread_settings);
+SPARKAPI SparkResource SPARKCALL
+SparkCreateResourceApplication(SparkApplication app, SparkConstString type,
+                               SparkConstString name, SparkHandle data);
+SPARKAPI SparkResource SPARKCALL SparkGetResourceApplication(
+    SparkApplication app, SparkConstString type, SparkConstString name);
+SPARKAPI SparkResult SPARKCALL SparkAddResourceApplication(
+    SparkApplication app, SparkConstString type, SparkResource resource);
+SPARKAPI SparkResult SPARKCALL SparkRemoveResourceApplication(
+    SparkApplication app, SparkConstString type, SparkConstString name);
+SPARKAPI SparkResult SPARKCALL
+SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type,
+                                   SparkFreeFunction resource_destructor);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
 
 #pragma endregion
@@ -3172,7 +3373,6 @@ typedef SparkApplication Application;
 #define TaskDestroy SparkTaskDestroy
 #define AddShutdownCallbackThreadPool SparkAddShutdownCallbackThreadPool
 
-
 #define CreateEventHandler SparkCreateEventHandler
 #define DestroyEventHandler SparkDestroyEventHandler
 #define AddEventListener SparkAddEventListener
@@ -3282,7 +3482,8 @@ typedef SparkApplication Application;
 
 #define ArrayArg SPARK_ARRAY_ARG
 #define NoIndices SPARK_NULL, 0
-#define MakeVertex(x, y, z, nx, ny, nz, u, v) SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)
+#define MakeVertex(x, y, z, nx, ny, nz, u, v)                                  \
+  SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)
 
 #endif
 
