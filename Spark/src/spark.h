@@ -1513,6 +1513,8 @@ typedef struct SparkWindowT {
   struct VkSemaphore_T **image_available_semaphores;
   struct VkSemaphore_T **render_finished_semaphores;
   struct VkFence_T **in_flight_fences;
+  struct VkBuffer_T* vertex_buffer;
+  struct VkDeviceMemory_T* vertex_buffer_memory;
   enum VkFormat swap_chain_image_format;
   SparkU32 current_frame;
   SparkU32 swap_chain_images_size;
