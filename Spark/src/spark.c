@@ -6570,7 +6570,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication app, SparkGraphicsPipelineConfig config, VkPipeline* pipeline) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication app, SparkGraphicsPipelineConfig config) {
 	SparkWindow window = app->window;
 	VkVertexInputBindingDescription binding_description = __SparkGetBindingDescription(VK_VERTEX_INPUT_RATE_VERTEX);
 	VkVertexInputAttributeDescription* attribute_descriptions = __SparkGetAttributeDescriptions();
@@ -6715,7 +6715,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication
 		pipeline_info.pTessellationState = NULL;
 	}
 
-	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, pipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, &config->pipeline) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
 		SparkFree(attribute_descriptions);
 		return SPARK_ERROR_INVALID;
@@ -9680,7 +9680,7 @@ SPARKAPI SparkGraphicsPipelineConfig SparkCreateGraphicsPipelineConfig(
 	gp->owns_pipeline_layout = SPARK_FALSE;
 	gp->patch_control_points = 0;
 
-	if (__SparkCreateGraphicsPipeline2(app, gp, &gp->pipeline) != SPARK_SUCCESS) {
+	if (__SparkCreateGraphicsPipeline2(app, gp) != SPARK_SUCCESS) {
 		SparkFree(gp);
 		return NULL;
 	}
