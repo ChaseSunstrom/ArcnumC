@@ -131,6 +131,15 @@ void ResourceCreater(Application app) {
   RemoveResourceApplication(app, StaticMeshResourceType, "Square");
 }
 
+void CreateShaders(Application app) {
+    Shader vshader = CreateShader(app, SPARK_SHADER_VERTEX, "src/shader.vert");
+    Shader fshader = CreateShader(app, SPARK_SHADER_FRAGMENT, "src/shader.frag");
+
+    SparkGraphicsPipelineConfig gp = SparkCreateGraphicsPipelineConfig(app, vshader, fshader, SPARK_NULL, SPARK_NULL, SPARK_NULL, SPARK_NULL);
+
+    Resource res = CreateResourceApplication(app, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, "default", gp);
+}
+
 void ExitOnEscape(Application app, Event event) {
   EventDataKeyPressed kp = event.data;
 
@@ -192,6 +201,7 @@ i32 main() {
                               SPARK_UNBLOCKED_PARRALLELISM);
   AddStartFunctionApplication(app, TestIterator,
                               SPARK_UNBLOCKED_PARRALLELISM);
+  AddStartFunctionApplication(app, CreateShaders, SPARK_UNTHREADED);
   AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape,
                               SPARK_UNBLOCKED_PARRALLELISM);
   AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, EventHandlerThing,

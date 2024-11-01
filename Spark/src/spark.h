@@ -726,8 +726,7 @@ typedef enum SparkShaderTypeT {
 	SPARK_SHADER_COMPUTE = 2,
 	SPARK_SHADER_GEOMETRY = 3,
 	SPARK_SHADER_TESSELLATION_CONTROL = 4,
-	SPARK_SHADER_TESSELLATION_EVALUATION = 5,
-	SPARK_SHADER_COMPUTE
+	SPARK_SHADER_TESSELLATION_EVALUATION = 5
 } SparkShaderType;
 
 /* Primitive types */
@@ -1512,7 +1511,6 @@ typedef struct SparkGraphicsPipelineConfigT {
 
 typedef struct SparkWindowT {
 	SparkWindowData window_data;
-	SparkRenderer renderer;
 	SparkBool should_close;
 #ifdef SPARK_IMPLEMENTATION
 	struct GLFWwindow* window;
@@ -2826,8 +2824,6 @@ SparkDestroyWindowData(SparkWindowData window_data);
 SPARKAPI SparkWindow SPARKCALL SparkCreateWindow(SparkWindowData window_data);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyWindow(SparkWindow window);
 
-SPARKAPI SparkRenderer SPARKCALL SparkCreateRenderer();
-SPARKAPI SparkVoid SPARKCALL SparkDestroyRenderer(SparkRenderer renderer);
 
 SPARKAPI SparkThreadPool SPARKCALL
 SparkCreateThreadPool(SparkSize thread_count);
@@ -3109,7 +3105,7 @@ typedef SparkResourceLoader ResourceLoader;
 typedef SparkResourceManager ResourceRegistry;
 typedef SparkWindowData WindowData;
 typedef SparkWindow Window;
-typedef SparkRenderer Renderer;
+typedef SparkShader Shader;
 typedef SparkEvent Event;
 typedef SparkEventHandler EventHandler;
 typedef SparkClientConnection ClientConnection;
@@ -3388,6 +3384,9 @@ typedef SparkApplication Application;
 
 #define CreateTexture SparkCreateTexture
 #define DestroyTexture SparkDestroyTexture
+
+#define CreateShader SparkCreateShader
+#define CreateShaderE SparkCreateShaderE
 
 #define CreateApplication SparkCreateApplication
 #define DestroyApplication SparkDestroyApplication

@@ -6955,14 +6955,13 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	for (SparkSize i = 0; i < gps->size; i++) {
 		SparkGraphicsPipelineConfig gp = gps->elements[i];
 
-		// Bind the pipeline
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
 
 		// Set viewport and scissor if needed
 		// (Assuming you have dynamic viewport and scissor)
 		VkViewport viewport = { 0 };
-		viewport.width = (float)window->swap_chain_extent->width;
-		viewport.height = (float)window->swap_chain_extent->height;
+		viewport.width = (SparkF32)window->swap_chain_extent->width;
+		viewport.height = (SparkF32)window->swap_chain_extent->height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
@@ -6990,7 +6989,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 			NULL
 		);
 
-		// Draw commands (adjust as needed)
 		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
 	}
 
@@ -7460,10 +7458,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 		return SPARK_ERROR_INVALID;
 	}
 
+	/*
 	if (__SparkCreateGraphicsPipeline(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
 		return SPARK_ERROR_INVALID;
 	}
+	*/
 
 	if (__SparkCreateFramebuffers(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffers!");
@@ -7606,7 +7606,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 
 	vkResetCommandBuffer(window->command_buffers[current_frame], 0);
 
-	SparkVector gps = SparkGetAllValuesHashMap(SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG)));
+	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG));
+	SparkVector gps = SparkGetAllValuesHashMap(rm->resources);
 	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame],
 		image_index, gps);
 	SparkDestroyVector(gps);
@@ -8918,7 +8919,6 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	SparkWindow window = SparkAllocate(sizeof(struct SparkWindowT));
 	memset(window, 0, sizeof(struct SparkWindowT));
 	window->window_data = window_data;
-	window->renderer = SparkCreateRenderer();
 	window->current_frame = 0;
 	window->should_close = SPARK_FALSE;
 
@@ -8937,7 +8937,6 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 
 	if (!window->window) {
 		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to create GLFW window!");
-		SparkDestroyRenderer(window->renderer);
 		SparkDestroyWindowData(window->window_data);
 		SparkFree(window);
 		glfwTerminate();
@@ -8962,7 +8961,6 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	glfwTerminate();
 	__SparkWaitIdle(window);
 	__SparkDestroyVulkan(window);
-	SparkDestroyRenderer(window->renderer);
 	SparkDestroyWindowData(window->window_data);
 	SparkFree(window);
 }
@@ -9677,18 +9675,15 @@ SPARKAPI SparkGraphicsPipelineConfig SparkCreateGraphicsPipelineConfig(
 	gp->tess_control_shader = tess_cont;
 	gp->tess_evaluation_shader = tess_eval;
 	gp->pipeline_layout = VK_NULL_HANDLE;
-	gp->pipeline = VK_NULL_HANDLE; 
+	gp->pipeline = VK_NULL_HANDLE;
+	gp->render_pass = app->window->render_pass;
 	gp->owns_pipeline_layout = SPARK_FALSE;
 	gp->patch_control_points = 0;
 
-	// Create the pipeline
-	VkPipeline pipeline;
-	if (__SparkCreateGraphicsPipeline2(app, gp, &pipeline) != SPARK_SUCCESS) {
+	if (__SparkCreateGraphicsPipeline2(app, gp, &gp->pipeline) != SPARK_SUCCESS) {
 		SparkFree(gp);
 		return NULL;
 	}
-
-	gp->pipeline = pipeline; 
 
 	return gp;
 }
