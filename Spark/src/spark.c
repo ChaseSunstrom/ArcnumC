@@ -6570,6 +6570,162 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication app, SparkGraphicsPipelineConfig config, VkPipeline* pipeline) {
+	SparkWindow window = app->window;
+	VkVertexInputBindingDescription binding_description = __SparkGetBindingDescription(VK_VERTEX_INPUT_RATE_VERTEX);
+	VkVertexInputAttributeDescription* attribute_descriptions = __SparkGetAttributeDescriptions();
+
+	VkPipelineShaderStageCreateInfo shader_stages[5];
+	uint32_t shader_stage_count = 0;
+
+	// Vertex Shader
+	VkPipelineShaderStageCreateInfo vert_shader_stage_info = { 0 };
+	vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vert_shader_stage_info.module = config->vertex_shader->module;
+	vert_shader_stage_info.pName = config->vertex_shader->entry_point;
+	shader_stages[shader_stage_count++] = vert_shader_stage_info;
+
+	// Tessellation Control Shader (Optional)
+	if (config->tess_control_shader) {
+		VkPipelineShaderStageCreateInfo tess_control_shader_stage_info = { 0 };
+		tess_control_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		tess_control_shader_stage_info.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		tess_control_shader_stage_info.module = config->tess_control_shader->module;
+		tess_control_shader_stage_info.pName = config->tess_control_shader->entry_point;
+		shader_stages[shader_stage_count++] = tess_control_shader_stage_info;
+	}
+
+	// Tessellation Evaluation Shader (Optional)
+	if (config->tess_evaluation_shader) {
+		VkPipelineShaderStageCreateInfo tess_eval_shader_stage_info = { 0 };
+		tess_eval_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		tess_eval_shader_stage_info.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		tess_eval_shader_stage_info.module = config->tess_evaluation_shader->module;
+		tess_eval_shader_stage_info.pName = config->tess_evaluation_shader->entry_point;
+		shader_stages[shader_stage_count++] = tess_eval_shader_stage_info;
+	}
+
+	// Geometry Shader (Optional)
+	if (config->geometry_shader) {
+		VkPipelineShaderStageCreateInfo geom_shader_stage_info = { 0 };
+		geom_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		geom_shader_stage_info.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+		geom_shader_stage_info.module = config->geometry_shader->module;
+		geom_shader_stage_info.pName = config->geometry_shader->entry_point;
+		shader_stages[shader_stage_count++] = geom_shader_stage_info;
+	}
+
+	// Fragment Shader
+	VkPipelineShaderStageCreateInfo frag_shader_stage_info = { 0 };
+	frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	frag_shader_stage_info.module = config->fragment_shader->module;
+	frag_shader_stage_info.pName = config->fragment_shader->entry_point;
+	shader_stages[shader_stage_count++] = frag_shader_stage_info;
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = { 0 };
+	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_info.vertexBindingDescriptionCount = 1;
+	vertex_input_info.vertexAttributeDescriptionCount = 3;
+	vertex_input_info.pVertexBindingDescriptions = &binding_description;
+	vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions;
+
+	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
+	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	input_assembly.primitiveRestartEnable = VK_FALSE;
+
+	VkPipelineViewportStateCreateInfo viewport_state = { 0 };
+	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_state.viewportCount = 1;
+	viewport_state.scissorCount = 1;
+
+	VkPipelineDynamicStateCreateInfo dynamic_state = { 0 };
+	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamic_state.dynamicStateCount = sizeof(DYNAMIC_STATES) / sizeof(DYNAMIC_STATES[0]);
+	dynamic_state.pDynamicStates = DYNAMIC_STATES;
+
+	VkPipelineRasterizationStateCreateInfo rasterizer = { 0 };
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	VkPipelineMultisampleStateCreateInfo multisampling = { 0 };
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineColorBlendAttachmentState color_blend_attachment = { 0 };
+	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+		VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	color_blend_attachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo color_blending = { 0 };
+	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	color_blending.logicOpEnable = VK_FALSE;
+	color_blending.attachmentCount = 1;
+	color_blending.pAttachments = &color_blend_attachment;
+
+	if (config->pipeline_layout == VK_NULL_HANDLE) {
+		VkPipelineLayoutCreateInfo pipeline_layout_info = { 0 };
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = &window->descriptor_set_layout;
+
+		if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL, &config->pipeline_layout) != VK_SUCCESS) {
+			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create pipeline layout!");
+			SparkFree(attribute_descriptions);
+			return SPARK_ERROR_INVALID;
+		}
+		config->owns_pipeline_layout = SPARK_TRUE;
+	}
+	else {
+		config->owns_pipeline_layout = SPARK_FALSE;
+	}
+
+	VkGraphicsPipelineCreateInfo pipeline_info = { 0 };
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = shader_stage_count;
+	pipeline_info.pStages = shader_stages;
+	pipeline_info.pVertexInputState = &vertex_input_info;
+	pipeline_info.pInputAssemblyState = &input_assembly;
+	pipeline_info.pViewportState = &viewport_state;
+	pipeline_info.pRasterizationState = &rasterizer;
+	pipeline_info.pMultisampleState = &multisampling;
+	pipeline_info.pColorBlendState = &color_blending;
+	pipeline_info.pDynamicState = &dynamic_state;
+	pipeline_info.layout = config->pipeline_layout;
+	pipeline_info.renderPass = config->render_pass;
+	pipeline_info.subpass = 0;
+
+	// Handle tessellation state
+	VkPipelineTessellationStateCreateInfo tessellation_state = { 0 };
+	if (config->tess_control_shader && config->tess_evaluation_shader) {
+		tessellation_state.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+		tessellation_state.patchControlPoints = config->patch_control_points;
+		pipeline_info.pTessellationState = &tessellation_state;
+	}
+	else {
+		pipeline_info.pTessellationState = NULL;
+	}
+
+	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, pipeline) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
+		SparkFree(attribute_descriptions);
+		return SPARK_ERROR_INVALID;
+	}
+
+	SparkFree(attribute_descriptions);
+
+	return SPARK_SUCCESS;
+}
+
 SPARKAPI SPARKSTATIC SparkResult
 __SparkCreateGraphicsPipeline(SparkWindow window) {
 	SparkBuffer vert_buf;
@@ -6770,13 +6926,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
-	SparkWindow window, VkCommandBuffer command_buffer, SparkU32 image_index) {
+	SparkWindow window,
+	VkCommandBuffer command_buffer,
+	SparkU32 image_index,
+	SparkVector gps
+) {
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
-			"Failed to begin recording command buffer!");
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to begin recording command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6791,33 +6950,49 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_color;
 
-	vkCmdBeginRenderPass(command_buffer, &render_pass_info,
-		VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		window->graphics_pipeline);
+	for (SparkSize i = 0; i < gps->size; i++) {
+		SparkGraphicsPipelineConfig gp = gps->elements[i];
 
-	VkViewport viewport = { 0 };
-	viewport.width = (SparkScalar)window->swap_chain_extent->width;
-	viewport.height = (SparkScalar)window->swap_chain_extent->height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+		// Bind the pipeline
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
 
-	VkRect2D scissor = { 0 };
-	scissor.offset = (VkOffset2D){ 0, 0 };
-	scissor.extent = *window->swap_chain_extent;
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+		// Set viewport and scissor if needed
+		// (Assuming you have dynamic viewport and scissor)
+		VkViewport viewport = { 0 };
+		viewport.width = (float)window->swap_chain_extent->width;
+		viewport.height = (float)window->swap_chain_extent->height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
-	VkBuffer vertex_buffers[] = { window->vertex_buffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+		VkRect2D scissor = { 0 };
+		scissor.offset = (VkOffset2D){ 0, 0 };
+		scissor.extent = *window->swap_chain_extent;
+		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-	vkCmdBindIndexBuffer(command_buffer, window->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+		// Bind vertex and index buffers as needed
+		VkBuffer vertex_buffers[] = { window->vertex_buffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(command_buffer, window->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, window->pipeline_layout, 0, 1, &window->descriptor_sets[window->current_frame], 0, SPARK_NULL);
+		// Bind descriptor sets using the pipeline's layout
+		vkCmdBindDescriptorSets(
+			command_buffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			gp->pipeline_layout,
+			0,
+			1,
+			&window->descriptor_sets[window->current_frame],
+			0,
+			NULL
+		);
 
-	vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
+		// Draw commands (adjust as needed)
+		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
+	}
 
 	vkCmdEndRenderPass(command_buffer);
 
@@ -7236,9 +7411,9 @@ SPARKAPI SPARKSTATIC SparkResult __SparkUpdateDescriptorSets(SparkWindow window)
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
+	SparkWindow window = app->window;
 
-
-SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 	if (__SparkCreateVulkanInstance(
 		&window->instance, window->window_data->title) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
@@ -7408,7 +7583,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkUpdateUniformBuffer(SparkWindow window, 
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
+	SparkWindow window = app->window;
 	SparkU32 current_frame = window->current_frame;
 	vkWaitForFences(window->device, 1, &window->in_flight_fences[current_frame],
 		VK_TRUE, UINT64_MAX);
@@ -7430,8 +7606,10 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 
 	vkResetCommandBuffer(window->command_buffers[current_frame], 0);
 
+	SparkVector gps = SparkGetAllValuesHashMap(SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG)));
 	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame],
-		image_index);
+		image_index, gps);
+	SparkDestroyVector(gps);
 
 	VkSemaphore wait_semaphores[] = {
 		window->image_available_semaphores[current_frame] };
@@ -7481,6 +7659,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 	}
 
 	window->current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 
 	return SPARK_SUCCESS;
 }
@@ -8774,15 +8953,6 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	glfwSetMouseButtonCallback(window->window, __GlfwSetMouseButtonCallback);
 	glfwSetScrollCallback(window->window, __GlfwSetScrollCallback);
 
-	if (__SparkInitializeVulkan(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
-		glfwDestroyWindow(window->window);
-		SparkDestroyRenderer(window->renderer);
-		SparkDestroyWindowData(window->window_data);
-		SparkFree(window);
-		glfwTerminate();
-		return SPARK_NULL;
-	}
 
 	return window;
 }
@@ -8797,22 +8967,11 @@ SPARKAPI SparkVoid SparkDestroyWindow(SparkWindow window) {
 	SparkFree(window);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateWindow(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkUpdateWindow(SparkApplication app) {
+	SparkWindow window = app->window;
 	window->should_close = glfwWindowShouldClose(window->window);
 	glfwPollEvents();
-	__SparkDrawFrame(window);
-}
-
-#pragma endregion
-
-#pragma region RENDER
-
-SPARKAPI SparkRenderer SparkCreateRenderer() {
-	return SparkAllocate(sizeof(struct SparkRendererT));
-}
-
-SPARKAPI SparkVoid SparkDestroyRenderer(SparkRenderer renderer) {
-	SparkFree(renderer);
+	__SparkDrawFrame(app);
 }
 
 #pragma endregion
@@ -9024,12 +9183,50 @@ SPARKAPI SparkVoid SparkDestroyTexture(SparkTexture texture) {
 
 #pragma region SHADER
 
-SPARKAPI SparkShader SparkCreateShader(SparkConstString vertex_shader_path,
-	SparkConstString fragment_shader_path) {
-	return SPARK_NULL;
+SPARKAPI SparkShader SparkCreateShader(SparkApplication app,
+	SparkShaderType type,
+	SparkConstString filename) {
+	return SparkCreateShaderE(app, type, filename, "main");
 }
 
-SPARKAPI SparkVoid SparkDestroyShader(SparkShader shader) { SparkFree(shader); }
+SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
+	SparkShaderType type,
+	SparkConstString filename,
+	SparkConstString entry) {
+	SparkShader shader = SparkAllocate(sizeof(struct SparkShaderT));
+	shader->type = type;
+	shader->entry_point = entry;
+	shader->device = app->window->device;
+	shader->filename = filename;
+
+	SparkCompileShaderToSpirv(filename, 
+		 					  type,
+							  &shader->code, 
+							  &shader->code_size);
+
+	VkShaderModuleCreateInfo create_info = { 0 };
+	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	create_info.codeSize = shader->code_size;
+	create_info.pCode = (SparkU32*)shader->code;
+
+	if (vkCreateShaderModule(shader->device, &create_info, SPARK_NULL, &shader->module) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create shader module for %s!", filename);
+		SparkFree(shader->code);
+		SparkFree(shader);
+		return SPARK_NULL;
+	}
+
+	return shader;
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader) {
+	if (!shader) return;
+
+	vkDestroyShaderModule(shader->device, shader->module, SPARK_NULL);
+	SparkFree(shader->code);
+	SparkFree(shader);
+}
+
 
 #pragma endregion
 
@@ -9236,7 +9433,7 @@ SPARKAPI SPARKSTATIC SparkResult
 __SparkUpdateApplication(SparkApplication app) {
 	while (__SparkApplicationKeepOpen(app)) {
 		__SparkRunUpdateFunctions(app);
-		__SparkUpdateWindow(app->window);
+		__SparkUpdateWindow(app);
 	}
 
 	return __SparkStopApplication(app);
@@ -9255,6 +9452,7 @@ __SparkInitializeResourceManagerApplication(SparkApplication app) {
 	SparkResourceManager dmodel_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, SparkDestroyDynamicModel);
 	SparkResourceManager scene_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_SCENE, SparkDestroyScene);
 	SparkResourceManager ai_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_AI_BEHAVIOR, SparkDestroyAIBehavior);
+	SparkResourceManager gp_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, SparkDestroyGraphicsPipelineConfig);
 
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH,
 		strlen(SPARK_RESOURCE_TYPE_STATIC_MESH), smesh_manager);
@@ -9278,6 +9476,8 @@ __SparkInitializeResourceManagerApplication(SparkApplication app) {
 		strlen(SPARK_RESOURCE_TYPE_SCENE), scene_manager);
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_AI_BEHAVIOR,
 		strlen(SPARK_RESOURCE_TYPE_AI_BEHAVIOR), ai_manager);
+	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, 
+		strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG), gp_manager);
 }
 
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
@@ -9302,6 +9502,15 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
 	app->event_handler->application = app;
 	app->event_handler->ecs = app->ecs;
 	SparkInitMutex(app->mutex);
+
+	if (__SparkInitializeVulkan(app) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
+		glfwDestroyWindow(window->window);
+		SparkDestroyWindowData(window->window_data);
+		SparkFree(window);
+		glfwTerminate();
+		return SPARK_NULL;
+	};
 
 	__SparkInitializeResourceManagerApplication(app);
 
@@ -9448,6 +9657,60 @@ SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type,
 	SparkResourceManager rm =
 		SparkCreateResourceManager(type, resource_destructor);
 	return SparkInsertHashMap(app->resource_manager, type, strlen(type), rm);
+}
+
+SPARKAPI SparkGraphicsPipelineConfig SparkCreateGraphicsPipelineConfig(
+	SparkApplication app,
+	SparkShader vert,
+	SparkShader frag,
+	SparkShader comp,
+	SparkShader geom,
+	SparkShader tess_cont,
+	SparkShader tess_eval
+) {
+	SparkGraphicsPipelineConfig gp = SparkAllocate(sizeof(struct SparkGraphicsPipelineConfigT));
+	gp->application = app;
+	gp->vertex_shader = vert;
+	gp->fragment_shader = frag;
+	gp->compute_shader = comp;
+	gp->geometry_shader = geom;
+	gp->tess_control_shader = tess_cont;
+	gp->tess_evaluation_shader = tess_eval;
+	gp->pipeline_layout = VK_NULL_HANDLE;
+	gp->pipeline = VK_NULL_HANDLE; 
+	gp->owns_pipeline_layout = SPARK_FALSE;
+	gp->patch_control_points = 0;
+
+	// Create the pipeline
+	VkPipeline pipeline;
+	if (__SparkCreateGraphicsPipeline2(app, gp, &pipeline) != SPARK_SUCCESS) {
+		SparkFree(gp);
+		return NULL;
+	}
+
+	gp->pipeline = pipeline; 
+
+	return gp;
+}
+
+SPARKAPI SparkVoid SparkDestroyGraphicsPipelineConfig(SparkGraphicsPipelineConfig gp) {
+	if (!gp) {
+		return;
+	}
+
+	VkDevice device = gp->application->window->device;
+
+	if (gp->pipeline != VK_NULL_HANDLE) {
+		vkDestroyPipeline(device, gp->pipeline, SPARK_NULL);
+		gp->pipeline = VK_NULL_HANDLE;
+	}
+
+	if (gp->owns_pipeline_layout && gp->pipeline_layout != VK_NULL_HANDLE) {
+		vkDestroyPipelineLayout(device, gp->pipeline_layout, SPARK_NULL);
+		gp->pipeline_layout = VK_NULL_HANDLE;
+	}
+
+	SparkFree(gp);
 }
 
 #pragma endregion
