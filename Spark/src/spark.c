@@ -5836,6 +5836,12 @@ struct VulkanMemoryAllocation {
 	SparkU32 size;
 };
 
+struct VulkanUniformBufferObject {
+	SparkMat4 model;
+	SparkMat4 view;
+	SparkMat4 proj;
+};
+
 /*
 * input_rate: VK_VERTEX_INPUT_RATE_VERTEX or VK_VERTEX_INPUT_RATE_INSTANCE
 */
@@ -6645,7 +6651,7 @@ __SparkCreateGraphicsPipeline(SparkWindow window) {
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisampling = { 0 };
@@ -6676,6 +6682,8 @@ __SparkCreateGraphicsPipeline(SparkWindow window) {
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = { 0 };
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &window->descriptor_set_layout;
 
 	if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL,
 		&window->pipeline_layout) != VK_SUCCESS) {
@@ -6805,7 +6813,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 
-	vkCmdDraw(command_buffer, 6, 1, 0, 0);
+	vkCmdBindIndexBuffer(command_buffer, window->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, window->pipeline_layout, 0, 1, &window->descriptor_sets[window->current_frame], 0, SPARK_NULL);
+
+	vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(command_buffer);
 
@@ -6833,7 +6845,7 @@ SPARKAPI SPARKSTATIC SparkU32 __SparkFindMemoryType(SparkWindow window, SparkU32
 
 SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateBuffer(SparkWindow window, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceSize size) {
 	struct VulkanMemoryAllocation* vk_alloc = SparkAllocate(sizeof(struct VulkanMemoryAllocation));
-	
+
 	vk_alloc->size = size;
 
 	VkBufferCreateInfo buffer_info = { 0 };
@@ -6874,11 +6886,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCopyBuffer(SparkWindow window, VkBuffer 
 
 	VkCommandBuffer command_buffer;
 	vkAllocateCommandBuffers(window->device, &alloc_info, &command_buffer);
-	
+
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	
+
 	vkBeginCommandBuffer(command_buffer, &begin_info);
 
 	VkBufferCopy copy_region = { 0 };
@@ -6911,7 +6923,7 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(Sp
 	vkMapMemory(window->device, staging_alloc->memory, 0, vertices_size, 0, &data);
 	memcpy(data, vertices, vertices_size);
 	vkUnmapMemory(window->device, staging_alloc->memory);
-	
+
 	// Create Vertex Buffer
 	struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(
 		window,
@@ -6920,9 +6932,41 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(Sp
 		vertices_size
 	);
 
-	staging_alloc->raw_data = data;
+	alloc->raw_data = data;
 
 	__SparkCopyBuffer(window, staging_alloc->buffer, alloc->buffer, vertices_size);
+
+	vkDestroyBuffer(window->device, staging_alloc->buffer, SPARK_NULL);
+	vkFreeMemory(window->device, staging_alloc->memory, SPARK_NULL);
+
+	SparkFree(staging_alloc);
+
+	return alloc;
+}
+
+SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateIndexBuffer(SparkWindow window, SparkHandle indices, SparkSize indices_size) {
+	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(
+		window,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		indices_size
+	);
+
+	SparkHandle data;
+	vkMapMemory(window->device, staging_alloc->memory, 0, indices_size, 0, &data);
+	memcpy(data, indices, indices_size);
+	vkUnmapMemory(window->device, staging_alloc->memory);
+
+	struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(
+		window,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		indices_size
+	);
+
+	alloc->raw_data = data;
+
+	__SparkCopyBuffer(window, staging_alloc->buffer, alloc->buffer, indices_size);
 
 	vkDestroyBuffer(window->device, staging_alloc->buffer, SPARK_NULL);
 	vkFreeMemory(window->device, staging_alloc->memory, SPARK_NULL);
@@ -6949,24 +6993,31 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBufferForWindow(SparkWindow 
 						  0.0f, 0.0f, 1.0f,     // Normal
 						  1.0f, 1.0f),          // Texcoord (u, v)
 
-						  // Second Triangle
-						  SPARK_MAKE_VERTEX(0.5f,  0.5f, 0.0f,   // Position
-											1.0f, 0.0f, 1.0f,     // Normal
-											1.0f, 1.0f),          // Texcoord (u, v)
-
-						  SPARK_MAKE_VERTEX(-0.5f,  0.5f, 0.0f,   // Position
-											0.0f, 0.0f, 1.0f,     // Normal
-											0.0f, 1.0f),          // Texcoord (u, v)
-
-						  SPARK_MAKE_VERTEX(-0.5f, -0.5f, 0.0f,   // Position
-											0.0f, 1.0f, 1.0f,     // Normal
-											0.0f, 0.0f),          // Texcoord (u, v)
+		SPARK_MAKE_VERTEX(-0.5f,  0.5f, 0.0f,   // Position
+						  1.0f, 0.0f, 1.0f,     // Normal
+						  1.0f, 1.0f),          // Texcoord (u, v)
 	};
 
 	struct VulkanMemoryAllocation* alloc = __SparkCreateVertexBuffer(window, vertices, sizeof(vertices));
 
 	window->vertex_buffer = alloc->buffer;
 	window->vertex_buffer_memory = alloc->memory;
+
+	SparkFree(alloc);
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateIndexBufferForWindow(SparkWindow window) {
+
+	const SparkU16 indices[] = {
+		0, 1, 2, 2, 3, 0
+	};
+
+	struct VulkanMemoryAllocation* alloc = __SparkCreateIndexBuffer(window, indices, sizeof(indices));
+
+	window->index_buffer = alloc->buffer;
+	window->index_buffer_memory = alloc->memory;
 
 	SparkFree(alloc);
 
@@ -7073,6 +7124,120 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecreateSwapChain(SparkWindow window) {
 	__SparkCreateFramebuffers(window);
 }
 
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorSetLayout(SparkWindow window) {
+	VkDescriptorSetLayoutBinding ubo_layout_binding = { 0 };
+	ubo_layout_binding.binding = 0;
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	
+	VkDescriptorSetLayoutCreateInfo layout_info = { 0 };
+	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount = 1;
+	layout_info.pBindings = &ubo_layout_binding;
+
+	if (vkCreateDescriptorSetLayout(window->device, &layout_info, SPARK_NULL, &window->descriptor_set_layout) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set layout!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateUniformBuffersForWindow(SparkWindow window) {
+	VkDeviceSize buffer_size = sizeof(struct VulkanUniformBufferObject);
+
+	window->uniform_buffers = SparkAllocate(sizeof(VkBuffer) * MAX_FRAMES_IN_FLIGHT);
+	window->uniform_buffers_size = MAX_FRAMES_IN_FLIGHT;
+
+	window->uniform_buffers_memory = SparkAllocate(sizeof(VkDeviceMemory) * MAX_FRAMES_IN_FLIGHT);
+	window->uniform_buffers_memory_size = MAX_FRAMES_IN_FLIGHT;
+
+	window->uniform_buffers_mapped = SparkAllocate(sizeof(SparkHandle) * MAX_FRAMES_IN_FLIGHT);
+	window->uniform_buffers_mapped_size = MAX_FRAMES_IN_FLIGHT;
+
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(window, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer_size);
+
+		window->uniform_buffers[i] = alloc->buffer;
+		window->uniform_buffers_memory[i] = alloc->memory;
+
+		vkMapMemory(window->device, alloc->memory, 0, buffer_size, 0, &window->uniform_buffers_mapped[i]);
+
+		SparkFree(alloc);
+	}
+	
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorPool(SparkWindow window) {
+	VkDescriptorPoolSize pool_size = { 0 };
+	pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	pool_size.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+	VkDescriptorPoolCreateInfo pool_info = { 0 };
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.poolSizeCount = 1;
+	pool_info.pPoolSizes = &pool_size;
+	pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
+
+	if (vkCreateDescriptorPool(window->device, &pool_info, SPARK_NULL, &window->descriptor_pool) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor pool!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorSets(SparkWindow window) {
+	VkDescriptorSetLayout* layouts = SparkAllocate(sizeof(VkDescriptorSetLayout) * MAX_FRAMES_IN_FLIGHT);
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		layouts[i] = window->descriptor_set_layout;
+	}
+
+	VkDescriptorSetAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	alloc_info.descriptorPool = window->descriptor_pool;
+	alloc_info.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+	alloc_info.pSetLayouts = layouts;
+
+	window->descriptor_sets = SparkAllocate(sizeof(VkDescriptorSet) * MAX_FRAMES_IN_FLIGHT);
+
+	if (vkAllocateDescriptorSets(window->device, &alloc_info, window->descriptor_sets) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate descriptor sets!");
+		SparkFree(layouts);
+		return SPARK_ERROR_INVALID;
+	}
+
+	SparkFree(layouts);
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkUpdateDescriptorSets(SparkWindow window) {
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		VkDescriptorBufferInfo buffer_info = { 0 };
+		buffer_info.buffer = window->uniform_buffers[i];
+		buffer_info.offset = 0;
+		buffer_info.range = sizeof(struct VulkanUniformBufferObject);
+
+		VkWriteDescriptorSet descriptor_write = { 0 };
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstSet = window->descriptor_sets[i];
+		descriptor_write.dstBinding = 0;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_write.descriptorCount = 1;
+		descriptor_write.pBufferInfo = &buffer_info;
+
+		vkUpdateDescriptorSets(window->device, 1, &descriptor_write, 0, SPARK_NULL);
+	}
+
+	return SPARK_SUCCESS;
+}
+
+
+
 SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 	if (__SparkCreateVulkanInstance(
 		&window->instance, window->window_data->title) != SPARK_SUCCESS) {
@@ -7115,6 +7280,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
+	if (__SparkCreateDescriptorSetLayout(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set!");
+		return SPARK_ERROR_INVALID;
+	}
+
 	if (__SparkCreateGraphicsPipeline(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
 		return SPARK_ERROR_INVALID;
@@ -7135,6 +7305,31 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
+	if (__SparkCreateIndexBufferForWindow(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create index buffer!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateUniformBuffersForWindow(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create uniform buffers!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateDescriptorPool(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor pool!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkCreateDescriptorSets(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor sets!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	if (__SparkUpdateDescriptorSets(window) != SPARK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to update descriptor sets!");
+		return SPARK_ERROR_INVALID;
+	}
+
 	if (__SparkCreateCommandBuffers(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command buffer!");
 		return SPARK_ERROR_INVALID;
@@ -7150,6 +7345,22 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	__SparkCleanupSwapChain(window);
+
+	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroyBuffer(window->device, window->uniform_buffers[i], SPARK_NULL);
+		vkFreeMemory(window->device, window->uniform_buffers_memory[i], SPARK_NULL);
+	}
+
+	SparkFree(window->uniform_buffers);
+	SparkFree(window->uniform_buffers_memory);
+	SparkFree(window->uniform_buffers_mapped);
+
+	vkDestroyDescriptorPool(window->device, window->descriptor_pool, SPARK_NULL);
+
+	vkDestroyDescriptorSetLayout(window->device, window->descriptor_set_layout, SPARK_NULL);
+
+	vkDestroyBuffer(window->device, window->index_buffer, SPARK_NULL);
+	vkFreeMemory(window->device, window->index_buffer_memory, SPARK_NULL);
 
 	vkDestroyBuffer(window->device, window->vertex_buffer, SPARK_NULL);
 	vkFreeMemory(window->device, window->vertex_buffer_memory, SPARK_NULL);
@@ -7178,6 +7389,23 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroySurfaceKHR(window->instance, window->surface, SPARK_NULL);
 
 	vkDestroyInstance(window->instance, SPARK_NULL);
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkUpdateUniformBuffer(SparkWindow window, SparkU32 current_image) {
+
+	struct VulkanUniformBufferObject ubo = { 0 };
+
+	static SparkF32 rot = 0.01f;
+	rot += 0.001f;
+
+	ubo.model = SparkMat4Rotate(rot, (SparkVec3) { 0.0f, 0.0f, 1.0f });
+	ubo.view = SparkMat4LookAt((SparkVec3){2.0f, 2.0f, 2.0f}, (SparkVec3){0.0f, 0.0f, 0.0f}, (SparkVec3){0.0f, 0.0f, 1.0f});
+	ubo.proj = SparkMat4Perspective(SparkRadians(45.0f), window->swap_chain_extent->width / (SparkF32)window->swap_chain_extent->height, 0.1f, 100.0f);
+	ubo.proj.m11 *= -1;
+
+	memcpy(window->uniform_buffers_mapped[current_image], &ubo, sizeof(ubo));
+
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
@@ -7211,6 +7439,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkWindow window) {
 		window->render_finished_semaphores[current_frame] };
 	VkPipelineStageFlags wait_stages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	__SparkUpdateUniformBuffer(window, current_frame);
 
 	VkSubmitInfo submit_info = { 0 };
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

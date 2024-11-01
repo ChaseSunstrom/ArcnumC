@@ -901,10 +901,10 @@ typedef struct SparkMatrix3T {
 } SparkMat3;
 
 typedef struct SparkMatrix4T {
-  SparkScalar m00, m01, m02, m03;
-  SparkScalar m10, m11, m12, m13;
-  SparkScalar m20, m21, m22, m23;
-  SparkScalar m30, m31, m32, m33;
+    SparkScalar m00, m10, m20, m30; // Column 0
+    SparkScalar m01, m11, m21, m31; // Column 1
+    SparkScalar m02, m12, m22, m32; // Column 2
+    SparkScalar m03, m13, m23, m33; // Column 3
 } SparkMat4;
 
 typedef struct SparkQuaternionT {
@@ -1505,6 +1505,7 @@ typedef struct SparkWindowT {
   struct VkImageView_T **swap_chain_image_views;
   struct VkExtent2D *swap_chain_extent;
   struct VkFramebuffer_T **swap_chain_framebuffers;
+  struct VkDescriptorSetLayout_T* descriptor_set_layout;
   struct VkPipelineLayout_T *pipeline_layout;
   struct VkRenderPass_T *render_pass;
   struct VkPipeline_T *graphics_pipeline;
@@ -1515,6 +1516,13 @@ typedef struct SparkWindowT {
   struct VkFence_T **in_flight_fences;
   struct VkBuffer_T* vertex_buffer;
   struct VkDeviceMemory_T* vertex_buffer_memory;
+  struct VkBuffer_T* index_buffer;
+  struct VkDescriptorPool_T* descriptor_pool;
+  struct VkDeviceMemory_T* index_buffer_memory;
+  struct VkBuffer_T** uniform_buffers;
+  struct VkDeviceMemory_T** uniform_buffers_memory;
+  struct VkDescriptorSet_T** descriptor_sets;
+  SparkHandle* uniform_buffers_mapped;
   enum VkFormat swap_chain_image_format;
   SparkU32 current_frame;
   SparkU32 swap_chain_images_size;
@@ -1523,6 +1531,9 @@ typedef struct SparkWindowT {
   SparkU32 image_available_semaphores_size;
   SparkU32 render_finished_semaphores_size;
   SparkU32 in_flight_fences_size;
+  SparkU32 uniform_buffers_size;
+  SparkU32 uniform_buffers_memory_size;
+  SparkU32 uniform_buffers_mapped_size;
   SparkBool framebuffer_resized;
 #endif
 } *SparkWindow;
