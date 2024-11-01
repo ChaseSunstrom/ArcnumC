@@ -5829,6 +5829,13 @@ struct VulkanSwapChainSupportDetails {
 	SparkU32 present_modes_size;
 };
 
+struct VulkanMemoryAllocation {
+	VkBuffer buffer; /* op */
+	VkDeviceMemory memory;
+	SparkHandle raw_data;
+	SparkU32 size;
+};
+
 /*
 * input_rate: VK_VERTEX_INPUT_RATE_VERTEX or VK_VERTEX_INPUT_RATE_INSTANCE
 */
@@ -5860,7 +5867,7 @@ SPARKAPI SPARKSTATIC VkVertexInputAttributeDescription* __SparkGetAttributeDescr
 	attribute_descriptions[2].offset = offsetof(SparkVertex, texcoord);
 
 	return attribute_descriptions;
-}\
+}
 
 SPARKAPI SPARKSTATIC SparkBool
 __SparkIndicesComplete(struct VulkanQueueFamilyIndices* indices) {
@@ -6824,16 +6831,118 @@ SPARKAPI SPARKSTATIC SparkU32 __SparkFindMemoryType(SparkWindow window, SparkU32
 	return UINT32_MAX;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBuffer(SparkWindow window) {
+SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateBuffer(SparkWindow window, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceSize size) {
+	struct VulkanMemoryAllocation* vk_alloc = SparkAllocate(sizeof(struct VulkanMemoryAllocation));
+	
+	vk_alloc->size = size;
+
+	VkBufferCreateInfo buffer_info = { 0 };
+	buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	buffer_info.size = size;
+	buffer_info.usage = usage;
+	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(window->device, &buffer_info, SPARK_NULL, &vk_alloc->buffer) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create vertex buffer!");
+		return SPARK_NULL;
+	}
+
+	VkMemoryRequirements mem_requirements = { 0 };
+	vkGetBufferMemoryRequirements(window->device, vk_alloc->buffer, &mem_requirements);
+
+	VkMemoryAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	alloc_info.allocationSize = mem_requirements.size;
+	alloc_info.memoryTypeIndex = __SparkFindMemoryType(window, mem_requirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(window->device, &alloc_info, SPARK_NULL, &vk_alloc->memory) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate vertex buffer memory!");
+		return SPARK_NULL;
+	}
+
+	vkBindBufferMemory(window->device, vk_alloc->buffer, vk_alloc->memory, 0);
+
+	return vk_alloc;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCopyBuffer(SparkWindow window, VkBuffer srcbuff, VkBuffer dstbuff, VkDeviceSize size) {
+	VkCommandBufferAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandPool = window->command_pool;
+	alloc_info.commandBufferCount = 1;
+
+	VkCommandBuffer command_buffer;
+	vkAllocateCommandBuffers(window->device, &alloc_info, &command_buffer);
+	
+	VkCommandBufferBeginInfo begin_info = { 0 };
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	
+	vkBeginCommandBuffer(command_buffer, &begin_info);
+
+	VkBufferCopy copy_region = { 0 };
+	copy_region.size = size;
+
+	vkCmdCopyBuffer(command_buffer, srcbuff, dstbuff, 1, &copy_region);
+
+	vkEndCommandBuffer(command_buffer);
+
+	VkSubmitInfo submit_info = { 0 };
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer;
+
+	vkQueueSubmit(window->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+	vkQueueWaitIdle(window->graphics_queue);
+
+	vkFreeCommandBuffers(window->device, window->command_pool, 1, &command_buffer);
+}
+
+SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(SparkWindow window, SparkHandle vertices, SparkSize vertices_size) {
+	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(
+		window,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		vertices_size
+	);
+
+	SparkHandle data;
+	vkMapMemory(window->device, staging_alloc->memory, 0, vertices_size, 0, &data);
+	memcpy(data, vertices, vertices_size);
+	vkUnmapMemory(window->device, staging_alloc->memory);
+	
+	// Create Vertex Buffer
+	struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(
+		window,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertices_size
+	);
+
+	staging_alloc->raw_data = data;
+
+	__SparkCopyBuffer(window, staging_alloc->buffer, alloc->buffer, vertices_size);
+
+	vkDestroyBuffer(window->device, staging_alloc->buffer, SPARK_NULL);
+	vkFreeMemory(window->device, staging_alloc->memory, SPARK_NULL);
+
+	SparkFree(staging_alloc);
+
+	return alloc;
+}
+
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBufferForWindow(SparkWindow window) {
 
 	const SparkVertex vertices[] = {
 		// First Triangle
 		SPARK_MAKE_VERTEX(-0.5f, -0.5f, 0.0f,   // Position
-						  0.0f, 0.0f, 1.0f,     // Normal
+						  0.0f, 1.0f, 0.0f,     // Normal
 						  0.0f, 0.0f),          // Texcoord (u, v)
 
 		SPARK_MAKE_VERTEX(0.5f, -0.5f, 0.0f,   // Position
-						  0.0f, 0.0f, 1.0f,     // Normal
+						  1.0f, 0.0f, 0.0f,     // Normal
 						  1.0f, 0.0f),          // Texcoord (u, v)
 
 		SPARK_MAKE_VERTEX(0.5f,  0.5f, 0.0f,   // Position
@@ -6842,7 +6951,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBuffer(SparkWindow window) {
 
 						  // Second Triangle
 						  SPARK_MAKE_VERTEX(0.5f,  0.5f, 0.0f,   // Position
-											0.0f, 0.0f, 1.0f,     // Normal
+											1.0f, 0.0f, 1.0f,     // Normal
 											1.0f, 1.0f),          // Texcoord (u, v)
 
 						  SPARK_MAKE_VERTEX(-0.5f,  0.5f, 0.0f,   // Position
@@ -6850,44 +6959,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBuffer(SparkWindow window) {
 											0.0f, 1.0f),          // Texcoord (u, v)
 
 						  SPARK_MAKE_VERTEX(-0.5f, -0.5f, 0.0f,   // Position
-											0.0f, 0.0f, 1.0f,     // Normal
+											0.0f, 1.0f, 1.0f,     // Normal
 											0.0f, 0.0f),          // Texcoord (u, v)
 	};
 
+	struct VulkanMemoryAllocation* alloc = __SparkCreateVertexBuffer(window, vertices, sizeof(vertices));
 
-	VkBufferCreateInfo buffer_info = { 0 };
-	buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	buffer_info.size = sizeof(vertices);
-	buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	window->vertex_buffer = alloc->buffer;
+	window->vertex_buffer_memory = alloc->memory;
 
-	if (vkCreateBuffer(window->device, &buffer_info, SPARK_NULL, &window->vertex_buffer) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create vertex buffer!");
-		return SPARK_ERROR_INVALID;
-	}
-
-	VkMemoryRequirements mem_requirements = { 0 };
-	vkGetBufferMemoryRequirements(window->device, window->vertex_buffer, &mem_requirements);
-
-	VkMemoryAllocateInfo alloc_info = { 0 };
-	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	alloc_info.allocationSize = mem_requirements.size;
-	alloc_info.memoryTypeIndex = __SparkFindMemoryType(window, mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	if (vkAllocateMemory(window->device, &alloc_info, SPARK_NULL, &window->vertex_buffer_memory) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate vertex buffer memory!");
-		return SPARK_ERROR_INVALID;
-	}
-
-	vkBindBufferMemory(window->device, window->vertex_buffer, window->vertex_buffer_memory, 0);
-
-	SparkHandle data;
-	vkMapMemory(window->device, window->vertex_buffer_memory, 0, buffer_info.size, 0, &data);
-	memcpy(data, vertices, buffer_info.size);
-	vkUnmapMemory(window->device, window->vertex_buffer_memory);
-
-
-
+	SparkFree(alloc);
 
 	return SPARK_SUCCESS;
 }
@@ -7049,7 +7130,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkWindow window) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	if (__SparkCreateVertexBuffer(window) != SPARK_SUCCESS) {
+	if (__SparkCreateVertexBufferForWindow(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create vertex buffer!");
 		return SPARK_ERROR_INVALID;
 	}
