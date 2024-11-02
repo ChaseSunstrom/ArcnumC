@@ -5545,8 +5545,8 @@ __SparkDestroyComponentArray(SparkHandle handle) {
 	SparkFree(arr);
 }
 
-SPARKAPI SparkEcs SparkCreateEcs() {
-	SparkEcs ecs = (SparkEcs)SparkAllocate(sizeof(struct SparkEcsT));
+SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
+	SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
 	if (!ecs) {
 		// Handle allocation failure
 		return SPARK_NULL;
@@ -5560,6 +5560,7 @@ SPARKAPI SparkEcs SparkCreateEcs() {
 		SPARK_NULL, // No key destructor needed for string literals
 		__SparkDestroyComponentArray // Value destructor for component arrays
 	);
+	ecs->event_handler = event_handler;
 	return ecs;
 }
 
@@ -5577,6 +5578,7 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 	if (!ecs)
 		return SPARK_INVALID;
+
 	SparkEntity entity_id;
 	if (ecs->recycled_ids->size > 0) {
 		entity_id = (SparkEntity)(intptr_t)SparkGetTopStack(ecs->recycled_ids);
@@ -5585,12 +5587,21 @@ SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 	else {
 		entity_id = ecs->entities->size + 1;
 	}
-	SparkEntity* entity =
-		(SparkEntity*)ecs->allocator->allocate(sizeof(SparkEntity));
+
+	SparkEntity* entity = ecs->allocator->allocate(sizeof(SparkEntity));
 	if (!entity)
 		return SPARK_INVALID;
+
 	*entity = entity_id;
 	SparkPushBackVector(ecs->entities, entity);
+
+	SparkEventDataEntityCreated event_data = SparkAllocate(sizeof(struct SparkEventDataEntityCreatedT));
+	event_data->ecs = ecs;
+	event_data->entity = entity_id;
+
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_ENTITY_CREATED, event_data, SparkFree);
+	SparkDispatchEvent(ecs->event_handler, event);
+
 	return entity_id;
 }
 
@@ -5606,7 +5617,16 @@ SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
 			break;
 		}
 	}
+
 	SparkPushStack(ecs->recycled_ids, (SparkHandle)(intptr_t)entity_id);
+
+	SparkEventDataEntityDestroyed event_data = SparkAllocate(sizeof(struct SparkEventDataEntityDestroyedT));
+	event_data->ecs = ecs;
+	event_data->entity = entity_id;
+
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_ENTITY_DESTROYED, event_data, SparkFree);
+	SparkDispatchEvent(ecs->event_handler, event);
+
 	return SPARK_SUCCESS;
 }
 
@@ -5634,7 +5654,7 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
 	component->entity = entity_id;
 	// Get or create component array
 	SparkComponentArray component_array =
-		(SparkComponentArray)SparkGetElementHashMap(ecs->components,
+		SparkGetElementHashMap(ecs->components,
 			(SparkHandle)component->type,
 			strlen(component->type));
 	if (!component_array) {
@@ -5651,6 +5671,15 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
 	SparkInsertHashMap(component_array->entity_to_component,
 		(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity),
 		component);
+
+	SparkEventDataComponentAdded event_data = SparkAllocate(sizeof(struct SparkEventDataComponentAddedT));
+	event_data->ecs = ecs;
+	event_data->entity = entity_id;
+	event_data->component = component;
+
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_COMPONENT_ADDED, event_data, SparkFree);
+	SparkDispatchEvent(ecs->event_handler, event);
+
 	return SPARK_SUCCESS;
 }
 
@@ -5667,6 +5696,16 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id,
 	SparkResult res =
 		SparkRemoveHashMap(component_array->entity_to_component,
 			(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity));
+
+	SparkEventDataComponentRemoved event_data = SparkAllocate(sizeof(struct SparkEventDataComponentRemovedT));
+	event_data->ecs = ecs;
+	event_data->entity = entity_id;
+	event_data->type = component_type;
+	event_data->name = component_name;
+
+	SparkEvent event = SparkCreateEvent(SPARK_EVENT_COMPONENT_REMOVED, event_data, SparkFree);
+	SparkDispatchEvent(ecs->event_handler, event);
+
 	return res;
 }
 
@@ -6570,7 +6609,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication app, SparkGraphicsPipelineConfig config) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication app, SparkGraphicsPipelineConfig config) {
 	SparkWindow window = app->window;
 	VkVertexInputBindingDescription binding_description = __SparkGetBindingDescription(VK_VERTEX_INPUT_RATE_VERTEX);
 	VkVertexInputAttributeDescription* attribute_descriptions = __SparkGetAttributeDescriptions();
@@ -6726,160 +6765,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline2(SparkApplication
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult
-__SparkCreateGraphicsPipeline(SparkWindow window) {
-	SparkBuffer vert_buf;
-	SparkBuffer frag_buf;
-	SparkSize vert_size;
-	SparkSize frag_size;
-
-	VkVertexInputBindingDescription binding_description = __SparkGetBindingDescription(VK_VERTEX_INPUT_RATE_VERTEX);
-	VkVertexInputAttributeDescription* attribute_descriptions = __SparkGetAttributeDescriptions();
-
-	SparkCompileShaderToSpirv("src/shader.vert", SPARK_SHADER_STAGE_VERTEX,
-		&vert_buf, &vert_size);
-	SparkCompileShaderToSpirv("src/shader.frag", SPARK_SHADER_STAGE_FRAGMENT,
-		&frag_buf, &frag_size);
-
-	VkShaderModule vert_shader_module =
-		__SparkCreateShaderModule(window, vert_buf, vert_size);
-	VkShaderModule frag_shader_module =
-		__SparkCreateShaderModule(window, frag_buf, frag_size);
-
-	VkPipelineShaderStageCreateInfo vert_shader_stage_info = { 0 };
-	vert_shader_stage_info.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vert_shader_stage_info.module = vert_shader_module;
-	vert_shader_stage_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo frag_shader_stage_info = { 0 };
-	frag_shader_stage_info.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	frag_shader_stage_info.module = frag_shader_module;
-	frag_shader_stage_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info,
-													   frag_shader_stage_info };
-
-	VkPipelineVertexInputStateCreateInfo vertex_input_info = { 0 };
-	vertex_input_info.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = 1;
-	vertex_input_info.vertexAttributeDescriptionCount = 3;
-	vertex_input_info.pVertexBindingDescriptions = &binding_description;
-	vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions;
-
-	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
-	input_assembly.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	input_assembly.primitiveRestartEnable = VK_FALSE;
-
-	VkViewport viewport = { 0 };
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = (SparkF32)window->swap_chain_extent->width;
-	viewport.height = (SparkF32)window->swap_chain_extent->height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	VkRect2D scissor = { 0 };
-	scissor.offset = (VkOffset2D){ 0, 0 };
-	scissor.extent = *window->swap_chain_extent;
-
-	VkPipelineDynamicStateCreateInfo dynamic_state = { 0 };
-	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamic_state.dynamicStateCount =
-		sizeof(DYNAMIC_STATES) / sizeof(DYNAMIC_STATES[0]);
-	dynamic_state.pDynamicStates = DYNAMIC_STATES;
-
-	VkPipelineViewportStateCreateInfo viewport_state = { 0 };
-	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewport_state.viewportCount = 1;
-	viewport_state.scissorCount = 1;
-
-	VkPipelineRasterizationStateCreateInfo rasterizer = { 0 };
-	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer.depthClampEnable = VK_FALSE;
-	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable = VK_FALSE;
-
-	VkPipelineMultisampleStateCreateInfo multisampling = { 0 };
-	multisampling.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineColorBlendAttachmentState color_blend_attachment = { 0 };
-	color_blend_attachment.colorWriteMask =
-		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-		VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	color_blend_attachment.blendEnable = VK_FALSE;
-	color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-	color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-	color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-	VkPipelineColorBlendStateCreateInfo color_blending = { 0 };
-	color_blending.sType =
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending.logicOpEnable = VK_FALSE;
-	color_blending.logicOp = VK_LOGIC_OP_COPY;
-	color_blending.attachmentCount = 1;
-	color_blending.pAttachments = &color_blend_attachment;
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info = { 0 };
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pSetLayouts = &window->descriptor_set_layout;
-
-	if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL,
-		&window->pipeline_layout) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create pipeline layout!");
-		return SPARK_ERROR_INVALID;
-	}
-
-	VkGraphicsPipelineCreateInfo pipeline_info = { 0 };
-	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipeline_info.stageCount = sizeof(shader_stages) / sizeof(shader_stages[0]);
-	pipeline_info.pStages = shader_stages;
-	pipeline_info.pVertexInputState = &vertex_input_info;
-	pipeline_info.pInputAssemblyState = &input_assembly;
-	pipeline_info.pViewportState = &viewport_state;
-	pipeline_info.pRasterizationState = &rasterizer;
-	pipeline_info.pMultisampleState = &multisampling;
-	pipeline_info.pColorBlendState = &color_blending;
-	pipeline_info.pDynamicState = &dynamic_state;
-	pipeline_info.layout = window->pipeline_layout;
-	pipeline_info.renderPass = window->render_pass;
-	pipeline_info.subpass = 0;
-
-	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1,
-		&pipeline_info, SPARK_NULL,
-		&window->graphics_pipeline) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
-		return SPARK_ERROR_INVALID;
-	}
-
-	SparkFree(vert_buf);
-	SparkFree(frag_buf);
-
-	vkDestroyShaderModule(window->device, vert_shader_module, SPARK_NULL);
-	vkDestroyShaderModule(window->device, frag_shader_module, SPARK_NULL);
-
-	SparkFree(attribute_descriptions);
-
-	return SPARK_SUCCESS;
-}
-
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 	window->swap_chain_framebuffers = SparkAllocate(
 		window->swap_chain_image_views_size * sizeof(VkFramebuffer));
@@ -6959,8 +6844,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 		
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
 
-		// Set viewport and scissor if needed
-		// (Assuming you have dynamic viewport and scissor)
 		VkViewport viewport = { 0 };
 		viewport.width = (SparkF32)window->swap_chain_extent->width;
 		viewport.height = (SparkF32)window->swap_chain_extent->height;
@@ -6973,13 +6856,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 		scissor.extent = *window->swap_chain_extent;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		// Bind vertex and index buffers as needed
 		VkBuffer vertex_buffers[] = { window->vertex_buffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 		vkCmdBindIndexBuffer(command_buffer, window->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-		// Bind descriptor sets using the pipeline's layout
 		vkCmdBindDescriptorSets(
 			command_buffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -6988,7 +6869,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 			1,
 			&window->descriptor_sets[window->current_frame],
 			0,
-			NULL
+			SPARK_NULL
 		);
 
 		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
@@ -7943,7 +7824,9 @@ SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
 	SparkEvent event;
 	event.type = event_type;
 	event.data = event_data;
+#ifndef NDEBUG
 	event.timestamp = SparkGetTime();
+#endif
 	event.destructor = destructor;
 	event.ref_count = SparkAllocate(sizeof(SparkSize));
 	*event.ref_count = 1;
@@ -9484,9 +9367,9 @@ __SparkInitializeResourceManagerApplication(SparkApplication app) {
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
 	SparkSize thread_count) {
 	SparkApplication app = SparkAllocate(sizeof(struct SparkApplicationT));
-	app->window = window;
-	app->ecs = SparkCreateEcs();
 	app->event_handler = window->window_data->event_handler;
+	app->window = window;
+	app->ecs = SparkCreateEcs(app->event_handler);
 	app->ecs->event_handler = app->event_handler;
 	app->start_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 	app->stop_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
@@ -9683,7 +9566,7 @@ SPARKAPI SparkGraphicsPipelineConfig SparkCreateGraphicsPipelineConfig(
 	gp->owns_pipeline_layout = SPARK_FALSE;
 	gp->patch_control_points = 0;
 
-	if (__SparkCreateGraphicsPipeline2(app, gp) != SPARK_SUCCESS) {
+	if (__SparkCreateGraphicsPipeline(app, gp) != SPARK_SUCCESS) {
 		SparkFree(gp);
 		return NULL;
 	}

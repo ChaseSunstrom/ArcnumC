@@ -138,7 +138,6 @@ void CreateShaders(Application app) {
     SparkGraphicsPipelineConfig gp = SparkCreateGraphicsPipelineConfig(app, vshader, fshader, SPARK_NULL, SPARK_NULL, SPARK_NULL, SPARK_NULL);
 
     Resource res = CreateResourceApplication(app, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, "default", gp);
-    SparkGraphicsPipelineConfig conf = res->data;
 }
 
 void ExitOnEscape(Application app, Event event) {

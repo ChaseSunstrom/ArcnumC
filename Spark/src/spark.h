@@ -393,7 +393,12 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_EVENT_MOUSE_BUTTON_RELEASED ((SparkEventType)0x1ULL << 9)
 #define SPARK_EVENT_MOUSE_MOVED ((SparkEventType)0x1ULL << 10)
 #define SPARK_EVENT_MOUSE_SCROLLED ((SparkEventType)0x1ULL << 11)
-#define SPARK_EVENT_MAX_BIT ((SparkEventType)0x1ULL << 12)
+#define SPARK_EVENT_ENTITY_CREATED ((SparkEventType)0x1ULL << 12)
+#define SPARK_EVENT_ENTITY_DESTROYED ((SparkEventType)0x1ULL << 13)
+#define SPARK_EVENT_COMPONENT_ADDED ((SparkEventType)0x1ULL << 14)
+#define SPARK_EVENT_COMPONENT_UPDATED ((SparkEventType)0x1ULL << 15)
+#define SPARK_EVENT_COMPONENT_REMOVED ((SparkEventType)0x1ULL << 16)
+#define SPARK_EVENT_MAX_BIT ((SparkEventType)0x1ULL << 17)
 #define SPARK_EVENT_ALL 0xFFFFFFFFFFFFFFFF
 
 #define SPARK_ARRAY_ARG(arr) (arr), sizeof((arr)) / sizeof((arr)[0])
@@ -861,6 +866,8 @@ typedef struct SparkEventDataMouseScrolledT {
 	SparkF64 y;
 } *SparkEventDataMouseScrolled;
 
+
+
 typedef struct SparkEventDataWindowResizedT {
 	SparkI32 width;
 	SparkI32 height;
@@ -1301,6 +1308,35 @@ typedef struct SparkEcsT {
 	SparkStack recycled_ids;
 	SparkEventHandler event_handler;
 } *SparkEcs;
+
+typedef struct SparkEventDataEntityCreatedT {
+	SparkEntity entity;
+	SparkEcs ecs;
+} *SparkEventDataEntityCreated;
+
+typedef struct SparkEventDataEntityDestroyedT {
+	SparkEntity entity;
+	SparkEcs ecs;
+} *SparkEventDataEntityDestroyed;
+
+typedef struct SparkEventDataComponentAddedT {
+	SparkEntity entity;
+	SparkComponent component;
+	SparkEcs ecs;
+} *SparkEventDataComponentAdded;
+
+typedef struct SparkEventDataComponentUpdatedT {
+	SparkEntity entity;
+	SparkComponent component;
+	SparkEcs ecs;
+} *SparkEventDataComponentUpdated;
+
+typedef struct SparkEventDataComponentRemovedT {
+	SparkEntity entity;
+	SparkEcs ecs;
+	SparkConstString type;
+	SparkConstString name;
+} *SparkEventDataComponentRemoved;
 
 typedef struct SparkResourceT {
 	SparkHandle data;
@@ -2755,7 +2791,7 @@ SPARKAPI SparkVoid SPARKCALL SparkGetWindowSize(SparkWindow window,
 	SparkI32* width,
 	SparkI32* height);
 
-SPARKAPI SparkEcs SPARKCALL SparkCreateEcs();
+SPARKAPI SparkEcs SPARKCALL SparkCreateEcs(SparkEventHandler event_handler);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyEcs(SparkEcs ecs);
 SPARKAPI SparkEntity SPARKCALL SparkCreateEntity(SparkEcs ecs);
 SPARKAPI SparkResult SPARKCALL SparkDestroyEntity(SparkEcs ecs,
