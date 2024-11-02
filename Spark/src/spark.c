@@ -6953,8 +6953,10 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	for (SparkSize i = 0; i < gps->size; i++) {
-		SparkGraphicsPipelineConfig gp = gps->elements[i];
+		SparkResource resource = gps->elements[i];
 
+		SparkGraphicsPipelineConfig gp = resource->data;
+		
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
 
 		// Set viewport and scissor if needed
@@ -7608,6 +7610,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 
 	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG));
 	SparkVector gps = SparkGetAllValuesHashMap(rm->resources);
+
 	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame],
 		image_index, gps);
 	SparkDestroyVector(gps);
