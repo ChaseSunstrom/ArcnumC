@@ -20,6 +20,9 @@
 #include <DR/dr_mp3.h>
 #include <DR/dr_wav.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <STB/stb_image.h>
+
 #ifdef _MSC_VER
 #include <Windows.h>
 #include <process.h>
@@ -5537,13 +5540,17 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 
 #pragma region ECS
 
-SPARKAPI SPARKSTATIC SparkVoid
-__SparkDestroyComponentArray(SparkHandle handle) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
 	SparkComponentArray arr = handle;
+	if (!arr) return;
 
-	SparkDestroyHashMap(arr->entity_to_component);
+	SparkDestroyVector(arr->components);
+	SparkDestroyHashMap(arr->entity_to_index);
+	SparkDestroyHashMap(arr->index_to_entity);
+
 	SparkFree(arr);
 }
+
 
 SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
 	SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
@@ -5647,30 +5654,47 @@ SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type,
 	return component;
 }
 
-SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkComponent component) {
+SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, SparkComponent component) {
 	if (!ecs || !component || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
+
 	component->entity = entity_id;
+
 	// Get or create component array
-	SparkComponentArray component_array =
-		SparkGetElementHashMap(ecs->components,
-			(SparkHandle)component->type,
-			strlen(component->type));
+	SparkComponentArray component_array = SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component->type,
+		strlen(component->type)
+	);
+
 	if (!component_array) {
-		component_array = (SparkComponentArray)ecs->allocator->allocate(
-			sizeof(struct SparkComponentArrayT));
+		component_array = (SparkComponentArray)ecs->allocator->allocate(sizeof(struct SparkComponentArrayT));
 		if (!component_array)
 			return SPARK_ERROR_OUT_OF_MEMORY;
-		component_array->entity_to_component =
-			SparkCreateHashMap(16, SparkIntegerHash, SparkIntegerCompare,
-				ecs->allocator, SPARK_NULL, component->destructor);
-		SparkInsertHashMap(ecs->components, (SparkHandle)component->type,
-			strlen(component->type), component_array);
+
+		// Initialize the components vector
+		component_array->components = SparkCreateVector(16, ecs->allocator, component->destructor);
+
+		// Initialize the hashmaps
+		component_array->entity_to_index = SparkCreateHashMap(
+			16, SparkIntegerHash, SparkIntegerCompare, ecs->allocator, SPARK_NULL, SPARK_NULL
+		);
+		component_array->index_to_entity = SparkCreateHashMap(
+			16, SparkIntegerHash, SparkIntegerCompare, ecs->allocator, SPARK_NULL, SPARK_NULL
+		);
+
+		SparkInsertHashMap(ecs->components, (SparkHandle)component->type, strlen(component->type), component_array);
 	}
-	SparkInsertHashMap(component_array->entity_to_component,
-		(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity),
-		component);
+
+	if (SparkGetElementHashMap(component_array->entity_to_index, (SparkHandle)(uintptr_t)entity_id, sizeof(SparkEntity))) {
+		SparkInsertHashMap(ecs->components, (SparkHandle)component->type, strlen(component->type), component_array);
+	}
+
+	SparkSize index = component_array->components->size;
+	SparkPushBackVector(component_array->components, component);
+
+	SparkInsertHashMap(component_array->entity_to_index, (SparkHandle)(uintptr_t)entity_id, sizeof(SparkEntity), (SparkHandle)(uintptr_t)index);
+	SparkInsertHashMap(component_array->index_to_entity, (SparkHandle)(uintptr_t)index, sizeof(SparkSize), (SparkHandle)(uintptr_t)entity_id);
 
 	SparkEventDataComponentAdded event_data = SparkAllocate(sizeof(struct SparkEventDataComponentAddedT));
 	event_data->ecs = ecs;
@@ -5683,20 +5707,90 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id,
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkConstString component_type,
-	SparkConstString component_name) {
+SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
 	if (!ecs || !component_type || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
-	SparkComponentArray component_array =
-		(SparkComponentArray)SparkGetElementHashMap(
-			ecs->components, (SparkHandle)component_type, strlen(component_type));
+
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component_type,
+		strlen(component_type)
+	);
+
 	if (!component_array)
 		return SPARK_ERROR_NOT_FOUND;
-	SparkResult res =
-		SparkRemoveHashMap(component_array->entity_to_component,
-			(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity));
 
+	// Get the index of the component for the entity
+	SparkHandle index_handle = SparkGetElementHashMap(
+		component_array->entity_to_index,
+		(SparkHandle)(uintptr_t)entity_id,
+		sizeof(SparkEntity)
+	);
+
+	if (!index_handle)
+		return SPARK_ERROR_NOT_FOUND;
+
+	SparkSize index = (SparkSize)(uintptr_t)index_handle;
+
+	// Get the last index
+	SparkSize last_index = component_array->components->size - 1;
+
+	if (index != last_index) {
+		// Swap the component to remove with the last component
+		SparkComponent component_to_remove = (SparkComponent)SparkGetElementVector(component_array->components, index);
+		SparkComponent last_component = (SparkComponent)SparkGetElementVector(component_array->components, last_index);
+
+		// Swap components in the vector
+		component_array->components->elements[index] = last_component;
+		component_array->components->elements[last_index] = component_to_remove;
+
+		// Update the hashmaps for the swapped component
+		SparkEntity last_entity_id = (SparkEntity)(uintptr_t)SparkGetElementHashMap(
+			component_array->index_to_entity,
+			(SparkHandle)(uintptr_t)last_index,
+			sizeof(SparkSize)
+		);
+
+		// Update entity_to_index
+		SparkInsertHashMap(
+			component_array->entity_to_index,
+			(SparkHandle)(uintptr_t)last_entity_id,
+			sizeof(SparkEntity),
+			(SparkHandle)(uintptr_t)index
+		);
+
+		// Update index_to_entity
+		SparkInsertHashMap(
+			component_array->index_to_entity,
+			(SparkHandle)(uintptr_t)index,
+			sizeof(SparkSize),
+			(SparkHandle)(uintptr_t)last_entity_id
+		);
+	}
+
+	// Remove the component
+	SparkComponent component_to_destroy = (SparkComponent)SparkGetElementVector(component_array->components, last_index);
+	SparkRemoveVector(component_array->components, last_index);
+
+	// Remove from hashmaps
+	SparkRemoveHashMap(
+		component_array->entity_to_index,
+		(SparkHandle)(uintptr_t)entity_id,
+		sizeof(SparkEntity)
+	);
+	SparkRemoveHashMap(
+		component_array->index_to_entity,
+		(SparkHandle)(uintptr_t)last_index,
+		sizeof(SparkSize)
+	);
+
+	// Destroy the component
+	if (component_to_destroy->destructor)
+		component_to_destroy->destructor(component_to_destroy->data);
+
+	SparkFree(component_to_destroy);
+
+	// Dispatch event
 	SparkEventDataComponentRemoved event_data = SparkAllocate(sizeof(struct SparkEventDataComponentRemovedT));
 	event_data->ecs = ecs;
 	event_data->entity = entity_id;
@@ -5706,22 +5800,34 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id,
 	SparkEvent event = SparkCreateEvent(SPARK_EVENT_COMPONENT_REMOVED, event_data, SparkFree);
 	SparkDispatchEvent(ecs->event_handler, event);
 
-	return res;
+	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id,
-	SparkConstString component_type,
-	SparkConstString component_name) {
+SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
 	if (!ecs || !component_type || entity_id == SPARK_INVALID)
 		return SPARK_NULL;
-	SparkComponentArray component_array =
-		(SparkComponentArray)SparkGetElementHashMap(
-			ecs->components, (SparkHandle)component_type, strlen(component_type));
+
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component_type,
+		strlen(component_type)
+	);
+
 	if (!component_array)
 		return SPARK_NULL;
-	SparkComponent component = (SparkComponent)SparkGetElementHashMap(
-		component_array->entity_to_component, (SparkHandle)(intptr_t)entity_id,
-		sizeof(SparkEntity));
+
+	SparkHandle index_handle = SparkGetElementHashMap(
+		component_array->entity_to_index,
+		(SparkHandle)(uintptr_t)entity_id,
+		sizeof(SparkEntity)
+	);
+
+	if (!index_handle)
+		return SPARK_NULL;
+
+	SparkSize index = (SparkSize)(uintptr_t)index_handle;
+	SparkComponent component = (SparkComponent)SparkGetElementVector(component_array->components, index);
+
 	return component;
 }
 
@@ -5789,44 +5895,116 @@ SPARKAPI SparkResult SparkStopEcs(SparkEcs ecs) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs,
-	SparkEntity entity_id) {
+SPARKAPI SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id) {
 	if (!ecs || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
-	for (SparkSize i = 0; i < ecs->components->capacity; ++i) {
-		SparkHashMapNode node = ecs->components->buckets[i];
-		while (node) {
-			SparkComponentArray component_array = (SparkComponentArray)node->value;
-			SparkRemoveHashMap(component_array->entity_to_component,
-				(SparkHandle)(intptr_t)entity_id, sizeof(SparkEntity));
-			node = node->next;
+
+	SparkHashMapIterator iterator = SparkCreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_VALUE, ecs->components);
+
+	while (SparkHasNextHashMapIterator(iterator)) {
+		SparkIterateForwardHashMapIterator(iterator);
+		SparkComponentArray component_array = (SparkComponentArray)SparkGetCurrentHashMapIterator(iterator);
+
+		// Check if the entity has a component of this type
+		SparkHandle index_handle = SparkGetElementHashMap(
+			component_array->entity_to_index,
+			(SparkHandle)(uintptr_t)entity_id,
+			sizeof(SparkEntity)
+		);
+
+		if (index_handle) {
+			// Remove the component
+			SparkConstString component_type = (SparkConstString)iterator->hash_map->buckets[iterator->pos]->key;
+			SparkRemoveComponent(ecs, entity_id, component_type, SPARK_NULL);
 		}
 	}
+
+	SparkDestroyHashMapIterator(iterator);
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SparkVector
-SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString component_type) {
+SPARKAPI SparkVector SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString component_type) {
 	if (!ecs || !component_type)
 		return SPARK_NULL;
-	SparkComponentArray component_array =
-		(SparkComponentArray)SparkGetElementHashMap(
-			ecs->components, (SparkHandle)component_type, strlen(component_type));
+
+	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
+		ecs->components,
+		(SparkHandle)component_type,
+		strlen(component_type)
+	);
+
 	if (!component_array)
 		return SPARK_NULL;
-	SparkVector components = SparkCreateVector(
-		component_array->entity_to_component->size, ecs->allocator, SPARK_NULL);
-	for (SparkSize i = 0; i < component_array->entity_to_component->capacity;
-		++i) {
-		SparkHashMapNode node = component_array->entity_to_component->buckets[i];
-		while (node) {
-			SparkComponent component = (SparkComponent)node->value;
-			SparkPushBackVector(components, component);
-			node = node->next;
-		}
-	}
-	return components;
+
+	return component_array->components;
 }
+
+#pragma endregion
+
+#pragma region COMPONENT
+
+SPARKAPI SparkComponent SPARKCALL SparkDefaultTransformComponent(SparkConstString name) {
+	SparkTransformComponent tcomp = SparkAllocate(sizeof(struct SparkTransformComponentT));
+	tcomp->position = SPARK_DEFAULT_POSITION;
+	tcomp->rotation = SPARK_DEFAULT_ROTATION;
+	tcomp->scale = SPARK_DEFAULT_SCALE;
+
+	return SparkCreateComponent(SPARK_TRANSFORM_COMPONENT, name, tcomp, SparkDestroyTransformComponent);
+}
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponent(SparkConstString name, SparkVec3 pos, SparkQuat rot, SparkVec3 scale) {
+	SparkTransformComponent tcomp = SparkAllocate(sizeof(struct SparkTransformComponentT));
+	tcomp->position = pos;
+	tcomp->rotation = rot;
+	tcomp->scale = scale;
+
+	return SparkCreateComponent(SPARK_TRANSFORM_COMPONENT, name, tcomp, SparkDestroyTransformComponent);
+}
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponentPos(SparkConstString name, SparkVec3 pos) {
+	SparkTransformComponent tcomp = SparkAllocate(sizeof(struct SparkTransformComponentT));
+	tcomp->position = pos;
+	tcomp->rotation = (SparkQuat){ 0.0f, 0.0f, 0.0f, 1.0f };
+	tcomp->scale = (SparkVec3){ 1.0f, 1.0f, 1.0f };
+
+	return SparkCreateComponent(SPARK_TRANSFORM_COMPONENT, name, tcomp, SparkDestroyTransformComponent);
+}
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponentRot(SparkConstString name, SparkVec3 pos, SparkQuat rot) {
+	SparkTransformComponent tcomp = SparkAllocate(sizeof(struct SparkTransformComponentT));
+	tcomp->position = pos;
+	tcomp->rotation = rot;
+	tcomp->scale = (SparkVec3){ 1.0f, 1.0f, 1.0f };
+
+	return SparkCreateComponent(SPARK_TRANSFORM_COMPONENT, name, tcomp, SparkDestroyTransformComponent);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyTransformComponent(SparkTransformComponent comp) {
+	SparkFree(comp);
+}
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateStaticModelComponent(SparkConstString name, SparkConstString model_name) {
+	SparkDynamicModelComponent mcomp = SparkAllocate(sizeof(struct SparkStaticModelComponentT));
+	mcomp->model_name = model_name;
+
+	return SparkCreateComponent(SPARK_STATIC_MODEL_COMPONENT, name, mcomp, SparkDestroyStaticModelComponent);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticModelComponent(SparkStaticModelComponent comp) {
+	SparkFree(comp);
+}
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateDynamicModelComponent(SparkConstString name, SparkConstString model_name) {
+	SparkDynamicModelComponent mcomp = SparkAllocate(sizeof(struct SparkDynamicModelComponentT));
+	mcomp->model_name = model_name;
+
+	return SparkCreateComponent(SPARK_DYNAMIC_MODEL_COMPONENT, name, mcomp, SparkDestroyDynamicModelComponent);
+}
+
+SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicModelComponent(SparkDynamicModelComponent comp) {
+	SparkFree(comp);
+}
+
 
 #pragma endregion
 
@@ -5846,7 +6024,7 @@ const VkDynamicState DYNAMIC_STATES[] = { VK_DYNAMIC_STATE_VIEWPORT,
 										 VK_DYNAMIC_STATE_SCISSOR };
 
 
-const SparkI32 MAX_FRAMES_IN_FLIGHT = 2;
+const SparkI32 MAX_FRAMES_IN_FLIGHT = 3;
 
 struct VulkanExtensions {
 	SparkU32 count;
@@ -5880,6 +6058,39 @@ struct VulkanUniformBufferObject {
 	SparkMat4 view;
 	SparkMat4 proj;
 };
+
+SPARKAPI SPARKSTATIC VkCommandBuffer __SparkBeginSingleTimeCommands(SparkWindow window) {
+	VkCommandBufferAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandPool = window->command_pool;
+	alloc_info.commandBufferCount = 1;
+
+	VkCommandBuffer command_buffer;
+	vkAllocateCommandBuffers(window->device, &alloc_info, &command_buffer);
+
+	VkCommandBufferBeginInfo begin_info = { 0 };
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(command_buffer, &begin_info);
+
+	return command_buffer;
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkEndSingleTimeCommands(SparkWindow window, VkCommandBuffer command_buffer) {
+	vkEndCommandBuffer(command_buffer);
+
+	VkSubmitInfo submit_info = { 0 };
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer;
+
+	vkQueueSubmit(window->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+	vkQueueWaitIdle(window->graphics_queue);
+
+	vkFreeCommandBuffers(window->device, window->command_pool, 1, &command_buffer);
+}
 
 /*
 * input_rate: VK_VERTEX_INPUT_RATE_VERTEX or VK_VERTEX_INPUT_RATE_INSTANCE
@@ -6209,11 +6420,12 @@ __SparkChooseSwapSurfaceFormat(const VkSurfaceFormatKHR * available_formats,
 	return available_formats[0];
 }
 
-SPARKAPI SPARKSTATIC VkPresentModeKHR
-__SparkChooseSwapPresentMode(const VkPresentModeKHR * available_present_modes,
+SPARKAPI SPARKSTATIC VkPresentModeKHR __SparkChooseSwapPresentMode(
+	SparkWindow window,
+	const VkPresentModeKHR* available_present_modes,
 	const SparkSize available_present_modes_size) {
 	for (SparkSize i = 0; i < available_present_modes_size; i++) {
-		if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+		if (available_present_modes[i] == window->window_data->present_mode) {
 			return available_present_modes[i];
 		}
 	}
@@ -6443,6 +6655,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	VkSurfaceFormatKHR surface_format = __SparkChooseSwapSurfaceFormat(
 		swap_chain_support.formats, swap_chain_support.formats_size);
 	VkPresentModeKHR present_mode = __SparkChooseSwapPresentMode(
+		window,
 		swap_chain_support.present_modes, swap_chain_support.present_modes_size);
 	VkExtent2D extent =
 		__SparkChooseSwapExtent(window, &swap_chain_support.capabilities);
@@ -6934,37 +7147,13 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateBuffer(SparkWin
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCopyBuffer(SparkWindow window, VkBuffer srcbuff, VkBuffer dstbuff, VkDeviceSize size) {
-	VkCommandBufferAllocateInfo alloc_info = { 0 };
-	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	alloc_info.commandPool = window->command_pool;
-	alloc_info.commandBufferCount = 1;
-
-	VkCommandBuffer command_buffer;
-	vkAllocateCommandBuffers(window->device, &alloc_info, &command_buffer);
-
-	VkCommandBufferBeginInfo begin_info = { 0 };
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(command_buffer, &begin_info);
+	VkCommandBuffer command_buffer = __SparkBeginSingleTimeCommands(window);
 
 	VkBufferCopy copy_region = { 0 };
 	copy_region.size = size;
-
 	vkCmdCopyBuffer(command_buffer, srcbuff, dstbuff, 1, &copy_region);
 
-	vkEndCommandBuffer(command_buffer);
-
-	VkSubmitInfo submit_info = { 0 };
-	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &command_buffer;
-
-	vkQueueSubmit(window->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-	vkQueueWaitIdle(window->graphics_queue);
-
-	vkFreeCommandBuffers(window->device, window->command_pool, 1, &command_buffer);
+	__SparkEndSingleTimeCommands(window, command_buffer);
 }
 
 SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(SparkWindow window, SparkHandle vertices, SparkSize vertices_size) {
@@ -7292,6 +7481,121 @@ SPARKAPI SPARKSTATIC SparkResult __SparkUpdateDescriptorSets(SparkWindow window)
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(SparkApplication app,
+	SparkU32 width,
+	SparkU32 height,
+	VkFormat format,
+	VkImageTiling tiling,
+	VkImageUsageFlags usage,
+	VkMemoryPropertyFlags properties,
+	VkImage* image,
+	VkDeviceMemory* image_memory) {
+	VkDevice device = app->window->device;
+
+	VkImageCreateInfo image_info = { 0 };
+	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_info.imageType = VK_IMAGE_TYPE_2D;
+	image_info.extent.width = width;
+	image_info.extent.height = height;
+	image_info.extent.depth = 1;
+	image_info.mipLevels = 1;
+	image_info.arrayLayers = 1;
+	image_info.format = format;
+	image_info.tiling = tiling;
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_info.usage = usage;
+	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+	image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateImage(device, &image_info, SPARK_NULL, image) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkMemoryRequirements mem_requirements;
+	vkGetImageMemoryRequirements(device, *image, &mem_requirements);
+
+	VkMemoryAllocateInfo alloc_info = { 0 };
+	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	alloc_info.allocationSize = mem_requirements.size;
+	alloc_info.memoryTypeIndex = __SparkFindMemoryType(app->window, mem_requirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(device, &alloc_info, SPARK_NULL, image_memory) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for image!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	vkBindImageMemory(device, *image, *image_memory, 0);
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkTransitionImageLayout(SparkWindow window, VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout) {
+	VkCommandBuffer command_buffer = __SparkBeginSingleTimeCommands(window);
+
+	VkImageMemoryBarrier barrier = { 0 };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = old_layout;
+	barrier.newLayout = new_layout;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	VkPipelineStageFlags src_stage;
+	VkPipelineStageFlags dst_stage;
+
+	if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		
+		src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported layout transition!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	vkCmdPipelineBarrier(command_buffer, src_stage, dst_stage, 0, 0, SPARK_NULL, 0, SPARK_NULL, 1, &barrier);
+
+	__SparkEndSingleTimeCommands(window, command_buffer);
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCopyBufferToImage(SparkWindow window, VkBuffer buffer, VkImage image, SparkU32 width, SparkU32 height) {
+	VkCommandBuffer command_buffer = __SparkBeginSingleTimeCommands(window);
+
+	VkBufferImageCopy region = { 0 };
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 0;
+	region.imageOffset = (VkOffset3D){ 0, 0, 0 };
+	region.imageExtent = (VkExtent3D){ width, height, 1 };
+
+	vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+	__SparkEndSingleTimeCommands(window, command_buffer);
+
+	return SPARK_SUCCESS;
+}
+
 SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 	SparkWindow window = app->window;
 
@@ -7402,6 +7706,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
+	vkDeviceWaitIdle(window->device);
+	
 	__SparkCleanupSwapChain(window);
 
 	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -7423,8 +7729,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyBuffer(window->device, window->vertex_buffer, SPARK_NULL);
 	vkFreeMemory(window->device, window->vertex_buffer_memory, SPARK_NULL);
 
-	vkDestroyPipeline(window->device, window->graphics_pipeline, SPARK_NULL);
-	vkDestroyPipelineLayout(window->device, window->pipeline_layout, SPARK_NULL);
 	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
 
 	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -7453,10 +7757,19 @@ SPARKAPI SPARKSTATIC SparkResult __SparkUpdateUniformBuffer(SparkWindow window, 
 
 	struct VulkanUniformBufferObject ubo = { 0 };
 
-	static SparkF32 rot = 0.01f;
-	rot += 0.001f;
+	static SparkF32 rotx = 0.01f;
+	static SparkF32 roty = 0.01f;
+	static SparkF32 rotz = 0.01f;
+	rotx += 0.01f;
+	roty += 0.01f;
+	rotz += 0.01f;
 
-	ubo.model = SparkMat4Rotate(rot, (SparkVec3) { 0.0f, 0.0f, 1.0f });
+	SparkMat4 rotationX = SparkMat4Rotate(rotx, (SparkVec3) { 1.0f, 0.0f, 0.0f });
+	SparkMat4 rotationY = SparkMat4Rotate(roty, (SparkVec3) { 0.0f, 1.0f, 0.0f });
+	SparkMat4 rotationZ = SparkMat4Rotate(rotz, (SparkVec3) { 0.0f, 0.0f, 1.0f });
+
+	ubo.model = SparkMat4Multiply(SparkMat4Multiply(rotationX, rotationY), rotationZ);
+
 	ubo.view = SparkMat4LookAt((SparkVec3){2.0f, 2.0f, 2.0f}, (SparkVec3){0.0f, 0.0f, 0.0f}, (SparkVec3){0.0f, 0.0f, 1.0f});
 	ubo.proj = SparkMat4Perspective(SparkRadians(45.0f), window->swap_chain_extent->width / (SparkF32)window->swap_chain_extent->height, 0.1f, 100.0f);
 	ubo.proj.m11 *= -1;
@@ -7557,29 +7870,13 @@ SPARKAPI SPARKSTATIC SparkResult __SparkWaitIdle(SparkWindow window) {
 
 #pragma region EVENT
 
-SPARKAPI SparkEventHandler SparkDefaultEventHandler() {
+SPARKAPI SparkEventHandler SparkCreateEventHandler() {
 	SparkEventHandler event_handler =
 		SparkAllocate(sizeof(struct SparkEventHandlerT));
 	event_handler->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 	event_handler->query_functions =
 		SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL,
 			SPARK_NULL, SparkDestroyHashMap);
-	return event_handler;
-}
-
-SPARKAPI SparkEventHandler SparkCreateEventHandler(
-	SparkEventHandlerFunction functions[], SparkSize function_count) {
-	SparkEventHandler event_handler =
-		SparkAllocate(sizeof(struct SparkEventHandlerT));
-	event_handler->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
-	event_handler->query_functions =
-		SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL,
-			SPARK_NULL, SparkDestroyHashMap);
-
-	for (SparkSize i = 0; i < function_count; i++) {
-		SparkPushBackVector(event_handler->event_functions, functions[i]);
-	}
-
 	return event_handler;
 }
 
@@ -7805,8 +8102,6 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 			query_event_handler->function(event_handler->application, components,
 				event);
 		}
-
-		SparkDestroyVector(components);
 	}
 
 	SparkDestroyVector(component_keys);
@@ -8674,18 +8969,71 @@ SPARKAPI SparkVoid SparkSetAudioLooping(SparkAudio source, SparkBool looping) {
 
 #pragma endregion
 
+#pragma region TEXTURE
+
+SPARKAPI SparkTexture SparkCreateTexture(SparkApplication app, SparkConstString image_path) {
+	VkDevice device = app->window->device;
+	SparkI32 tex_width, tex_height, tex_channels;
+
+	stbi_uc* pixels = stbi_load(image_path, &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
+
+	if (!pixels) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load texture from file: %s", image_path);
+		return SPARK_ERROR_INVALID;
+	}
+
+	VkDeviceSize image_size = tex_width * tex_height * 4;
+
+	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(app->window, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, image_size);
+
+	SparkHandle data;
+	vkMapMemory(device, staging_alloc->memory, 0, image_size, 0, &data);
+	memcpy(data, pixels, image_size);
+	vkUnmapMemory(device, staging_alloc->memory);
+
+	stbi_image_free(pixels);
+
+	SparkTexture texture = SparkAllocate(sizeof(struct SparkTextureT));
+	texture->device = device;
+	texture->width = tex_width;
+	texture->height = tex_height;
+	texture->channels = tex_channels;
+	
+	__SparkCreateImage(app, tex_width, tex_height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture->image, &texture->image_memory);
+	__SparkTransitionImageLayout(app->window, texture->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	__SparkCopyBufferToImage(app->window, staging_alloc->buffer, texture->image, tex_width, tex_height);
+	__SparkTransitionImageLayout(app->window, texture->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	vkDestroyBuffer(device, staging_alloc->buffer, SPARK_NULL);
+	vkFreeMemory(device, staging_alloc->memory, SPARK_NULL);
+
+	SparkFree(staging_alloc);
+
+	return texture;
+}
+
+SPARKAPI SparkVoid SparkDestroyTexture(SparkTexture texture) {
+	vkDestroyImage(texture->device, texture->image, SPARK_NULL);
+	vkFreeMemory(texture->device, texture->image_memory, SPARK_NULL);
+	SparkFree(texture);
+}
+
+#pragma endregion
+
 #pragma region WINDOW
 
 SPARKAPI SparkWindowData SparkCreateWindowData(SparkConstString title,
 	SparkI32 width, SparkI32 height,
-	SparkBool vsync) {
+	SparkBool vsync,
+	SparkPresentMode present) {
 	SparkWindowData window_data = SparkAllocate(sizeof(struct SparkWindowDataT));
 	window_data->title = SparkAllocate(strlen(title) + 1);
 	strcpy(window_data->title, title);
 	window_data->width = width;
 	window_data->height = height;
 	window_data->vsync = vsync;
-	window_data->event_handler = SparkDefaultEventHandler();
+	window_data->present_mode = present;
+	window_data->event_handler = SparkCreateEventHandler();
 	return window_data;
 }
 
@@ -9053,18 +9401,6 @@ SPARKAPI SparkVoid SparkDestroyDynamicModel(SparkDynamicModel model) {
 
 #pragma endregion
 
-#pragma region TEXTURE
-
-SPARKAPI SparkTexture SparkCreateTexture(SparkConstString file_path) {
-	return SPARK_NULL;
-}
-
-SPARKAPI SparkVoid SparkDestroyTexture(SparkTexture texture) {
-	SparkFree(texture);
-}
-
-#pragma endregion
-
 #pragma region SHADER
 
 SPARKAPI SparkShader SparkCreateShader(SparkApplication app,
@@ -9302,9 +9638,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 				handler->function(app, components);
 			}
 		}
-
-		// Destroy the components vector after synchronous functions have used it
-		SparkDestroyVector(components);
 	}
 
 	SparkDestroyVector(keys);
@@ -9402,7 +9735,6 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
 }
 
 SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
-	SparkDestroyWindow(app->window);
 	SparkDestroyEcs(app->ecs);
 	SparkDestroyEventHandler(app->event_handler);
 	SparkDestroyVector(app->start_functions);
@@ -9413,6 +9745,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyVector(app->query_event_functions);
 	SparkDestroyHashMap(app->resource_manager);
 	SparkDestroyThreadPool(app->thread_pool);
+	SparkDestroyWindow(app->window);
 	SparkDestroyMutex(app->mutex);
 	SparkFree(app);
 }

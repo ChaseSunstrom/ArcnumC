@@ -333,6 +333,10 @@
 
 #define SPARK_PACKET_MAX_SIZE 4096
 
+#define SPARK_DEFAULT_POSITION (SparkVec3){0.0f, 0.0f, 0.0f}
+#define SPARK_DEFAULT_ROTATION (SparkQuat){0.0f, 0.0f, 0.0f, 1.0f}
+#define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
+
 /*#ifdef __cplusplus
 extern "C" {
 #endif
@@ -792,7 +796,6 @@ typedef enum SparkRenderAPIT {
 	SPARK_RENDER_API_METAL
 } SparkRenderAPI;
 
-/* Shader data types */
 typedef enum SparkShaderDataTypeT {
 	SPARK_SHADER_DATA_TYPE_FLOAT,
 	SPARK_SHADER_DATA_TYPE_VEC2,
@@ -807,6 +810,11 @@ typedef enum SparkShaderDataTypeT {
 	SPARK_SHADER_DATA_TYPE_MAT4,
 	SPARK_SHADER_DATA_TYPE_SAMPLER2D
 } SparkShaderDataType;
+
+typedef enum SparkPresentModeT {
+	SPARK_PRESENT_MODE_IMMEDIATE = 0,
+	SPARK_PRESENT_MODE_MAILBOX = 1
+} SparkPresentMode;
 
 typedef enum SparkEnvelopeTypeT {
 	SPARK_ENVELOPE_TYPE_DATA = 0,
@@ -1284,8 +1292,24 @@ typedef struct SparkComponentT {
 	SparkEntity entity;
 } *SparkComponent;
 
+typedef struct SparkTransformComponentT {
+	SparkVec3 position;
+	SparkQuat rotation;
+	SparkVec3 scale;
+} *SparkTransformComponent;
+
+typedef struct SparkStaticModelComponentT {
+	SparkConstString model_name;
+} *SparkStaticModelComponent;
+
+typedef struct SparkDynamicModelComponentT {
+	SparkConstString model_name;
+} *SparkDynamicModelComponent;
+
 typedef struct SparkComponentArrayT {
-	SparkHashMap entity_to_component; // HashMap of entity IDs to components
+	SparkVector components;
+	SparkHashMap entity_to_index;
+	SparkHashMap index_to_entity;
 } *SparkComponentArray;
 
 typedef struct SparkSystemT {
@@ -1362,10 +1386,11 @@ typedef struct SparkResourceManagerT {
 } *SparkResourceManager;
 
 typedef struct SparkWindowDataT {
-	SparkConstString title;
 	SparkI32 width;
 	SparkI32 height;
 	SparkBool vsync;
+	SparkPresentMode present_mode;
+	SparkConstString title;
 	SparkEventHandler event_handler;
 } *SparkWindowData;
 
@@ -1379,6 +1404,15 @@ typedef struct SparkRigidBodyT {
 	SparkScalar friction;
 	SparkScalar restitution;
 } *SparkRigidBody;
+
+typedef struct SparkTextureT {
+	struct VkDevice_T* device;
+	struct VkImage_T* image;
+	struct VkDeviceMemory_T* image_memory;
+	SparkI32 width;
+	SparkI32 height;
+	SparkI32 channels;
+} *SparkTexture;
 
 typedef struct SparkColliderT {
 	enum {
@@ -1436,6 +1470,10 @@ typedef struct SparkStaticMeshT {
 	SparkU32* indices;
 	SparkU32 vertex_count;
 	SparkU32 index_count;
+	struct VkBuffer_T* vertex_buffer;
+	struct VkDeviceMemory_T* vertex_buffer_memory;
+	struct VkBuffer_T* index_buffer;
+	struct VkDeviceMemory_T* index_buffer_memory;
 } *SparkStaticMesh;
 
 typedef struct SparkDynamicMeshT {
@@ -1443,10 +1481,16 @@ typedef struct SparkDynamicMeshT {
 	SparkU32* indices;
 	SparkU32 vertex_count;
 	SparkU32 index_count;
+	struct VkBuffer_T* vertex_buffer;
+	struct VkDeviceMemory_T* vertex_buffer_memory;
+	struct VkBuffer_T* index_buffer;
+	struct VkDeviceMemory_T* index_buffer_memory;
 } *SparkDynamicMesh;
 
 typedef struct SparkMaterialT {
-	SparkI8 not_implemented;
+	struct SparkGraphicsPipelineConfigT* pipeline_config;
+	SparkVec4 color;
+
 } *SparkMaterial;
 
 typedef struct SparkStaticModelT {
@@ -1563,9 +1607,7 @@ typedef struct SparkWindowT {
 	struct VkExtent2D* swap_chain_extent;
 	struct VkFramebuffer_T** swap_chain_framebuffers;
 	struct VkDescriptorSetLayout_T* descriptor_set_layout;
-	struct VkPipelineLayout_T* pipeline_layout;
 	struct VkRenderPass_T* render_pass;
-	struct VkPipeline_T* graphics_pipeline;
 	struct VkCommandPool_T* command_pool;
 	struct VkCommandBuffer_T** command_buffers;
 	struct VkSemaphore_T** image_available_semaphores;
@@ -2590,36 +2632,8 @@ SPARKAPI SparkResult SPARKCALL SparkDrawElements(SparkPrimitiveType mode,
 	SparkShaderDataType type,
 	SparkSize offset);
 
-/* Texture functions */
-typedef struct SparkTextureT* SparkTexture;
-SPARKAPI SparkTexture SPARKCALL SparkCreateTexture(SparkConstString file_path);
+SPARKAPI SparkTexture SPARKCALL SparkCreateTexture(SparkApplication app, SparkConstString image_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyTexture(SparkTexture texture);
-SPARKAPI SparkResult SPARKCALL SparkBindTexture(SparkTexture texture,
-	SparkI32 unit);
-SPARKAPI SparkResult SPARKCALL SparkSetTextureParameter(SparkTexture texture,
-	SparkI32 pname,
-	SparkI32 param);
-
-/* Framebuffer functions */
-typedef struct SparkFramebufferT* SparkFramebuffer;
-SPARKAPI SparkFramebuffer SPARKCALL SparkCreateFramebuffer();
-SPARKAPI SparkVoid SPARKCALL
-SparkDeleteFramebuffer(SparkFramebuffer framebuffer);
-SPARKAPI SparkResult SPARKCALL
-SparkBindFramebuffer(SparkFramebuffer framebuffer);
-SPARKAPI SparkResult SPARKCALL
-SparkFramebufferTexture2D(SparkFramebuffer framebuffer, SparkTexture texture);
-
-/* Renderbuffer functions */
-typedef struct SparkRenderbufferT* SparkRenderbuffer;
-SPARKAPI SparkRenderbuffer SPARKCALL SparkCreateRenderbuffer(SparkI32 width,
-	SparkI32 height);
-SPARKAPI SparkVoid SPARKCALL
-SparkDeleteRenderbuffer(SparkRenderbuffer renderbuffer);
-SPARKAPI SparkResult SPARKCALL
-SparkBindRenderbuffer(SparkRenderbuffer renderbuffer);
-SPARKAPI SparkResult SPARKCALL SparkFramebufferRenderbuffer(
-	SparkFramebuffer framebuffer, SparkRenderbuffer renderbuffer);
 
 SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[],
 	SparkU32 vertices_size);
@@ -2821,9 +2835,19 @@ SPARKAPI SparkResult SPARKCALL SparkStopEcs(SparkEcs ecs);
 SPARKAPI SparkResult SPARKCALL
 SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity entity_id);
 
-SPARKAPI SparkEventHandler SPARKCALL SparkDefaultEventHandler();
-SPARKAPI SparkEventHandler SPARKCALL SparkCreateEventHandler(
-	SparkEventHandlerFunction functions[], SparkSize function_count);
+SPARKAPI SparkComponent SPARKCALL SparkDefaultTransformComponent(SparkConstString name);
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponent(SparkConstString name, SparkVec3 pos, SparkQuat rot, SparkVec3 scale);
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponentPos(SparkConstString name, SparkVec3 pos);
+SPARKAPI SparkComponent SPARKCALL SparkCreateTransformComponentRot(SparkConstString name, SparkVec3 pos, SparkQuat rot);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyTransformComponent(SparkTransformComponent comp);
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateStaticModelComponent(SparkConstString name, SparkConstString model_name);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticModelComponent(SparkStaticModelComponent comp);
+
+SPARKAPI SparkComponent SPARKCALL SparkCreateDynamicModelComponent(SparkConstString name, SparkConstString model_name);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicModelComponent(SparkDynamicModelComponent comp);
+
+SPARKAPI SparkEventHandler SPARKCALL SparkCreateEventHandler();
 SPARKAPI SparkResult SPARKCALL
 SparkDestroyEventHandler(SparkEventHandler event_handler);
 SPARKAPI SparkResult SPARKCALL SparkAddEventListener(
@@ -2854,7 +2878,8 @@ SPARKAPI SparkResult SPARKCALL SparkDestroyEvent(SparkEvent event);
 SPARKAPI SparkWindowData SPARKCALL SparkCreateWindowData(SparkConstString title,
 	SparkI32 width,
 	SparkI32 height,
-	SparkBool vsync);
+	SparkBool vsync,
+	SparkPresentMode present);
 SPARKAPI SparkVoid SPARKCALL
 SparkDestroyWindowData(SparkWindowData window_data);
 SPARKAPI SparkWindow SPARKCALL SparkCreateWindow(SparkWindowData window_data);
