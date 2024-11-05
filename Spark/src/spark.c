@@ -1236,44 +1236,6 @@ SPARKAPI SparkBlendMode SparkStringToBlendMode(SparkConstString string) {
 		return (SparkBlendMode)-1;
 }
 
-SPARKAPI SparkConstString
-SparkTextureFilterToString(SparkTextureFilter filter) {
-	switch (filter) {
-	case SPARK_TEXTURE_FILTER_NEAREST:
-		return "SPARK_TEXTURE_FILTER_NEAREST";
-	case SPARK_TEXTURE_FILTER_LINEAR:
-		return "SPARK_TEXTURE_FILTER_LINEAR";
-	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
-		return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST";
-	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
-		return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST";
-	case SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
-		return "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR";
-	case SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-		return "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR";
-	default:
-		return "UNKNOWN_SPARK_TEXTURE_FILTER";
-	}
-}
-
-SPARKAPI SparkTextureFilter
-SparkStringToTextureFilter(SparkConstString string) {
-	if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST") == 0)
-		return SPARK_TEXTURE_FILTER_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR") == 0)
-		return SPARK_TEXTURE_FILTER_LINEAR;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST") == 0)
-		return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST") == 0)
-		return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR") == 0)
-		return SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR;
-	else if (strcmp(string, "SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR") == 0)
-		return SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR;
-	else
-		return (SparkTextureFilter)-1;
-}
-
 SPARKAPI SparkConstString SparkLogLevelToString(SparkLogLevel level) {
 	switch (level) {
 	case SPARK_LOG_LEVEL_TRACE:
@@ -7648,7 +7610,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateTextureSampler(
 	sampler_info.minLod = min_lod;
 	sampler_info.maxLod = max_lod;
 
-	if (vkCreateSampler(window->device, &sampler_info, SPARK_NULL, &texture->texture_sampler) != VK_SUCCES) {
+	if (vkCreateSampler(window->device, &sampler_info, SPARK_NULL, &texture->texture_sampler) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create texture sampler!");
 		return SPARK_ERROR_INVALID;
 	}
