@@ -24,7 +24,7 @@
 #include <STB/stb_image.h>
 
 #ifdef _MSC_VER
-#include <Windows.h>
+#include <windows.h>
 #include <process.h>
 #define SparkAtomicIncrement(data) InterlockedIncrement((LONG volatile *)(data))
 #define SparkAtomicDecrement(data) InterlockedDecrement((LONG volatile *)(data))
@@ -6008,12 +6008,13 @@ struct VulkanSwapChainSupportDetails {
 	SparkU32 present_modes_size;
 };
 
-struct VulkanMemoryAllocation {
-	VkBuffer buffer; /* op */
+typedef struct VulkanMemoryAllocationT {
+	VkDevice device;
+	VkBuffer buffer;
 	VkDeviceMemory memory;
 	SparkHandle raw_data;
 	SparkU32 size;
-};
+} *VulkanMemoryAllocation;
 
 struct VulkanUniformBufferObject {
 	SparkMat4 model;
@@ -6993,11 +6994,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
-	SparkWindow window,
+	SparkApplication app,
 	VkCommandBuffer command_buffer,
 	SparkU32 image_index,
 	SparkVector gps
 ) {
+	SparkWindow window = app->window;
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -7013,11 +7015,24 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	render_pass_info.renderArea.offset = (VkOffset2D){ 0, 0 };
 	render_pass_info.renderArea.extent = *window->swap_chain_extent;
 
-	VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	SparkResourceManager scene_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SCENE, strlen(SPARK_RESOURCE_TYPE_SCENE));
+	SparkResourceManager smesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
+	SparkResourceManager smodel_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MODEL, strlen(SPARK_RESOURCE_TYPE_STATIC_MODEL));
+	SparkResourceManager dmodel_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL));
+
+	SparkScene scene = scene_manager->current_resource->data;
+	SparkVec4 sky_color = scene->sky_color;
+	VkClearValue clear_color = { sky_color.x, sky_color.y, sky_color.z, sky_color.w };
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_color;
 
 	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+	SparkVector smeshes = SparkGetAllValuesHashMap(smesh_manager->resources);
+	SparkStaticMesh mesh = ((SparkResource)smeshes->elements[0])->data;
+
+	SparkVector smodels = SparkGetAllValuesHashMap(smodel_manager->resources);
+	SparkVector dmodels = SparkGetAllValuesHashMap(dmodel_manager->resources);
 
 	for (SparkSize i = 0; i < gps->size; i++) {
 		SparkResource resource = gps->elements[i];
@@ -7038,10 +7053,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 		scissor.extent = *window->swap_chain_extent;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		VkBuffer vertex_buffers[] = { window->vertex_buffer };
+		VkBuffer vertex_buffers[] = { mesh->vertex_buffer->buffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-		vkCmdBindIndexBuffer(command_buffer, window->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer->buffer, 0, VK_INDEX_TYPE_UINT16);
 
 		vkCmdBindDescriptorSets(
 			command_buffer,
@@ -7054,8 +7070,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 			SPARK_NULL
 		);
 
-		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, mesh->index_count, 1, 0, 0, 0);
 	}
+
+	SparkDestroyVector(smeshes);
+	SparkDestroyVector(smodels);
+	SparkDestroyVector(dmodels);
 
 	vkCmdEndRenderPass(command_buffer);
 
@@ -7081,10 +7101,11 @@ SPARKAPI SPARKSTATIC SparkU32 __SparkFindMemoryType(SparkWindow window, SparkU32
 	return UINT32_MAX;
 }
 
-SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateBuffer(SparkWindow window, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceSize size) {
-	struct VulkanMemoryAllocation* vk_alloc = SparkAllocate(sizeof(struct VulkanMemoryAllocation));
+SPARKAPI SPARKSTATIC VulkanMemoryAllocation __SparkCreateBuffer(SparkWindow window, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDeviceSize size) {
+	VulkanMemoryAllocation vk_alloc = SparkAllocate(sizeof(struct VulkanMemoryAllocationT));
 
 	vk_alloc->size = size;
+	vk_alloc->device = window->device;
 
 	VkBufferCreateInfo buffer_info = { 0 };
 	buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -7125,8 +7146,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCopyBuffer(SparkWindow window, VkBuffer 
 	__SparkEndSingleTimeCommands(window, command_buffer);
 }
 
-SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(SparkWindow window, SparkHandle vertices, SparkSize vertices_size) {
-	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(
+SPARKAPI SPARKSTATIC VulkanMemoryAllocation __SparkCreateVertexBuffer(SparkWindow window, SparkHandle vertices, SparkSize vertices_size) {
+	VulkanMemoryAllocation staging_alloc = __SparkCreateBuffer(
 		window,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -7139,7 +7160,7 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(Sp
 	vkUnmapMemory(window->device, staging_alloc->memory);
 
 	// Create Vertex Buffer
-	struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(
+	VulkanMemoryAllocation alloc = __SparkCreateBuffer(
 		window,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -7158,8 +7179,8 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateVertexBuffer(Sp
 	return alloc;
 }
 
-SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateIndexBuffer(SparkWindow window, SparkHandle indices, SparkSize indices_size) {
-	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(
+SPARKAPI SPARKSTATIC VulkanMemoryAllocation __SparkCreateIndexBuffer(SparkWindow window, SparkHandle indices, SparkSize indices_size) {
+	VulkanMemoryAllocation staging_alloc = __SparkCreateBuffer(
 		window,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -7171,7 +7192,7 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateIndexBuffer(Spa
 	memcpy(data, indices, indices_size);
 	vkUnmapMemory(window->device, staging_alloc->memory);
 
-	struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(
+	VulkanMemoryAllocation alloc = __SparkCreateBuffer(
 		window,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -7190,56 +7211,7 @@ SPARKAPI SPARKSTATIC struct VulkanMemoryAllocation* __SparkCreateIndexBuffer(Spa
 	return alloc;
 }
 
-
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateVertexBufferForWindow(SparkWindow window) {
-
-	const SparkVertex vertices[] = {
-		// First Triangle
-		SPARK_MAKE_VERTEX(-0.5f, -0.5f, 0.0f,   // Position
-						  0.0f, 1.0f, 0.0f,     // Normal
-						  0.0f, 0.0f),          // Texcoord (u, v)
-
-		SPARK_MAKE_VERTEX(0.5f, -0.5f, 0.0f,   // Position
-						  1.0f, 0.0f, 0.0f,     // Normal
-						  1.0f, 0.0f),          // Texcoord (u, v)
-
-		SPARK_MAKE_VERTEX(0.5f,  0.5f, 0.0f,   // Position
-						  0.0f, 0.0f, 1.0f,     // Normal
-						  1.0f, 1.0f),          // Texcoord (u, v)
-
-		SPARK_MAKE_VERTEX(-0.5f,  0.5f, 0.0f,   // Position
-						  1.0f, 0.0f, 1.0f,     // Normal
-						  1.0f, 1.0f),          // Texcoord (u, v)
-	};
-
-	struct VulkanMemoryAllocation* alloc = __SparkCreateVertexBuffer(window, vertices, sizeof(vertices));
-
-	window->vertex_buffer = alloc->buffer;
-	window->vertex_buffer_memory = alloc->memory;
-
-	SparkFree(alloc);
-
-	return SPARK_SUCCESS;
-}
-
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateIndexBufferForWindow(SparkWindow window) {
-
-	const SparkU16 indices[] = {
-		0, 1, 2, 2, 3, 0
-	};
-
-	struct VulkanMemoryAllocation* alloc = __SparkCreateIndexBuffer(window, indices, sizeof(indices));
-
-	window->index_buffer = alloc->buffer;
-	window->index_buffer_memory = alloc->memory;
-
-	SparkFree(alloc);
-
-	return SPARK_SUCCESS;
-}
-
-SPARKAPI SPARKSTATIC SparkResult
-__SparkCreateCommandBuffers(SparkWindow window) {
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandBuffers(SparkWindow window) {
 	window->command_buffers =
 		SparkAllocate(MAX_FRAMES_IN_FLIGHT * sizeof(VkCommandBuffer));
 	window->command_buffers_size = MAX_FRAMES_IN_FLIGHT;
@@ -7380,7 +7352,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateUniformBuffersForWindow(SparkWindo
 	window->uniform_buffers_mapped_size = MAX_FRAMES_IN_FLIGHT;
 
 	for (SparkSize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		struct VulkanMemoryAllocation* alloc = __SparkCreateBuffer(window, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer_size);
+		VulkanMemoryAllocation alloc = __SparkCreateBuffer(window, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer_size);
 
 		window->uniform_buffers[i] = alloc->buffer;
 		window->uniform_buffers_memory[i] = alloc->memory;
@@ -7696,16 +7668,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	if (__SparkCreateVertexBufferForWindow(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create vertex buffer!");
-		return SPARK_ERROR_INVALID;
-	}
-
-	if (__SparkCreateIndexBufferForWindow(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create index buffer!");
-		return SPARK_ERROR_INVALID;
-	}
-
 	if (__SparkCreateUniformBuffersForWindow(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create uniform buffers!");
 		return SPARK_ERROR_INVALID;
@@ -7756,12 +7718,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroyDescriptorPool(window->device, window->descriptor_pool, SPARK_NULL);
 
 	vkDestroyDescriptorSetLayout(window->device, window->descriptor_set_layout, SPARK_NULL);
-
-	vkDestroyBuffer(window->device, window->index_buffer, SPARK_NULL);
-	vkFreeMemory(window->device, window->index_buffer_memory, SPARK_NULL);
-
-	vkDestroyBuffer(window->device, window->vertex_buffer, SPARK_NULL);
-	vkFreeMemory(window->device, window->vertex_buffer_memory, SPARK_NULL);
 
 	vkDestroyRenderPass(window->device, window->render_pass, SPARK_NULL);
 
@@ -7839,7 +7795,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG));
 	SparkVector gps = SparkGetAllValuesHashMap(rm->resources);
 
-	__SparkRecordCommandBuffer(window, window->command_buffers[current_frame],
+	__SparkRecordCommandBuffer(app, window->command_buffers[current_frame],
 		image_index, gps);
 	SparkDestroyVector(gps);
 
@@ -9018,7 +8974,7 @@ SPARKAPI SparkTexture SparkCreateTexture(SparkApplication app, SparkConstString 
 
 	VkDeviceSize image_size = tex_width * tex_height * 4;
 
-	struct VulkanMemoryAllocation* staging_alloc = __SparkCreateBuffer(app->window, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, image_size);
+	VulkanMemoryAllocation staging_alloc = __SparkCreateBuffer(app->window, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, image_size);
 
 	SparkHandle data;
 	vkMapMemory(device, staging_alloc->memory, 0, image_size, 0, &data);
@@ -9273,6 +9229,7 @@ SPARKAPI SparkResourceManager SparkCreateResourceManager(
 	manager->resources =
 		SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL,
 			SPARK_NULL, __SparkFreeResource);
+	manager->current_resource = SPARK_NULL;
 	return manager;
 }
 
@@ -9289,8 +9246,31 @@ SPARKAPI SparkResult SparkAddResource(SparkResourceManager manager,
 	}
 
 	// Will overwrite the resource if it already exists
-	return SparkInsertHashMap(manager->resources, resource->name,
+	SparkResult res = SparkInsertHashMap(manager->resources, resource->name,
 		strlen(resource->name), resource);
+
+	if (!manager->current_resource) {
+		manager->current_resource = SparkGetElementHashMap(manager->resources, resource->name, strlen(resource->name));
+	}
+
+	return res;
+}
+
+SPARKAPI SparkResult SparkSetCurrentResource(SparkResourceManager manager, SparkConstString resource_name) {
+	if (!manager) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	SparkResource resource = SparkGetElementHashMap(manager->resources, resource_name, strlen(resource_name));
+
+	if (resource) {
+		manager->current_resource = resource;
+		return SPARK_SUCCESS;
+	}
+
+	SparkLog(SPARK_LOG_LEVEL_ERROR, "Can not set current resource that does not exist!");
+	return SPARK_ERROR_INVALID;
 }
 
 SPARKAPI SparkResult SparkRemoveResource(SparkResourceManager manager,
@@ -9303,6 +9283,7 @@ SPARKAPI SparkResult SparkRemoveResource(SparkResourceManager manager,
 	return SparkRemoveHashMap(manager->resources, name, strlen(name));
 }
 
+/*
 SPARKAPI SparkHandle SparkCreateResourceData(SparkConstString type, ...) {
 	va_list args;
 	va_start(type, args);
@@ -9332,6 +9313,7 @@ SPARKAPI SparkHandle SparkCreateResourceData(SparkConstString type, ...) {
 
 	return handle;
 }
+*/
 
 SPARKAPI SparkResource SparkCreateResource(SparkResourceManager manager,
 	SparkConstString name,
@@ -9368,12 +9350,19 @@ SPARKAPI SparkResource SparkGetResource(SparkResourceManager manager,
 
 #pragma region MESH
 
-SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[],
+SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkApplication app, SparkVertex vertices[],
 	SparkU32 vertices_size) {
-	return SparkCreateStaticMeshI(vertices, vertices_size, SPARK_NULL, 0);
+	return SparkCreateStaticMeshI(app, vertices, vertices_size, SPARK_NULL, 0);
 }
 
-SPARKAPI SparkStaticMesh SparkCreateStaticMeshI(SparkVertex vertices[],
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkApplication app, SparkVertex vertices[],
+	SparkU32 vertices_size) {
+	return SparkCreateDynamicMeshI(app, vertices, vertices_size, SPARK_NULL, 0);
+}
+
+SPARKAPI SparkStaticMesh SparkCreateStaticMeshI(
+	SparkApplication app,
+	SparkVertex vertices[],
 	SparkU32 vertices_size,
 	SparkU32 indices[],
 	SparkU32 indices_size) {
@@ -9382,19 +9371,20 @@ SPARKAPI SparkStaticMesh SparkCreateStaticMeshI(SparkVertex vertices[],
 	mesh->vertex_count = vertices_size;
 	mesh->indices = indices;
 	mesh->index_count = indices_size;
+
+	mesh->vertex_buffer = __SparkCreateVertexBuffer(app->window, vertices, sizeof(SparkVertex) * vertices_size);
+
+	if (indices_size > 0)
+		mesh->index_buffer = __SparkCreateIndexBuffer(app->window, indices, sizeof(SparkU32) * indices_size);
+	else
+		mesh->index_buffer = SPARK_NULL;
+
 	return mesh;
 }
 
-SPARKAPI SparkVoid SparkDestroyStaticMesh(SparkStaticMesh mesh) {
-	SparkFree(mesh);
-}
-
-SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[],
-	SparkU32 vertices_size) {
-	return SparkCreateDynamicMeshI(vertices, vertices_size, SPARK_NULL, 0);
-}
-
-SPARKAPI SparkDynamicMesh SparkCreateDynamicMeshI(SparkVertex vertices[],
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMeshI(
+	SparkApplication app,
+	SparkVertex vertices[],
 	SparkU32 vertices_size,
 	SparkU32 indices[],
 	SparkU32 indices_size) {
@@ -9403,12 +9393,45 @@ SPARKAPI SparkDynamicMesh SparkCreateDynamicMeshI(SparkVertex vertices[],
 	mesh->vertex_count = vertices_size;
 	mesh->indices = indices;
 	mesh->index_count = indices_size;
+
+	mesh->vertex_buffer = __SparkCreateVertexBuffer(app->window, vertices, sizeof(SparkVertex) * vertices_size);
+	
+	if (indices_size > 0)
+		mesh->index_buffer = __SparkCreateIndexBuffer(app->window, indices, sizeof(SparkU32) * indices_size);
+	else
+		mesh->index_buffer = SPARK_NULL;
+
 	return mesh;
 }
 
-SPARKAPI SparkVoid SparkDestroyDynamicMesh(SparkDynamicMesh mesh) {
+SPARKAPI SparkVoid SparkDestroyStaticMesh(SparkStaticMesh mesh) {
+	if (mesh->vertex_buffer) {
+		vkDestroyBuffer(mesh->vertex_buffer->device, mesh->vertex_buffer->buffer, SPARK_NULL);
+		vkFreeMemory(mesh->vertex_buffer->device, mesh->vertex_buffer->memory, SPARK_NULL);
+		SparkFree(mesh->vertex_buffer);
+	}
+	if (mesh->index_buffer) {
+		vkDestroyBuffer(mesh->index_buffer->device, mesh->index_buffer->buffer, SPARK_NULL);
+		vkFreeMemory(mesh->index_buffer->device, mesh->index_buffer->memory, SPARK_NULL);
+		SparkFree(mesh->index_buffer);
+	}
 	SparkFree(mesh);
 }
+
+SPARKAPI SparkVoid SparkDestroyDynamicMesh(SparkDynamicMesh mesh) {
+	if (mesh->vertex_buffer) {
+		vkDestroyBuffer(mesh->vertex_buffer->device, mesh->vertex_buffer->buffer, SPARK_NULL);
+		vkFreeMemory(mesh->vertex_buffer->device, mesh->vertex_buffer->memory, SPARK_NULL);
+		SparkFree(mesh->vertex_buffer);
+	}
+	if (mesh->index_buffer) {
+		vkDestroyBuffer(mesh->index_buffer->device, mesh->index_buffer->buffer, SPARK_NULL);
+		vkFreeMemory(mesh->index_buffer->device, mesh->index_buffer->memory, SPARK_NULL);
+		SparkFree(mesh->index_buffer);
+	}
+	SparkFree(mesh);
+}
+
 
 #pragma endregion
 
@@ -9511,20 +9534,17 @@ SPARKAPI SparkVoid SparkDestroyFont(SparkFont font) { SparkFree(font); }
 
 #pragma region SCENE
 
-SPARKAPI SparkScene SPARKCALL SparkCreateScene() {
-	return SparkAllocate(sizeof(struct SparkSceneT));
+SPARKAPI SparkScene SPARKCALL SparkCreateScene(SparkVec4 sky_color) {
+	SparkScene scene = SparkAllocate(sizeof(struct SparkSceneT));
+	scene->sky_color = sky_color;
+
+	return scene;
 }
 
 SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene) {
 	SparkFree(scene);
 }
 
-SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene,
-	SparkEntity entity,
-	SparkSceneNode parent) {}
-
-SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene,
-	SparkEntity entity) {}
 
 #pragma endregion
 
@@ -9705,6 +9725,13 @@ __SparkUpdateApplication(SparkApplication app) {
 	return __SparkStopApplication(app);
 }
 
+SPARKAPI SPARKSTATIC SparkVoid __SparkInitializeResourceDefaults(SparkApplication app) {
+	SparkCreateResourceApplication(app,
+		SPARK_RESOURCE_TYPE_SCENE,
+		SPARK_DEFAULT_SCENE,
+		SparkCreateScene((SparkVec4){ 0.2f, 0.3f, 0.4f, 1.0f }));
+}
+
 SPARKAPI SPARKSTATIC SparkVoid
 __SparkInitializeResourceManagerApplication(SparkApplication app) {
 	SparkResourceManager smesh_manager = SparkCreateResourceManager(SPARK_RESOURCE_TYPE_STATIC_MESH, SparkDestroyStaticMesh);
@@ -9744,6 +9771,8 @@ __SparkInitializeResourceManagerApplication(SparkApplication app) {
 		strlen(SPARK_RESOURCE_TYPE_AI_BEHAVIOR), ai_manager);
 	SparkInsertHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, 
 		strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG), gp_manager);
+
+	__SparkInitializeResourceDefaults(app);
 }
 
 SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,

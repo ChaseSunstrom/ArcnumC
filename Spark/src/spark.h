@@ -476,6 +476,8 @@ typedef pthread_cond_t SparkCondition;
 #define SPARK_UNBLOCKED_PARRALLELISM                                           \
   (Pair) { SPARK_TRUE, SPARK_FALSE }
 
+#define SPARK_DEFAULT_SCENE "Default Scene"
+
 #pragma endregion
 
 #pragma region ENUMS
@@ -1372,6 +1374,11 @@ typedef struct SparkResourceT {
 	SparkFreeFunction destructor;
 } *SparkResource;
 
+typedef struct SparkSceneT {
+	/* Temporary Scene stuff, right now just a color */
+	SparkVec4 sky_color;
+} *SparkScene;
+
 typedef struct SparkResourceLoaderT {
 	SparkConstString type;
 	SparkHandle(*load)(SparkConstString path);
@@ -1385,6 +1392,8 @@ typedef struct SparkResourceManagerT {
 	SparkConstString type;
 	/* HashMap <SparkString, SparkResource> */
 	SparkHashMap resources;
+	/* Current resource, only used for some things like Scenes */
+	SparkResource current_resource;
 	SparkFreeFunction resource_destructor;
 } *SparkResourceManager;
 
@@ -1470,23 +1479,13 @@ typedef struct SparkVertexT {
 	SparkVec2 texcoord;
 } SparkVertex;
 
-typedef struct SparkInstanceT {
-	SparkMat4 model_matrix;
-} *SparkInstance;
-
 typedef struct SparkStaticMeshT {
 	SparkVertex* vertices;
 	SparkU32* indices;
 	SparkU32 vertex_count;
 	SparkU32 index_count;
-	struct VkBuffer_T* vertex_buffer;
-	struct VkDeviceMemory_T* vertex_buffer_memory;
-	struct VkBuffer_T* index_buffer;
-	struct VkDeviceMemory_T* index_buffer_memory;
-	struct VkBuffer_T* instance_buffer;
-	struct VkDeviceMemory_T* instance_buffer_memory;
-	SparkInstance* instances;
-	SparkU32 instance_count;
+	struct VulkanMemoryAllocationT* vertex_buffer;
+	struct VulkanMemoryAllocationT* index_buffer;
 } *SparkStaticMesh;
 
 typedef struct SparkDynamicMeshT {
@@ -1494,20 +1493,14 @@ typedef struct SparkDynamicMeshT {
 	SparkU32* indices;
 	SparkU32 vertex_count;
 	SparkU32 index_count;
-	struct VkBuffer_T* vertex_buffer;
-	struct VkDeviceMemory_T* vertex_buffer_memory;
-	struct VkBuffer_T* index_buffer;
-	struct VkDeviceMemory_T* index_buffer_memory;
-	struct VkBuffer_T* instance_buffer;
-	struct VkDeviceMemory_T* instance_buffer_memory;
-	SparkInstance* instances;
-	SparkU32 instance_count;
+	struct VulkanMemoryAllocationT* vertex_buffer;
+	struct VulkanMemoryAllocationT* index_buffer;
 } *SparkDynamicMesh;
 
 typedef struct SparkMaterialT {
 	struct SparkGraphicsPipelineConfigT* pipeline_config;
+	SparkTexture texture;
 	SparkVec4 color;
-
 } *SparkMaterial;
 
 typedef struct SparkStaticModelT {
@@ -1519,17 +1512,6 @@ typedef struct SparkDynamicModelT {
 	SparkDynamicMesh mesh;
 	SparkMaterial material;
 } *SparkDynamicModel;
-
-/* Scene management declarations */
-typedef struct SparkSceneNodeT {
-	SparkEntity entity;
-	struct SparkSceneNodeT* parent;
-	SparkVector children; // Vector of SparkSceneNode
-} *SparkSceneNode;
-
-typedef struct SparkSceneT {
-	SparkSceneNode root;
-} *SparkScene;
 
 /* Animation declarations */
 typedef struct SparkAnimationT {
@@ -1630,11 +1612,7 @@ typedef struct SparkWindowT {
 	struct VkSemaphore_T** image_available_semaphores;
 	struct VkSemaphore_T** render_finished_semaphores;
 	struct VkFence_T** in_flight_fences;
-	struct VkBuffer_T* vertex_buffer;
-	struct VkDeviceMemory_T* vertex_buffer_memory;
-	struct VkBuffer_T* index_buffer;
 	struct VkDescriptorPool_T* descriptor_pool;
-	struct VkDeviceMemory_T* index_buffer_memory;
 	struct VkBuffer_T** uniform_buffers;
 	struct VkDeviceMemory_T** uniform_buffers_memory;
 	struct VkDescriptorSet_T** descriptor_sets;
@@ -2652,17 +2630,17 @@ SPARKAPI SparkResult SPARKCALL SparkDrawElements(SparkPrimitiveType mode,
 SPARKAPI SparkTexture SPARKCALL SparkCreateTexture(SparkApplication app, SparkConstString image_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyTexture(SparkTexture texture);
 
-SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkVertex vertices[],
+SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkApplication app, SparkVertex vertices[],
 	SparkU32 vertices_size);
 SPARKAPI SparkStaticMesh SPARKCALL
-SparkCreateStaticMeshI(SparkVertex vertices[], SparkU32 vertices_size,
+SparkCreateStaticMeshI(SparkApplication app, SparkVertex vertices[], SparkU32 vertices_size,
 	SparkU32 indices[], SparkU32 indices_size);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyStaticMesh(SparkStaticMesh mesh);
 
-SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkVertex vertices[],
+SPARKAPI SparkDynamicMesh SparkCreateDynamicMesh(SparkApplication app, SparkVertex vertices[],
 	SparkU32 vertices_size);
 SPARKAPI SparkDynamicMesh SPARKCALL
-SparkCreateDynamicMeshI(SparkVertex vertices[], SparkU32 vertices_size,
+SparkCreateDynamicMeshI(SparkApplication app, SparkVertex vertices[], SparkU32 vertices_size,
 	SparkU32 indices[], SparkU32 indices_size);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicMesh(SparkDynamicMesh mesh);
 
@@ -2748,13 +2726,8 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeString(
 SPARKAPI SparkResult SPARKCALL SparkDeserializeTrivial(
 	SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 
-SPARKAPI SparkScene SPARKCALL SparkCreateScene();
+SPARKAPI SparkScene SPARKCALL SparkCreateScene(SparkVec4 sky_color);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene);
-SPARKAPI SparkResult SPARKCALL SparkAddEntityToScene(SparkScene scene,
-	SparkEntity entity,
-	SparkSceneNode parent);
-SPARKAPI SparkResult SPARKCALL SparkRemoveEntityFromScene(SparkScene scene,
-	SparkEntity entity);
 
 SPARKAPI SparkResourceManager SPARKCALL SparkCreateResourceManager(
 	SparkConstString type, SparkFreeFunction resource_free);
@@ -2770,6 +2743,7 @@ SPARKAPI SparkResource SPARKCALL SparkCreateResource(
 	SparkResourceManager manager, SparkConstString name, SparkHandle data);
 SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceManager manager,
 	SparkConstString name);
+SPARKAPI SparkResult SPARKCALL SparkSetCurrentResource(SparkResourceManager manager, SparkConstString resource_name);
 
 SPARKAPI SparkAnimation SPARKCALL
 SparkCreateAnimation(SparkConstString file_path);
