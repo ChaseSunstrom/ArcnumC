@@ -6473,8 +6473,11 @@ __SparkIsDeviceSuitable(SparkWindow window, VkPhysicalDevice device) {
 		SparkFree(swap_chain_support.present_modes);
 	}
 
+	VkPhysicalDeviceFeatures supported_features;
+	vkGetPhysicalDeviceFeatures(device, &supported_features);
+
 	return __SparkIndicesComplete(&indices) && extensions_supported &&
-		swap_chain_adequete;
+		swap_chain_adequete && supported_features.samplerAnisotropy;
 }
 
 SPARKAPI SPARKSTATIC SparkI32
@@ -6607,6 +6610,8 @@ __SparkCreateLogicalDevice(SparkWindow window) {
 	VkPhysicalDeviceFeatures device_features = { 0 };
 	VkDeviceCreateInfo create_info = { 0 };
 
+	device_features.samplerAnisotropy = SPARK_TRUE;
+
 	queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queue_create_info.queueFamilyIndex = indices.graphics_family;
 	queue_create_info.queueCount = 1;
@@ -6729,32 +6734,34 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
+SPARKAPI SPARKSTATIC VkImageView __SparkCreateImageView(SparkWindow window, VkImage image, VkFormat format) {
+	VkImageViewCreateInfo view_info = { 0 };
+	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.image = image;
+	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	view_info.format = format;
+	view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	view_info.subresourceRange.baseMipLevel = 0;
+	view_info.subresourceRange.levelCount = 1;
+	view_info.subresourceRange.baseArrayLayer = 0;
+	view_info.subresourceRange.layerCount = 1;
+
+	VkImageView image_view;
+	if (vkCreateImageView(window->device, &view_info, SPARK_NULL, &image_view) != VK_SUCCESS) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create texture image view!");
+		return SPARK_ERROR_INVALID;
+	}
+
+	return image_view;
+}
+
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateImageViews(SparkWindow window) {
 	window->swap_chain_image_views =
 		SparkAllocate(window->swap_chain_images_size * sizeof(VkImageView));
 	window->swap_chain_image_views_size = window->swap_chain_images_size;
 
 	for (SparkSize i = 0; i < window->swap_chain_images_size; i++) {
-		VkImageViewCreateInfo create_info = { 0 };
-		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		create_info.image = window->swap_chain_images[i];
-		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.format = window->swap_chain_image_format;
-		create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		create_info.subresourceRange.baseMipLevel = 0;
-		create_info.subresourceRange.levelCount = 1;
-		create_info.subresourceRange.baseArrayLayer = 0;
-		create_info.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(window->device, &create_info, SPARK_NULL,
-			&window->swap_chain_image_views[i]) != VK_SUCCESS) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image views!");
-			return SPARK_ERROR_INVALID;
-		}
+		window->swap_chain_image_views[i] = __SparkCreateImageView(window, window->swap_chain_images[i], window->swap_chain_image_format);
 	}
 
 	return SPARK_SUCCESS;
@@ -7375,18 +7382,26 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorSetLayout(SparkWindow wi
 	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	ubo_layout_binding.descriptorCount = 1;
 	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkDescriptorSetLayoutBinding sampler_layout_binding = { 0 };
+	sampler_layout_binding.binding = 1;
+	sampler_layout_binding.descriptorCount = 1;
+	sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampler_layout_binding.pImmutableSamplers = SPARK_NULL;
+	sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	
+	VkDescriptorSetLayoutBinding bindings[2] = { ubo_layout_binding, sampler_layout_binding };
+
 	VkDescriptorSetLayoutCreateInfo layout_info = { 0 };
 	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layout_info.bindingCount = 1;
-	layout_info.pBindings = &ubo_layout_binding;
+	layout_info.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+	layout_info.pBindings = bindings;
 
 	if (vkCreateDescriptorSetLayout(window->device, &layout_info, SPARK_NULL, &window->descriptor_set_layout) != VK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set layout!");
 		return SPARK_ERROR_INVALID;
 	}
 
-	
 	return SPARK_SUCCESS;
 }
 
@@ -7417,14 +7432,16 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateUniformBuffersForWindow(SparkWindo
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorPool(SparkWindow window) {
-	VkDescriptorPoolSize pool_size = { 0 };
-	pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	pool_size.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+	VkDescriptorPoolSize pool_sizes[2];
+	pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	pool_sizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+	pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	pool_sizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
 	VkDescriptorPoolCreateInfo pool_info = { 0 };
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	pool_info.poolSizeCount = 1;
-	pool_info.pPoolSizes = &pool_size;
+	pool_info.poolSizeCount = sizeof(pool_sizes) / sizeof(pool_sizes[0]);
+	pool_info.pPoolSizes = pool_sizes;
 	pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
 
 	if (vkCreateDescriptorPool(window->device, &pool_info, SPARK_NULL, &window->descriptor_pool) != VK_SUCCESS) {
@@ -7488,23 +7505,26 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(SparkApplication app,
 	VkImageTiling tiling,
 	VkImageUsageFlags usage,
 	VkMemoryPropertyFlags properties,
+	VkImageType image_type,
+	VkSampleCountFlagBits samples,
+	SparkU32 mip_levels,
 	VkImage* image,
 	VkDeviceMemory* image_memory) {
 	VkDevice device = app->window->device;
 
 	VkImageCreateInfo image_info = { 0 };
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	image_info.imageType = VK_IMAGE_TYPE_2D;
+	image_info.imageType = image_type;
 	image_info.extent.width = width;
 	image_info.extent.height = height;
 	image_info.extent.depth = 1;
-	image_info.mipLevels = 1;
+	image_info.mipLevels = mip_levels;
 	image_info.arrayLayers = 1;
 	image_info.format = format;
 	image_info.tiling = tiling;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_info.usage = usage;
-	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+	image_info.samples = samples;
 	image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	if (vkCreateImage(device, &image_info, SPARK_NULL, image) != VK_SUCCESS) {
@@ -7573,6 +7593,65 @@ SPARKAPI SPARKSTATIC SparkResult __SparkTransitionImageLayout(SparkWindow window
 	__SparkEndSingleTimeCommands(window, command_buffer);
 
 	return SPARK_SUCCESS;
+}
+
+
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateTextureImageView(SparkWindow window, SparkTexture texture) {
+	texture->image_view = __SparkCreateImageView(window, texture->image, VK_FORMAT_R8G8B8A8_SRGB);
+	return SPARK_SUCCESS;
+}
+
+/*
+* Repeat Mode:
+* VK_SAMPLER_ADDRESS_MODE_REPEAT: Repeat the texture when going beyond the image dimensions.
+* VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT: Like repeat, but inverts the coordinates to mirror the image when going beyond the dimensions.
+* VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE: Take the color of the edge closest to the coordinate beyond the image dimensions.
+* VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE: Like clamp to edge, but instead uses the edge opposite to the closest edge.
+* VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER: Return a solid color when sampling beyond the dimensions of the image.
+
+* Border Color:
+* VK_BORDER_COLOR_INT_OPAQUE_BLACK: Black border color beyond image
+*/
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateTextureSampler(
+	SparkWindow window, 
+	SparkTexture texture, 
+	VkSamplerAddressMode repeat_mode, 
+	SparkBool enable_anisotropy,
+	VkBorderColor border_color,
+	SparkTextureFilter mip_map_mode,
+	SparkF32 mip_lod_bias,
+	SparkF32 min_lod,
+	SparkF32 max_lod
+) {
+	VkSamplerCreateInfo sampler_info = { 0 };
+	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.magFilter = VK_FILTER_LINEAR;
+	sampler_info.minFilter = VK_FILTER_LINEAR;
+	sampler_info.addressModeU = repeat_mode;
+	sampler_info.addressModeV = repeat_mode;
+	sampler_info.addressModeW = repeat_mode;
+	sampler_info.anisotropyEnable = enable_anisotropy;
+	
+	if (enable_anisotropy) {
+		VkPhysicalDeviceProperties properties = { 0 };
+		vkGetPhysicalDeviceProperties(window->physical_device, &properties);
+
+		sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	}
+
+	sampler_info.borderColor = border_color;
+	sampler_info.unnormalizedCoordinates = VK_FALSE;
+	sampler_info.compareEnable = VK_FALSE;
+	sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+	sampler_info.mipmapMode = mip_map_mode;
+	sampler_info.mipLodBias = mip_lod_bias;
+	sampler_info.minLod = min_lod;
+	sampler_info.maxLod = max_lod;
+
+	if (vkCreateSampler(window->device, &sampler_info, SPARK_NULL, &texture->texture_sampler) != VK_SUCCES) {
+		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create texture sampler!");
+		return SPARK_ERROR_INVALID;
+	}
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkCopyBufferToImage(SparkWindow window, VkBuffer buffer, VkImage image, SparkU32 width, SparkU32 height) {
@@ -7644,13 +7723,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set!");
 		return SPARK_ERROR_INVALID;
 	}
-
-	/*
-	if (__SparkCreateGraphicsPipeline(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
-		return SPARK_ERROR_INVALID;
-	}
-	*/
 
 	if (__SparkCreateFramebuffers(window) != SPARK_SUCCESS) {
 		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffers!");
@@ -8999,10 +9071,23 @@ SPARKAPI SparkTexture SparkCreateTexture(SparkApplication app, SparkConstString 
 	texture->height = tex_height;
 	texture->channels = tex_channels;
 	
-	__SparkCreateImage(app, tex_width, tex_height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture->image, &texture->image_memory);
+	__SparkCreateImage(
+		app, 
+		tex_width, 
+		tex_height, 
+		VK_FORMAT_R8G8B8A8_SRGB, 
+		VK_IMAGE_TILING_OPTIMAL, 
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+		VK_IMAGE_TYPE_2D,
+		VK_SAMPLE_COUNT_1_BIT,
+		1,
+		&texture->image, 
+		&texture->image_memory);
 	__SparkTransitionImageLayout(app->window, texture->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	__SparkCopyBufferToImage(app->window, staging_alloc->buffer, texture->image, tex_width, tex_height);
 	__SparkTransitionImageLayout(app->window, texture->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	__SparkCreateTextureImageView(app->window, texture);
 
 	vkDestroyBuffer(device, staging_alloc->buffer, SPARK_NULL);
 	vkFreeMemory(device, staging_alloc->memory, SPARK_NULL);
@@ -9013,6 +9098,8 @@ SPARKAPI SparkTexture SparkCreateTexture(SparkApplication app, SparkConstString 
 }
 
 SPARKAPI SparkVoid SparkDestroyTexture(SparkTexture texture) {
+	vkDestroySampler(texture->device, texture->texture_sampler, SPARK_NULL);
+	vkDestroyImageView(texture->device, texture->image_view, SPARK_NULL);
 	vkDestroyImage(texture->device, texture->image, SPARK_NULL);
 	vkFreeMemory(texture->device, texture->image_memory, SPARK_NULL);
 	SparkFree(texture);
@@ -9926,5 +10013,33 @@ SPARKAPI SparkVoid SparkDestroyGraphicsPipelineConfig(SparkGraphicsPipelineConfi
 
 	SparkFree(gp);
 }
+
+SPARKAPI SparkMaterial SparkGetMaterialApplication(SparkApplication app, SparkConstString name) {
+	SparkResourceManager material_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_MATERIAL, strlen(SPARK_RESOURCE_TYPE_MATERIAL));
+	SparkResource resource = SparkGetResource(material_manager, name);
+	if (resource) {
+		return (SparkMaterial)resource->data;
+	}
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkStaticMesh SparkGetStaticMeshApplication(SparkApplication app, SparkConstString name) {
+	SparkResourceManager mesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
+	SparkResource resource = SparkGetResource(mesh_manager, name);
+	if (resource) {
+		return resource->data;
+	}
+	return SPARK_NULL;
+}
+
+SPARKAPI SparkDynamicMesh SparkGetDynamicMeshApplication(SparkApplication app, SparkConstString name) {
+	SparkResourceManager mesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
+	SparkResource resource = SparkGetResource(mesh_manager, name);
+	if (resource) {
+		return resource->data;
+	}
+	return SPARK_NULL;
+}
+
 
 #pragma endregion

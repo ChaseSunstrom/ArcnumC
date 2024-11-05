@@ -770,11 +770,9 @@ typedef enum SparkBlendModeT {
 /* Texture filtering options */
 typedef enum SparkTextureFilterT {
 	SPARK_TEXTURE_FILTER_NEAREST = 0,
-	SPARK_TEXTURE_FILTER_LINEAR,
-	SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST,
-	SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST,
-	SPARK_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR,
-	SPARK_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR
+	SPARK_TEXTURE_FILTER_LINEAR = 1,
+	SPARK_TEXTURE_FILTER_MIPMAP_NEAREST = 0,
+	SPARK_TEXTURE_FILTER_MIPMAP_LINEAR = 1,
 } SparkTextureFilter;
 
 /* Log levels */
@@ -873,8 +871,6 @@ typedef struct SparkEventDataMouseScrolledT {
 	SparkF64 x;
 	SparkF64 y;
 } *SparkEventDataMouseScrolled;
-
-
 
 typedef struct SparkEventDataWindowResizedT {
 	SparkI32 width;
@@ -1219,6 +1215,13 @@ typedef struct SparkThreadPoolT {
 	SparkVector shutdown_callback_args;
 } *SparkThreadPool;
 
+typedef struct SparkUniformBufferObjectT {
+	struct VkBuffer_T* buffer;
+	struct VkDeviceMemory_T* memory;
+	struct VkDescriptorBufferInfo_T* descriptor;
+	SparkHandle data;
+};
+
 typedef struct SparkEventT {
 	SparkEventType type;
 	SparkHandle data;
@@ -1409,6 +1412,8 @@ typedef struct SparkTextureT {
 	struct VkDevice_T* device;
 	struct VkImage_T* image;
 	struct VkDeviceMemory_T* image_memory;
+	struct VkImageView_T* image_view;
+	struct VkSampler_T* texture_sampler;
 	SparkI32 width;
 	SparkI32 height;
 	SparkI32 channels;
@@ -1465,6 +1470,10 @@ typedef struct SparkVertexT {
 	SparkVec2 texcoord;
 } SparkVertex;
 
+typedef struct SparkInstanceT {
+	SparkMat4 model_matrix;
+} *SparkInstance;
+
 typedef struct SparkStaticMeshT {
 	SparkVertex* vertices;
 	SparkU32* indices;
@@ -1474,6 +1483,10 @@ typedef struct SparkStaticMeshT {
 	struct VkDeviceMemory_T* vertex_buffer_memory;
 	struct VkBuffer_T* index_buffer;
 	struct VkDeviceMemory_T* index_buffer_memory;
+	struct VkBuffer_T* instance_buffer;
+	struct VkDeviceMemory_T* instance_buffer_memory;
+	SparkInstance* instances;
+	SparkU32 instance_count;
 } *SparkStaticMesh;
 
 typedef struct SparkDynamicMeshT {
@@ -1485,6 +1498,10 @@ typedef struct SparkDynamicMeshT {
 	struct VkDeviceMemory_T* vertex_buffer_memory;
 	struct VkBuffer_T* index_buffer;
 	struct VkDeviceMemory_T* index_buffer_memory;
+	struct VkBuffer_T* instance_buffer;
+	struct VkDeviceMemory_T* instance_buffer_memory;
+	SparkInstance* instances;
+	SparkU32 instance_count;
 } *SparkDynamicMesh;
 
 typedef struct SparkMaterialT {
@@ -2965,6 +2982,9 @@ SPARKAPI SparkResult SPARKCALL
 SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type,
 	SparkFreeFunction resource_destructor);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
+SPARKAPI SparkMaterial SPARKCALL SparkGetMaterialApplication(SparkApplication app, SparkConstString name);
+SPARKAPI SparkStaticMesh SPARKCALL SparkGetStaticMeshApplication(SparkApplication app, SparkConstString name);
+SPARKAPI SparkDynamicMesh SPARKCALL SparkGetDynamicMeshApplication(SparkApplication app, SparkConstString name);
 
 #pragma endregion
 
