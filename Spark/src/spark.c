@@ -5557,13 +5557,13 @@ SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
 	static SparkU64 next_bit = 1;
 
 	if (!component_bits)
-		component_bits = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, free);
+		component_bits = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, SparkFree);
 
 	SparkU64* bit = SparkGetElementHashMap(component_bits, (SparkHandle)component_type, strlen(component_type));
 	if (bit)
 		return *bit;
 
-	SparkU64* new_bit = malloc(sizeof(SparkU64));
+	SparkU64* new_bit = SparkAllocate(sizeof(SparkU64));
 	*new_bit = next_bit;
 	next_bit <<= 1;
 
