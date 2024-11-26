@@ -371,6 +371,7 @@ typedef SparkU32 SparkDuration;
 typedef SparkU32 SparkFrequency;
 typedef SparkU32 SparkRate;
 typedef SparkU64 SparkEventType;
+typedef SparkU64 SparkSignature;
 
 #ifdef _WIN32
 #include <windows.h>
@@ -477,6 +478,8 @@ typedef pthread_cond_t SparkCondition;
   (Pair) { SPARK_TRUE, SPARK_FALSE }
 
 #define SPARK_DEFAULT_SCENE "Default Scene"
+
+#define INVALID_INDEX ((SparkSize)-1)
 
 #pragma endregion
 
@@ -1224,6 +1227,10 @@ typedef struct SparkUniformBufferObjectT {
 	SparkHandle data;
 };
 
+typedef struct SparkQueryT {
+	SparkSignature signature;   // Required components' signature
+} *SparkQuery;
+
 typedef struct SparkEventT {
 	SparkEventType type;
 	SparkHandle data;
@@ -1241,7 +1248,7 @@ typedef struct SparkEventHandlerFunctionT {
 
 typedef struct SparkQueryEventHandlerFunctionT {
 	SparkEventType event_type;
-	SparkConstString component_type;
+	SparkQuery query;
 	SparkApplicationQueryEventFunction function;
 	SparkPair thread_settings;
 } *SparkQueryEventHandlerFunction;
@@ -1250,6 +1257,7 @@ typedef struct SparkQueryHandlerFunctionT {
 	SparkConstString component_type;
 	SparkApplicationQueryFunction function;
 	SparkPair thread_settings;
+	SparkQuery query;
 } *SparkQueryHandlerFunction;
 
 typedef struct SparkUpdateHandlerFunctionT {
@@ -1312,10 +1320,14 @@ typedef struct SparkDynamicModelComponentT {
 } *SparkDynamicModelComponent;
 
 typedef struct SparkComponentArrayT {
-	SparkVector components;
-	SparkHashMap entity_to_index;
-	SparkHashMap index_to_entity;
+    SparkComponent* dense;   // Dense array of components
+    SparkEntity* entities;   // Entity IDs corresponding to components
+    SparkSize* sparse;       // Mapping from entity IDs to indices in dense array
+    SparkSize size;          // Number of active components
+    SparkSize dense_capacity;
+    SparkSize sparse_capacity;
 } *SparkComponentArray;
+
 
 typedef struct SparkSystemT {
 	SparkSystemStartFunction start;
@@ -1325,17 +1337,24 @@ typedef struct SparkSystemT {
 	SparkHandle system_data;
 } *SparkSystem;
 
+
+typedef struct SparkQueryCacheT {
+	SparkQuery query;
+	SparkVector entities;  // Cached entities matching the query
+	SparkSize version;     // ECS version at the time of caching
+} *SparkQueryCache;
+
 typedef struct SparkEcsT {
 	SparkAllocator allocator;
-	/* Vector <SparkEntity> */
-	SparkVector entities;
-	/* Vector <SparkSystem> */
-	SparkVector systems;
-	/* HashMap <SparkString, SparkComponentArray> */
-	SparkHashMap components;
-	/* Stack <SparkI32> */
-	SparkStack recycled_ids;
+	SparkVector entities;            // Vector<SparkEntity>
+	SparkVector systems;             // Vector<SparkSystem>
+	SparkHashMap components;         // HashMap<SparkString, SparkComponentArray>
+	SparkStack recycled_ids;         // Stack<SparkEntity>
 	SparkEventHandler event_handler;
+	SparkSignature* signatures;      // Array of signatures for entities
+	SparkSize entity_count;          // Total number of entities
+	SparkSize version;               // Version for cache invalidation
+	SparkVector query_caches;        // Vector<SparkQueryCache>
 } *SparkEcs;
 
 typedef struct SparkEventDataEntityCreatedT {
@@ -1637,22 +1656,19 @@ typedef struct SparkApplicationT {
 	SparkEcs ecs;
 	SparkHashMap resource_manager;
 	SparkEventHandler event_handler;
-	/* Vector <SparkApplicationStartFunction> */
-	SparkVector start_functions;
-	/* Vector <SparkApplicationUpdateFunction> */
-	SparkVector update_functions;
-	/* Vector <SparkApplicationStopFunction> */
-	SparkVector stop_functions;
-	/* Vector <SparkApplicationEventFunction> */
-	SparkVector event_functions;
-	/* HashMap <SparkConstString, SparkVector <SparkApplicationQueryFunction>> */
-	SparkHashMap query_functions;
-	/* Vector <SparkApplicationQueryEventFunction> */
-	SparkVector query_event_functions;
+	SparkVector start_functions;         // Vector<SparkStartHandlerFunction>
+	SparkVector update_functions;        // Vector<SparkUpdateHandlerFunction>
+	SparkVector stop_functions;          // Vector<SparkStopHandlerFunction>
+	SparkVector event_functions;         // Vector<SparkEventHandlerFunction>
+	SparkVector query_functions;         // Vector<SparkQueryHandlerFunction>
+	SparkHashMap query_event_functions;  // HashMap<SparkEventType, SparkVector<SparkQueryEventHandlerFunction>>
 	SparkThreadPool thread_pool;
 	SparkMutex mutex;
 	SparkF32 delta_time;
+	SparkBool should_close;
+	SparkBool closing;
 } *SparkApplication;
+
 
 #pragma endregion
 
@@ -2368,6 +2384,7 @@ SPARKAPI SparkVector SPARKCALL SparkDefaultVector();
 SPARKAPI SparkVector SPARKCALL SparkCreateVector(SparkSize capacity,
 	SparkAllocator allocator,
 	SparkFreeFunction destructor);
+SPARKAPI SparkVector SPARKCALL SparkMemcpyIntoVector(SparkSize size, SparkHandle* elements, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyVector(SparkVector vector);
 SPARKAPI SparkVector SPARKCALL SparkCopyVector(SparkVector vector);
 SPARKAPI SparkHandle SPARKCALL SparkGetElementVector(SparkVector vector,
@@ -2745,6 +2762,19 @@ SPARKAPI SparkResource SPARKCALL SparkGetResource(SparkResourceManager manager,
 	SparkConstString name);
 SPARKAPI SparkResult SPARKCALL SparkSetCurrentResource(SparkResourceManager manager, SparkConstString resource_name);
 
+SPARKAPI SparkQuery SPARKCALL SparkCreateQuery(
+	SparkConstString* component_types,
+	SparkSize component_count
+);
+SPARKAPI SparkVector SPARKCALL SparkPerformQuery(
+	SparkEcs ecs,
+	SparkQuery query
+);
+SPARKAPI SparkVoid SPARKCALL SparkInvalidateQueryCaches(
+	SparkEcs ecs
+);
+SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type);
+
 SPARKAPI SparkAnimation SPARKCALL
 SparkCreateAnimation(SparkConstString file_path);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAnimation(SparkAnimation animation);
@@ -2848,13 +2878,18 @@ SPARKAPI SparkResult SPARKCALL SparkRemoveEventListener(
 	SparkEventHandler event_handler, SparkEventType event_type,
 	SparkApplicationEventFunction function);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkQuery query,
+	SparkApplicationQueryEventFunction function,
+	SparkPair thread_settings
+);
 SPARKAPI SparkResult SPARKCALL SparkRemoveQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
 	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function);
+	SparkApplicationQueryEventFunction function
+);
 SPARKAPI SparkResult SPARKCALL
 SparkDispatchEvent(SparkEventHandler event_handler, SparkEvent event);
 SPARKAPI SparkEvent SPARKCALL SparkCreateEvent(SparkEventType event_type,
@@ -2937,12 +2972,16 @@ SPARKAPI SparkResult SPARKCALL SparkAddEventFunctionApplication(
 	SparkApplication app, SparkEventType event_type,
 	SparkApplicationEventFunction function, SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryFunctionApplication(
-	SparkApplication app, SparkConstString component_type,
-	SparkApplicationQueryFunction function, SparkPair thread_settings);
+	SparkApplication app,
+	SparkQuery query,
+	SparkApplicationQueryFunction function,
+	SparkPair thread_settings);
 SPARKAPI SparkResult SPARKCALL SparkAddQueryEventFunctionApplication(
-	SparkApplication app, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings);
+	SparkApplication app,
+	SparkEventType event_type,
+	SparkQuery query,
+	SparkApplicationQueryEventFunction function,
+	SparkPair thread_settings);
 SPARKAPI SparkResource SPARKCALL
 SparkCreateResourceApplication(SparkApplication app, SparkConstString type,
 	SparkConstString name, SparkHandle data);
@@ -2956,6 +2995,7 @@ SPARKAPI SparkResult SPARKCALL
 SparkAddResourceManagerApplication(SparkApplication app, SparkConstString type,
 	SparkFreeFunction resource_destructor);
 SPARKAPI SparkResult SPARKCALL SparkStartApplication(SparkApplication app);
+SPARKAPI SparkResult SPARKCALL SparkStopApplication(SparkApplication app);
 SPARKAPI SparkMaterial SPARKCALL SparkGetMaterialApplication(SparkApplication app, SparkConstString name);
 SPARKAPI SparkStaticMesh SPARKCALL SparkGetStaticMeshApplication(SparkApplication app, SparkConstString name);
 SPARKAPI SparkDynamicMesh SPARKCALL SparkGetDynamicMeshApplication(SparkApplication app, SparkConstString name);

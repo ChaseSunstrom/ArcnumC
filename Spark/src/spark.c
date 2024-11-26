@@ -2608,11 +2608,33 @@ SPARKAPI SparkVector SparkCreateVector(SparkSize capacity,
 	vector->allocator = allocator;
 	vector->capacity = capacity;
 	vector->size = 0;
-	vector->destructor = destructor; // Set destructor
+	vector->destructor = destructor;
 	vector->elements =
 		allocator->allocate(vector->capacity * sizeof(SparkHandle));
 	vector->external_allocator = external_allocator;
 	return vector;
+}
+
+SPARKAPI SparkVector SparkMemcpyIntoVector(SparkSize size, SparkHandle* elements, SparkAllocator allocator, SparkFreeFunction destructor) {
+	SparkBool external_allocator = SPARK_TRUE;
+
+	if (!allocator) {
+		allocator = SparkDefaultAllocator();
+		external_allocator = SPARK_FALSE;
+	}
+
+	SparkVector vector = allocator->allocate(sizeof(struct SparkVectorT));
+	vector->allocator = allocator;
+	vector->capacity = size * 2;
+	vector->size = size;
+	vector->destructor = destructor;
+
+	vector->elements =
+		allocator->allocate(vector->capacity * sizeof(SparkHandle));
+
+	memcpy(vector->elements, elements, size * sizeof(SparkHandle));
+
+	vector->external_allocator = external_allocator;
 }
 
 SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
@@ -5502,45 +5524,137 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 
 #pragma region ECS
 
-SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
-	SparkComponentArray arr = handle;
-	if (!arr) return;
+#define MAX_COMPONENT_TYPES 64
 
-	SparkDestroyVector(arr->components);
-	SparkDestroyHashMap(arr->entity_to_index);
-	SparkDestroyHashMap(arr->index_to_entity);
+SPARKAPI SparkVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
+	// Check if query result is cached
+	for (SparkSize i = 0; i < ecs->query_caches->size; ++i) {
+		SparkQueryCache cache = ecs->query_caches->elements[i];
+		if (cache->query->signature == query->signature && cache->version == ecs->version)
+			return cache->entities; // Return cached result
+	}
 
+	// Perform the query
+	SparkVector matching_entities = SparkCreateVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
+	for (SparkEntity entity = 0; entity < ecs->entity_count; ++entity) {
+		if ((ecs->signatures[entity] & query->signature) == query->signature) {
+			SparkPushBackVector(matching_entities, (SparkHandle)(uintptr_t)entity);
+		}
+	}
+
+	// Cache the result
+	SparkQueryCache new_cache = SparkAllocate(sizeof(struct SparkQueryCacheT));
+	new_cache->query = query;
+	new_cache->entities = matching_entities;
+	new_cache->version = ecs->version;
+	SparkPushBackVector(ecs->query_caches, new_cache);
+
+	return matching_entities;
+}
+
+SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
+	static SparkHashMap component_bits = NULL;
+	static SparkU64 next_bit = 1;
+
+	if (!component_bits)
+		component_bits = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, free);
+
+	SparkU64* bit = SparkGetElementHashMap(component_bits, (SparkHandle)component_type, strlen(component_type));
+	if (bit)
+		return *bit;
+
+	SparkU64* new_bit = malloc(sizeof(SparkU64));
+	*new_bit = next_bit;
+	next_bit <<= 1;
+
+	SparkInsertHashMap(component_bits, (SparkHandle)component_type, strlen(component_type), new_bit);
+
+	return *new_bit;
+}
+
+SPARKAPI SparkVoid SparkInvalidateQueryCaches(SparkEcs ecs) {
+	for (SparkSize i = 0; i < ecs->query_caches->size; ++i) {
+		SparkQueryCache cache = ecs->query_caches->elements[i];
+		SparkDestroyVector(cache->entities);
+		SparkFree(cache);
+	}
+	SparkClearVector(ecs->query_caches);
+}
+
+SPARKAPI SparkQuery SparkCreateQuery(SparkConstString* component_types, SparkSize component_count) {
+	SparkQuery query = SparkAllocate(sizeof(struct SparkQueryT));
+	query->signature = 0;
+	for (SparkSize i = 0; i < component_count; ++i) {
+		query->signature |= GetComponentBit(component_types[i]);
+	}
+	return query;
+}
+
+SPARKAPI SparkComponentArray SparkCreateComponentArray(SparkSize initial_sparse_capacity) {
+	SparkComponentArray array = SparkAllocate(sizeof(struct SparkComponentArrayT));
+	array->dense = SparkAllocate(sizeof(SparkComponent) * 16); // Initial dense capacity
+	array->entities = SparkAllocate(sizeof(SparkEntity) * 16);
+	array->dense_capacity = 16;
+	array->sparse = SparkAllocate(sizeof(SparkSize) * initial_sparse_capacity);
+	array->sparse_capacity = initial_sparse_capacity;
+	array->size = 0;
+	for (SparkSize i = 0; i < initial_sparse_capacity; ++i)
+		array->sparse[i] = INVALID_INDEX;
+	return array;
+}
+
+SPARKAPI SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
+	SparkComponentArray arr = (SparkComponentArray)handle;
+	if (!arr)
+		return;
+
+	// Destroy components
+	for (SparkSize i = 0; i < arr->size; ++i) {
+		if (arr->dense[i]->destructor)
+			arr->dense[i]->destructor(arr->dense[i]->data);
+		SparkFree(arr->dense[i]);
+	}
+
+	SparkFree(arr->dense);
+	SparkFree(arr->entities);
+	SparkFree(arr->sparse);
 	SparkFree(arr);
 }
 
-
 SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
-	SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
-	if (!ecs) {
-		// Handle allocation failure
-		return SPARK_NULL;
-	}
-	ecs->allocator = SparkDefaultAllocator();
-	ecs->entities = SparkCreateVector(16, ecs->allocator, SparkFree);
-	ecs->systems = SparkCreateVector(8, ecs->allocator, SPARK_NULL);
-	ecs->recycled_ids = SparkCreateStack(16, ecs->allocator, SPARK_NULL);
-	ecs->components = SparkCreateHashMap(
-		16, SparkStringHash, SparkStringCompare, ecs->allocator,
-		SPARK_NULL, // No key destructor needed for string literals
-		__SparkDestroyComponentArray // Value destructor for component arrays
-	);
-	ecs->event_handler = event_handler;
-	return ecs;
+    SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
+    if (!ecs)
+        return SPARK_NULL;
+
+    ecs->allocator = SparkDefaultAllocator();
+    ecs->entities = SparkCreateVector(16, ecs->allocator, SparkFree);
+    ecs->systems = SparkCreateVector(8, ecs->allocator, SPARK_NULL);
+    ecs->recycled_ids = SparkCreateStack(16, ecs->allocator, SPARK_NULL);
+    ecs->components = SparkCreateHashMap(
+        16, SparkStringHash, SparkStringCompare, ecs->allocator,
+        SPARK_NULL, // No key destructor needed for string literals
+        __SparkDestroyComponentArray // Value destructor for component arrays
+    );
+    ecs->event_handler = event_handler;
+    ecs->signatures = NULL;
+    ecs->entity_count = 0;
+    ecs->version = 0;
+    ecs->query_caches = SparkCreateVector(4, ecs->allocator, SparkFree);
+    return ecs;
 }
 
 SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	if (!ecs)
 		return;
+
 	SparkStopEcs(ecs);
 	SparkDestroyHashMap(ecs->components);
 	SparkDestroyVector(ecs->entities);
 	SparkDestroyVector(ecs->systems);
 	SparkDestroyStack(ecs->recycled_ids);
+	SparkDestroyVector(ecs->query_caches);
+	if (ecs->signatures)
+		SparkFree(ecs->signatures);
 	SparkFree(ecs);
 }
 
@@ -5554,7 +5668,30 @@ SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 		SparkPopStack(ecs->recycled_ids);
 	}
 	else {
-		entity_id = ecs->entities->size + 1;
+		entity_id = ecs->entities->size;
+	}
+
+	// Ensure capacity for signatures
+	if (entity_id >= ecs->entity_count) {
+		ecs->entity_count = entity_id + 1;
+		ecs->signatures = SparkReallocate(ecs->signatures, sizeof(SparkSignature) * ecs->entity_count);
+		ecs->signatures[entity_id] = 0;
+
+		// Resize sparse arrays in component arrays
+		SparkHashMapIterator iterator = SparkCreateHashMapIterator(SPARK_ITERATOR_STATE_BEGIN, SPARK_HASHMAP_ITERATOR_TYPE_VALUE, ecs->components);
+		while (SparkHasNextHashMapIterator(iterator)) {
+			SparkIterateForwardHashMapIterator(iterator);
+			SparkComponentArray component_array = (SparkComponentArray)SparkGetCurrentHashMapIterator(iterator);
+
+			if (ecs->entity_count > component_array->sparse_capacity) {
+				SparkSize new_capacity = ecs->entity_count;
+				component_array->sparse = SparkReallocate(component_array->sparse, sizeof(SparkSize) * new_capacity);
+				for (SparkSize i = component_array->sparse_capacity; i < new_capacity; ++i)
+					component_array->sparse[i] = INVALID_INDEX;
+				component_array->sparse_capacity = new_capacity;
+			}
+		}
+		SparkDestroyHashMapIterator(iterator);
 	}
 
 	SparkEntity* entity = ecs->allocator->allocate(sizeof(SparkEntity));
@@ -5574,13 +5711,14 @@ SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 	return entity_id;
 }
 
+
 SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
 	if (!ecs || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
+
 	SparkRemoveAllEntityComponents(ecs, entity_id);
 	for (SparkSize i = 0; i < ecs->entities->size; ++i) {
-		SparkEntity* entity =
-			(SparkEntity*)SparkGetElementVector(ecs->entities, i);
+		SparkEntity* entity = (SparkEntity*)SparkGetElementVector(ecs->entities, i);
 		if (*entity == entity_id) {
 			SparkRemoveVector(ecs->entities, i);
 			break;
@@ -5588,7 +5726,10 @@ SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
 	}
 
 	SparkPushStack(ecs->recycled_ids, (SparkHandle)(intptr_t)entity_id);
+	ecs->signatures[entity_id] = 0;
+	ecs->version++;
 
+	// Dispatch event
 	SparkEventDataEntityDestroyed event_data = SparkAllocate(sizeof(struct SparkEventDataEntityDestroyedT));
 	event_data->ecs = ecs;
 	event_data->entity = entity_id;
@@ -5630,33 +5771,42 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 	);
 
 	if (!component_array) {
-		component_array = (SparkComponentArray)ecs->allocator->allocate(sizeof(struct SparkComponentArrayT));
+		component_array = SparkCreateComponentArray(ecs->entity_count);
 		if (!component_array)
 			return SPARK_ERROR_OUT_OF_MEMORY;
 
-		// Initialize the components vector
-		component_array->components = SparkCreateVector(16, ecs->allocator, component->destructor);
-
-		// Initialize the hashmaps
-		component_array->entity_to_index = SparkCreateHashMap(
-			16, SparkIntegerHash, SparkIntegerCompare, ecs->allocator, SPARK_NULL, SPARK_NULL
-		);
-		component_array->index_to_entity = SparkCreateHashMap(
-			16, SparkIntegerHash, SparkIntegerCompare, ecs->allocator, SPARK_NULL, SPARK_NULL
-		);
-
 		SparkInsertHashMap(ecs->components, (SparkHandle)component->type, strlen(component->type), component_array);
 	}
 
-	if (SparkGetElementHashMap(component_array->entity_to_index, (SparkHandle)(uintptr_t)entity_id, sizeof(SparkEntity))) {
-		SparkInsertHashMap(ecs->components, (SparkHandle)component->type, strlen(component->type), component_array);
+	// Ensure the sparse array can accommodate entity_id
+	if (entity_id >= component_array->sparse_capacity) {
+		// Resize the sparse array
+		SparkSize new_capacity = entity_id + 1;
+		component_array->sparse = SparkReallocate(component_array->sparse, sizeof(SparkSize) * new_capacity);
+		for (SparkSize i = component_array->sparse_capacity; i < new_capacity; ++i)
+			component_array->sparse[i] = INVALID_INDEX;
+		component_array->sparse_capacity = new_capacity;
 	}
 
-	SparkSize index = component_array->components->size;
-	SparkPushBackVector(component_array->components, component);
+	if (component_array->sparse[entity_id] != INVALID_INDEX)
+		return SPARK_ERROR_INVALID;
 
-	SparkInsertHashMap(component_array->entity_to_index, (SparkHandle)(uintptr_t)entity_id, sizeof(SparkEntity), (SparkHandle)(uintptr_t)index);
-	SparkInsertHashMap(component_array->index_to_entity, (SparkHandle)(uintptr_t)index, sizeof(SparkSize), (SparkHandle)(uintptr_t)entity_id);
+	// Resize dense arrays if necessary
+	if (component_array->size >= component_array->dense_capacity) {
+		component_array->dense_capacity *= 2;
+		component_array->dense = SparkReallocate(component_array->dense, sizeof(SparkComponent) * component_array->dense_capacity);
+		component_array->entities = SparkReallocate(component_array->entities, sizeof(SparkEntity) * component_array->dense_capacity);
+	}
+
+	// Add component to dense array
+	SparkSize index = component_array->size++;
+	component_array->dense[index] = component;
+	component_array->entities[index] = entity_id;
+	component_array->sparse[entity_id] = index;
+
+	// Update entity's signature
+	ecs->signatures[entity_id] |= GetComponentBit(component->type);
+	ecs->version++; // Increment ECS version
 
 	SparkEventDataComponentAdded event_data = SparkAllocate(sizeof(struct SparkEventDataComponentAddedT));
 	event_data->ecs = ecs;
@@ -5682,77 +5832,35 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, S
 	if (!component_array)
 		return SPARK_ERROR_NOT_FOUND;
 
-	// Get the index of the component for the entity
-	SparkHandle index_handle = SparkGetElementHashMap(
-		component_array->entity_to_index,
-		(SparkHandle)(uintptr_t)entity_id,
-		sizeof(SparkEntity)
-	);
-
-	if (!index_handle)
+	if (entity_id >= component_array->sparse_capacity)
 		return SPARK_ERROR_NOT_FOUND;
 
-	SparkSize index = (SparkSize)(uintptr_t)index_handle;
+	SparkSize index = component_array->sparse[entity_id];
+	if (index == INVALID_INDEX)
+		return SPARK_ERROR_NOT_FOUND;
 
-	// Get the last index
-	SparkSize last_index = component_array->components->size - 1;
-
+	// Swap with last component
+	SparkSize last_index = component_array->size - 1;
 	if (index != last_index) {
-		// Swap the component to remove with the last component
-		SparkComponent component_to_remove = (SparkComponent)SparkGetElementVector(component_array->components, index);
-		SparkComponent last_component = (SparkComponent)SparkGetElementVector(component_array->components, last_index);
-
-		// Swap components in the vector
-		component_array->components->elements[index] = last_component;
-		component_array->components->elements[last_index] = component_to_remove;
-
-		// Update the hashmaps for the swapped component
-		SparkEntity last_entity_id = (SparkEntity)(uintptr_t)SparkGetElementHashMap(
-			component_array->index_to_entity,
-			(SparkHandle)(uintptr_t)last_index,
-			sizeof(SparkSize)
-		);
-
-		// Update entity_to_index
-		SparkInsertHashMap(
-			component_array->entity_to_index,
-			(SparkHandle)(uintptr_t)last_entity_id,
-			sizeof(SparkEntity),
-			(SparkHandle)(uintptr_t)index
-		);
-
-		// Update index_to_entity
-		SparkInsertHashMap(
-			component_array->index_to_entity,
-			(SparkHandle)(uintptr_t)index,
-			sizeof(SparkSize),
-			(SparkHandle)(uintptr_t)last_entity_id
-		);
+		component_array->dense[index] = component_array->dense[last_index];
+		component_array->entities[index] = component_array->entities[last_index];
+		component_array->sparse[component_array->entities[index]] = index;
 	}
 
-	// Remove the component
-	SparkComponent component_to_destroy = (SparkComponent)SparkGetElementVector(component_array->components, last_index);
-	SparkRemoveVector(component_array->components, last_index);
+	component_array->sparse[entity_id] = INVALID_INDEX;
+	component_array->size--;
 
-	// Remove from hashmaps
-	SparkRemoveHashMap(
-		component_array->entity_to_index,
-		(SparkHandle)(uintptr_t)entity_id,
-		sizeof(SparkEntity)
-	);
-	SparkRemoveHashMap(
-		component_array->index_to_entity,
-		(SparkHandle)(uintptr_t)last_index,
-		sizeof(SparkSize)
-	);
+	// Update entity's signature
+	ecs->signatures[entity_id] &= ~GetComponentBit(component_type);
+	ecs->version++; // Increment ECS version
 
 	// Destroy the component
+	SparkComponent component_to_destroy = component_array->dense[last_index];
 	if (component_to_destroy->destructor)
 		component_to_destroy->destructor(component_to_destroy->data);
 
 	SparkFree(component_to_destroy);
 
-	// Dispatch event
 	SparkEventDataComponentRemoved event_data = SparkAllocate(sizeof(struct SparkEventDataComponentRemovedT));
 	event_data->ecs = ecs;
 	event_data->entity = entity_id;
@@ -5778,20 +5886,17 @@ SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, S
 	if (!component_array)
 		return SPARK_NULL;
 
-	SparkHandle index_handle = SparkGetElementHashMap(
-		component_array->entity_to_index,
-		(SparkHandle)(uintptr_t)entity_id,
-		sizeof(SparkEntity)
-	);
-
-	if (!index_handle)
+	if (entity_id >= component_array->sparse_capacity)
 		return SPARK_NULL;
 
-	SparkSize index = (SparkSize)(uintptr_t)index_handle;
-	SparkComponent component = (SparkComponent)SparkGetElementVector(component_array->components, index);
+	SparkSize index = component_array->sparse[entity_id];
+	if (index == INVALID_INDEX)
+		return SPARK_NULL;
 
+	SparkComponent component = component_array->dense[index];
 	return component;
 }
+
 
 SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
 	if (!ecs || !system)
@@ -5867,15 +5972,8 @@ SPARKAPI SparkResult SparkRemoveAllEntityComponents(SparkEcs ecs, SparkEntity en
 		SparkIterateForwardHashMapIterator(iterator);
 		SparkComponentArray component_array = (SparkComponentArray)SparkGetCurrentHashMapIterator(iterator);
 
-		// Check if the entity has a component of this type
-		SparkHandle index_handle = SparkGetElementHashMap(
-			component_array->entity_to_index,
-			(SparkHandle)(uintptr_t)entity_id,
-			sizeof(SparkEntity)
-		);
-
-		if (index_handle) {
-			// Remove the component
+		SparkSize index = component_array->sparse[entity_id];
+		if (index != INVALID_INDEX) {
 			SparkConstString component_type = (SparkConstString)iterator->hash_map->buckets[iterator->pos]->key;
 			SparkRemoveComponent(ecs, entity_id, component_type, SPARK_NULL);
 		}
@@ -5898,7 +5996,7 @@ SPARKAPI SparkVector SparkGetAllComponentsByType(SparkEcs ecs, SparkConstString 
 	if (!component_array)
 		return SPARK_NULL;
 
-	return component_array->components;
+	return SparkMemcpyIntoVector(component_array->size, component_array->dense, SPARK_NULL, SPARK_NULL);
 }
 
 #pragma endregion
@@ -7432,7 +7530,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkUpdateDescriptorSets(SparkWindow window)
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(SparkApplication app,
+SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(
+	SparkApplication app,
 	SparkU32 width,
 	SparkU32 height,
 	VkFormat format,
@@ -7443,7 +7542,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(SparkApplication app,
 	VkSampleCountFlagBits samples,
 	SparkU32 mip_levels,
 	VkImage* image,
-	VkDeviceMemory* image_memory) {
+	VkDeviceMemory* image_memory
+) { 
 	VkDevice device = app->window->device;
 
 	VkImageCreateInfo image_info = { 0 };
@@ -7860,13 +7960,20 @@ SPARKAPI SPARKSTATIC SparkResult __SparkWaitIdle(SparkWindow window) {
 
 #pragma region EVENT
 
+typedef struct SparkQueryEventTaskArgT {
+	SparkApplication app;
+	SparkVector entities;
+	SparkApplicationQueryEventFunction function;
+	SparkEvent event;
+} *SparkQueryEventTaskArg;
+
 SPARKAPI SparkEventHandler SparkCreateEventHandler() {
 	SparkEventHandler event_handler =
 		SparkAllocate(sizeof(struct SparkEventHandlerT));
 	event_handler->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 	event_handler->query_functions =
 		SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL,
-			SPARK_NULL, SparkDestroyHashMap);
+			SPARK_NULL, SparkDestroyVector);
 	return event_handler;
 }
 
@@ -7913,9 +8020,11 @@ SPARKAPI SparkResult SparkRemoveEventListener(
 
 // Helper function to register the handler for a specific event type
 SPARKAPI SPARKSTATIC SparkResult __SparkAddQueryEventListenerForEventType(
-	SparkEventHandler event_handler, SparkEventType single_event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings) {
+	SparkEventHandler event_handler,
+	SparkEventType single_event_type,
+	SparkQuery query,
+	SparkApplicationQueryEventFunction function,
+	SparkPair thread_settings) {
 
 	SparkQueryEventHandlerFunction query_event_handler =
 		SparkAllocate(sizeof(struct SparkQueryEventHandlerFunctionT));
@@ -7923,54 +8032,43 @@ SPARKAPI SPARKSTATIC SparkResult __SparkAddQueryEventListenerForEventType(
 		return SPARK_ERROR_NULL;
 
 	query_event_handler->event_type = single_event_type;
-	query_event_handler->component_type = component_type;
+	query_event_handler->query = query;
 	query_event_handler->function = function;
 	query_event_handler->thread_settings = thread_settings;
 
 	// Use the integer value directly as the key
-	SparkHashMap component_map = SparkGetElementHashMap(
-		event_handler->query_functions, (SparkHandle)(uintptr_t)single_event_type,
-		sizeof(SparkEventType));
+	SparkVector handlers = SparkGetElementHashMap(
+		event_handler->query_functions,
+		(SparkHandle)(uintptr_t)single_event_type,
+		sizeof(SparkEventType)
+	);
 
-	if (!component_map) {
-		component_map =
-			SparkCreateHashMap(4, SparkStringHash, SparkStringCompare, SPARK_NULL,
-				SPARK_NULL, SparkDestroyVector);
-		if (!component_map) {
+	if (!handlers) {
+		handlers = SparkCreateVector(4, SPARK_NULL, SparkFree);
+		if (!handlers) {
 			SparkFree(query_event_handler);
 			return SPARK_ERROR_NULL;
 		}
-		SparkInsertHashMap(event_handler->query_functions,
+		SparkInsertHashMap(
+			event_handler->query_functions,
 			(SparkHandle)(uintptr_t)single_event_type,
-			sizeof(SparkEventType), component_map);
+			sizeof(SparkEventType),
+			handlers
+		);
 	}
 
-	SparkVector functions = SparkGetElementHashMap(
-		component_map, (SparkHandle)component_type, strlen(component_type));
-
-	if (!functions) {
-		functions = SparkCreateVector(4, SPARK_NULL, SparkFree);
-		if (!functions) {
-			SparkFree(query_event_handler);
-			return SPARK_ERROR_NULL;
-		}
-		SparkPushBackVector(functions, query_event_handler);
-		SparkInsertHashMap(component_map, (SparkHandle)component_type,
-			strlen(component_type), functions);
-	}
-	else {
-		SparkPushBackVector(functions, query_event_handler);
-	}
-
+	SparkPushBackVector(handlers, query_event_handler);
 	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkAddQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings) {
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkQuery query,
+	SparkApplicationQueryEventFunction function,
+	SparkPair thread_settings) {
 
-	if (!function || !component_type)
+	if (!function || !query)
 		return SPARK_ERROR_INVALID_ARGUMENT;
 
 	// Iterate over all bits in event_type
@@ -7978,7 +8076,7 @@ SPARKAPI SparkResult SparkAddQueryEventListener(
 	while (bit != 0) {
 		if (event_type & bit) {
 			SparkResult result = __SparkAddQueryEventListenerForEventType(
-				event_handler, bit, component_type, function, thread_settings);
+				event_handler, bit, query, function, thread_settings);
 			if (result != SPARK_SUCCESS) {
 				return result;
 			}
@@ -7991,35 +8089,33 @@ SPARKAPI SparkResult SparkAddQueryEventListener(
 }
 
 SPARKAPI SparkResult SparkRemoveQueryEventListener(
-	SparkEventHandler event_handler, SparkEventType event_type,
-	SparkConstString component_type,
+	SparkEventHandler event_handler,
+	SparkEventType event_type,
+	SparkQuery query,
 	SparkApplicationQueryEventFunction function) {
 
-	SparkHashMap components_map = SparkGetElementHashMap(
-		event_handler->query_functions, event_type, sizeof(event_type));
+	SparkVector handlers = SparkGetElementHashMap(
+		event_handler->query_functions,
+		(SparkHandle)(uintptr_t)event_type,
+		sizeof(event_type)
+	);
 
-	if (!components_map) {
+	if (!handlers) {
 		return SPARK_ERROR_NOT_FOUND;
 	}
 
-	SparkVector functions = SparkGetElementHashMap(components_map, component_type,
-		strlen(component_type));
-
-	if (!functions) {
-		return SPARK_ERROR_NOT_FOUND;
-	}
-
-	for (SparkSize i = 0; i < functions->size; i++) {
-		SparkQueryEventHandlerFunction query_event_handler =
-			SparkGetElementVector(functions, i);
-		if (query_event_handler->function == function) {
-			SparkRemoveVector(functions, i);
+	for (SparkSize i = 0; i < handlers->size; ++i) {
+		SparkQueryEventHandlerFunction query_event_handler = handlers->elements[i];
+		if (query_event_handler->function == function && query_event_handler->query == query) {
+			SparkRemoveVector(handlers, i);
+			SparkFree(query_event_handler);
 			return SPARK_SUCCESS;
 		}
 	}
 
 	return SPARK_ERROR_NOT_FOUND;
 }
+
 
 typedef struct SparkEventTaskT {
 	SparkApplication app;
@@ -8033,6 +8129,20 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkEventTask(SparkHandle task) {
 	SparkLockMutex(task_arg->app->mutex);
 	task_arg->function(task_arg->app, task_arg->event);
 	SparkUnlockMutex(task_arg->app->mutex);
+
+	if (SparkAtomicDecrement(task_arg->event.ref_count) == 0) {
+		SparkDestroyEvent(task_arg->event);
+	}
+
+	SparkFree(task_arg);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkQueryEventTaskFunction(SparkHandle arg) {
+	SparkQueryEventTaskArg task_arg = (SparkQueryEventTaskArg)arg;
+	task_arg->function(task_arg->app, task_arg->entities, task_arg->event);
+
+	// Clean up
+	SparkDestroyVector(task_arg->entities);
 
 	if (SparkAtomicDecrement(task_arg->event.ref_count) == 0) {
 		SparkDestroyEvent(task_arg->event);
@@ -8065,43 +8175,52 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 		}
 	}
 
-	SparkHashMap component_map = SparkGetElementHashMap(
-		event_handler->query_functions, event.type, sizeof(event.type));
+	SparkVector handlers = SparkGetElementHashMap(
+		event_handler->query_functions,
+		(SparkHandle)(uintptr_t)event.type,
+		sizeof(event.type)
+	);
 
-	if (!component_map) {
-		return SPARK_ERROR_NULL;
-	}
+	if (handlers) {
+		for (SparkSize i = 0; i < handlers->size; ++i) {
+			SparkQueryEventHandlerFunction query_handler = handlers->elements[i];
+			SparkQuery query = query_handler->query;
+			SparkVector matching_entities = SparkPerformQuery(event_handler->ecs, query);
 
-	SparkVector component_keys = SparkGetAllKeysHashMap(component_map);
+			if (query_handler->thread_settings.first) {
+				// Asynchronous handling
+				SparkQueryEventTaskArg task_arg = SparkAllocate(sizeof(struct SparkQueryEventTaskArgT));
+				task_arg->app = event_handler->application;
+				task_arg->entities = matching_entities;
+				task_arg->function = query_handler->function;
+				task_arg->event = event;
 
-	if (!component_keys) {
-		/* Unknown here because it could be empty, its ambigious */
-		return SPARK_UNKNOWN;
-	}
+				// Increment event ref_count for asynchronous handling
+				SparkAtomicIncrement(event.ref_count);
 
-	for (SparkSize i = 0; i < component_keys->size; i++) {
-		SparkConstString component_key = SparkGetElementVector(component_keys, i);
-		SparkVector functions = SparkGetElementHashMap(component_map, component_key,
-			strlen(component_key));
-		SparkVector components =
-			SparkGetAllComponentsByType(event_handler->ecs, component_key);
-
-		for (SparkSize j = 0; j < functions->size; j++) {
-			SparkQueryEventHandlerFunction query_event_handler =
-				SparkGetElementVector(functions, j);
-			query_event_handler->function(event_handler->application, components,
-				event);
+				SparkAddTaskThreadPool(
+					event_handler->application->thread_pool,
+					(SparkThreadFunction)__SparkQueryEventTaskFunction,
+					task_arg,
+					query_handler->thread_settings.second
+				);
+			}
+			else {
+				// Synchronous handling
+				query_handler->function(event_handler->application, matching_entities, event);
+				SparkDestroyVector(matching_entities);
+			}
 		}
 	}
 
-	SparkDestroyVector(component_keys);
-
+	// Decrement event ref_count
 	if (SparkAtomicDecrement(event.ref_count) == 0) {
 		SparkDestroyEvent(event);
 	}
 
 	return SPARK_SUCCESS;
 }
+
 
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
 	SparkHandle event_data,
@@ -9545,7 +9664,6 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyScene(SparkScene scene) {
 	SparkFree(scene);
 }
 
-
 #pragma endregion
 
 #pragma region AI
@@ -9567,6 +9685,7 @@ typedef struct SparkQueryTaskArgT {
 	SparkApplication app;
 	SparkVector components;
 	SparkApplicationQueryFunction function;
+	SparkVector entities;
 } *SparkQueryTaskArg;
 
 typedef struct SparkApplicationTaskArgT {
@@ -9574,16 +9693,11 @@ typedef struct SparkApplicationTaskArgT {
 	SparkApplicationUpdateFunction function;
 } *SparkApplicationTaskArg;
 
-SPARKAPI SPARKSTATIC SparkHandle __SparkQueryTaskFunction(SparkHandle arg) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkQueryTaskFunction(SparkHandle arg) {
 	SparkQueryTaskArg task_arg = (SparkQueryTaskArg)arg;
-
-	// Execute the query function
-	task_arg->function(task_arg->app, task_arg->components);
-
-	SparkDestroyVector(task_arg->components);
+	task_arg->function(task_arg->app, task_arg->entities);
+	SparkDestroyVector(task_arg->entities);
 	SparkFree(task_arg);
-
-	return SPARK_NULL;
 }
 
 SPARKAPI SPARKSTATIC SparkVoid
@@ -9601,7 +9715,9 @@ __SparkApplicationTaskFunction(SparkHandle task) {
 
 SPARKAPI SPARKSTATIC SparkBool
 __SparkApplicationKeepOpen(SparkApplication app) {
-	return !app->window->should_close;
+	SparkBool should_close = app->window->should_close || app->should_close;
+	app->closing = should_close;
+	return !should_close;
 }
 
 SPARKAPI SPARKSTATIC SparkResult
@@ -9652,13 +9768,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkStopApplication(SparkApplication app) {
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	// Run update functions
-	for (SparkSize i = 0; i < app->update_functions->size; i++) {
-		SparkUpdateHandlerFunction function =
-			SparkGetElementVector(app->update_functions, i);
+	for (SparkSize i = 0; i < app->update_functions->size; ++i) {
+		SparkUpdateHandlerFunction function = app->update_functions->elements[i];
 		if (function->thread_settings.first) {
 			// Add to thread pool
-			SparkApplicationTaskArg task_arg =
-				SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
+			SparkApplicationTaskArg task_arg = SparkAllocate(sizeof(struct SparkApplicationTaskArgT));
 			task_arg->app = app;
 			task_arg->function = function->function;
 
@@ -9673,47 +9787,35 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	}
 
 	// Run query functions
-	SparkVector keys = SparkGetAllKeysHashMap(app->query_functions);
+	for (SparkSize i = 0; i < app->query_functions->size; ++i) {
+		SparkQueryHandlerFunction handler = app->query_functions->elements[i];
+		SparkQuery query = handler->query;
+		SparkVector matching_entities = SparkPerformQuery(app->ecs, query);
 
-	for (SparkSize i = 0; i < keys->size; i++) {
-		SparkConstString component_type = (SparkConstString)keys->elements[i];
-		SparkVector functions = SparkGetElementHashMap(
-			app->query_functions, component_type, strlen(component_type));
+		if (handler->thread_settings.first) {
+			// Prepare arguments for the thread function
+			SparkQueryTaskArg task_arg = SparkAllocate(sizeof(struct SparkQueryTaskArgT));
+			task_arg->app = app;
+			task_arg->entities = matching_entities;
+			task_arg->function = handler->function;
 
-		SparkVector components =
-			SparkGetAllComponentsByType(app->ecs, component_type);
-
-		for (SparkSize j = 0; j < functions->size; j++) {
-			SparkQueryHandlerFunction handler =
-				(SparkQueryHandlerFunction)SparkGetElementVector(functions, j);
-
-			if (handler->thread_settings.first) {
-				// Create copy of components
-				SparkVector components_copy = SparkCopyVector(components);
-
-				// Prepare arguments for the thread function
-				SparkQueryTaskArg task_arg =
-					SparkAllocate(sizeof(struct SparkQueryTaskArgT));
-				task_arg->app = app;
-				task_arg->components = components_copy;
-				task_arg->function = handler->function;
-
-				SparkAddTaskThreadPool(app->thread_pool,
-					(SparkThreadFunction)__SparkQueryTaskFunction,
-					task_arg, handler->thread_settings.second);
-			}
-			else {
-				// Run the function directly
-				handler->function(app, components);
-			}
+			SparkAddTaskThreadPool(
+				app->thread_pool,
+				(SparkThreadFunction)__SparkQueryTaskFunction,
+				task_arg,
+				handler->thread_settings.second
+			);
+		}
+		else {
+			// Run directly
+			handler->function(app, matching_entities);
 		}
 	}
-
-	SparkDestroyVector(keys);
 
 	// Wait for tasks that need to be waited upon
 	SparkWaitThreadPool(app->thread_pool);
 }
+
 
 SPARKAPI SPARKSTATIC SparkResult
 __SparkUpdateApplication(SparkApplication app) {
@@ -9789,13 +9891,13 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
 	app->resource_manager =
 		SparkCreateHashMap(8, SparkStringHash, SparkStringCompare, SPARK_NULL,
 			SPARK_NULL, SparkDestroyResourceManager);
-	app->query_functions =
-		SparkCreateHashMap(2, SparkStringHash, SparkStringCompare, SPARK_NULL,
-			SPARK_NULL, SparkDestroyVector);
+	app->query_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
 	app->event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
-	app->query_event_functions = SparkCreateVector(2, SPARK_NULL, SparkFree);
+	app->query_event_functions = SparkCreateHashMap(2, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL, SPARK_NULL, SparkDestroyVector);
 	app->event_handler->application = app;
 	app->event_handler->ecs = app->ecs;
+	app->should_close = SPARK_FALSE;
+	app->closing = SPARK_FALSE;
 	SparkInitMutex(app->mutex);
 
 	if (__SparkInitializeVulkan(app) != SPARK_SUCCESS) {
@@ -9818,9 +9920,9 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyVector(app->start_functions);
 	SparkDestroyVector(app->stop_functions);
 	SparkDestroyVector(app->update_functions);
-	SparkDestroyHashMap(app->query_functions);
+	SparkDestroyVector(app->query_functions);
 	SparkDestroyVector(app->event_functions);
-	SparkDestroyVector(app->query_event_functions);
+	SparkDestroyHashMap(app->query_event_functions);
 	SparkDestroyHashMap(app->resource_manager);
 	SparkDestroyThreadPool(app->thread_pool);
 	SparkDestroyWindow(app->window);
@@ -9837,6 +9939,12 @@ SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 		return SPARK_ERROR_INVALID;
 	}
 
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkResult SparkStopApplication(SparkApplication app) {
+	app->should_close = SPARK_TRUE;
+	app->closing = SPARK_TRUE;
 	return SPARK_SUCCESS;
 }
 
@@ -9878,34 +9986,26 @@ SPARKAPI SparkResult SparkAddEventFunctionApplication(
 }
 
 SPARKAPI SparkResult SparkAddQueryFunctionApplication(
-	SparkApplication app, SparkConstString component_type,
-	SparkApplicationQueryFunction function, SparkPair thread_settings) {
-	SparkVector functions = SparkGetElementHashMap(
-		app->query_functions, component_type, strlen(component_type));
+	SparkApplication app,
+	SparkQuery query,
+	SparkApplicationQueryFunction function,
+	SparkPair thread_settings) {
+	SparkQueryHandlerFunction handler = SparkAllocate(sizeof(struct SparkQueryHandlerFunctionT));
+	handler->query = query;
+	handler->function = function;
+	handler->thread_settings = thread_settings;
 
-	SparkQueryHandlerFunction query_function =
-		SparkAllocate(sizeof(struct SparkQueryHandlerFunctionT));
-	query_function->function = function;
-	query_function->component_type = component_type;
-	query_function->thread_settings = thread_settings;
-
-	if (!functions) {
-		functions = SparkCreateVector(4, SPARK_NULL, SparkFree);
-		SparkPushBackVector(functions, query_function);
-		SparkInsertHashMap(app->query_functions, component_type,
-			strlen(component_type), functions);
-	}
-	else {
-		SparkPushBackVector(functions, query_function);
-	}
+	SparkPushBackVector(app->query_functions, handler);
+	return SPARK_SUCCESS;
 }
 
 SPARKAPI SparkResult SparkAddQueryEventFunctionApplication(
-	SparkApplication app, SparkEventType event_type,
-	SparkConstString component_type,
-	SparkApplicationQueryEventFunction function, SparkPair thread_settings) {
-	return SparkAddQueryEventListener(app->event_handler, event_type,
-		component_type, function, thread_settings);
+	SparkApplication app,
+	SparkEventType event_type,
+	SparkQuery query,
+	SparkApplicationQueryEventFunction function,
+	SparkPair thread_settings) {
+	return SparkAddQueryEventListener(app->event_handler, event_type, query, function, thread_settings);
 }
 
 SPARKAPI SparkResult SparkDispatchEventApplication(SparkApplication app,
@@ -10031,6 +10131,5 @@ SPARKAPI SparkDynamicMesh SparkGetDynamicMeshApplication(SparkApplication app, S
 	}
 	return SPARK_NULL;
 }
-
 
 #pragma endregion
