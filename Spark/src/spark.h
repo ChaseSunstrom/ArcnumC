@@ -274,6 +274,8 @@
 #else
 #define SPARK_LOG_ERROR(message, ...)
 #endif
+#define SPARK_LOG_FATAL(message, ...)                                          \
+  SparkLogImpl(SPARK_LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
 
 #if __STDC_VERSION__ >= 201112L
 
@@ -337,10 +339,10 @@
 #define SPARK_DEFAULT_ROTATION (SparkQuat){0.0f, 0.0f, 0.0f, 1.0f}
 #define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
 
-/*#ifdef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
-*/
+
 
 #pragma region TYPES
 
@@ -2732,8 +2734,6 @@ SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(
 	SparkFileDeserializer deserializer, SparkHandle data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL SparkDeserializeData(
 	SparkFileDeserializer deserializer, SparkHandle* data, SparkSize* size);
-SPARKAPI SparkResult SPARKCALL SparkDeserializeRawData(
-	SparkFileDeserializer deserializer, SparkHandle* data, SparkSize size);
 SPARKAPI SparkResult SPARKCALL
 SparkDeserializeVector(SparkFileDeserializer deserializer, SparkVector* vector);
 SPARKAPI SparkResult SPARKCALL
@@ -3544,9 +3544,7 @@ typedef SparkApplication Application;
 
 #pragma endregion
 
-/*
 #ifdef __cplusplus
 }
 #endif
-*/
 #endif /* SPARK_H */

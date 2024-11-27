@@ -1,6 +1,7 @@
 // shader_compiler.cpp
 
 #include "spark_shader.h"
+#include "spark.h"
 
 // Include glslang headers
 #include <glslang/Include/ResourceLimits.h>
@@ -192,8 +193,7 @@ namespace {
     std::string ReadFile(const std::filesystem::path& path) {
         std::ifstream file_stream(path, std::ios::in | std::ios::binary);
         if (!file_stream) {
-            // Handle the error: file could not be opened
-            fprintf(stderr, "Error: Could not open file %s\n", path.string().c_str());
+           SPARK_LOG_ERROR("Could not open file %s", path.string().c_str());
             return "";
         }
 
@@ -207,20 +207,14 @@ namespace {
     inline bool FileExists(const std::filesystem::path& path) {
         return std::filesystem::exists(path);
     }
-
-    // Helper function to compute SHA-256 hash of a string
-    // For production, use a robust library like OpenSSL or Crypto++
-    // Here is a minimal SHA-256 implementation for demonstration purposes
-    // Note: This is not optimized and is for illustrative purposes only
-
-    // Begin SHA-256 implementation
+    
     struct SHA256_CTX {
-        uint32_t state[8];
-        uint64_t bitcount;
-        unsigned char buffer[64];
+        SparkU32 state[8];
+        SparkU64 bitcount;
+        SparkU8 buffer[64];
     };
 
-    const uint32_t k[64] = {
+    const SparkU32 k[64] = {
         0x428a2f98, 0x71374491, 0xb5c0fbcf,
         0xe9b5dba5, 0x3956c25b, 0x59f111f1,
         0x923f82a4, 0xab1c5ed5, 0xd807aa98,
@@ -257,12 +251,12 @@ namespace {
         ctx->state[7] = 0x5be0cd19;
     }
 
-    uint32_t ROTRIGHT(uint32_t a, uint32_t b) {
+    SparkU32 ROTRIGHT(SparkU32 a, SparkU32 b) {
         return ((a >> b) | (a << (32 - b)));
     }
 
-    void SHA256_Transform(SHA256_CTX* ctx, const unsigned char data[]) {
-        uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+    void SHA256_Transform(SHA256_CTX* ctx, const SparkU8 data[]) {
+        SparkU32 a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
 
         for (i = 0, j = 0; i < 16; ++i, j += 4)
             m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
@@ -305,7 +299,7 @@ namespace {
         ctx->state[7] += h;
     }
 
-    void SHA256_Update(SHA256_CTX* ctx, const unsigned char data[], size_t len) {
+    void SHA256_Update(SHA256_CTX* ctx, const SparkU8 data[], size_t len) {
         size_t i = 0;
 
         for (i = 0; i < len; ++i) {
@@ -316,14 +310,14 @@ namespace {
         }
     }
 
-    void SHA256_Final(SHA256_CTX* ctx, unsigned char hash[]) {
-        unsigned char finalcount[8];
-        unsigned int i;
+    void SHA256_Final(SHA256_CTX* ctx, SparkU8 hash[]) {
+        SparkU8 finalcount[8];
+        SparkU32 i;
 
         for (i = 0; i < 8; ++i)
-            finalcount[i] = (unsigned char)((ctx->bitcount >> ((7 - i) * 8)) & 0xFF);
+            finalcount[i] = (SparkU8)((ctx->bitcount >> ((7 - i) * 8)) & 0xFF);
 
-        unsigned char c = 0x80;
+        SparkU8 c = 0x80;
         SHA256_Update(ctx, &c, 1);
 
         while ((ctx->bitcount / 8) % 64 != 56) {
@@ -343,30 +337,29 @@ namespace {
 
     std::string ComputeSHA256(const std::string& data) {
         SHA256_CTX ctx;
-        unsigned char hash[32];
-        char buf[3];
+        SparkU8 hash[32];
+        SparkI8 buf[3];
         buf[2] = 0;
 
         SHA256_Init(&ctx);
-        SHA256_Update(&ctx, reinterpret_cast<const unsigned char*>(data.c_str()), data.size());
+        SHA256_Update(&ctx, reinterpret_cast<const SparkU8*>(data.c_str()), data.size());
         SHA256_Final(&ctx, hash);
 
         std::stringstream ss;
-        for (int i = 0; i < 32; ++i) {
+        for (SparkI32 i = 0; i < 32; ++i) {
             sprintf(buf, "%02x", hash[i]);
             ss << buf;
         }
 
         return ss.str();
     }
-    // End SHA-256 implementation
 
     // Helper function to create directories if they don't exist
     bool EnsureDirectoryExists(const std::filesystem::path& dir_path) {
         std::error_code ec;
         if (!std::filesystem::exists(dir_path, ec)) {
             if (!std::filesystem::create_directories(dir_path, ec)) {
-                fprintf(stderr, "Error: Could not create directory %s: %s\n",
+                SPARK_LOG_ERROR("Could not create directory %s: %s",
                     dir_path.string().c_str(), ec.message().c_str());
                 return false;
             }
@@ -406,7 +399,7 @@ namespace {
     bool ReadHashFromFile(const std::filesystem::path& hash_path, std::string& stored_hash) {
         std::ifstream hash_file(hash_path, std::ios::in);
         if (!hash_file) {
-            fprintf(stderr, "Error: Could not open hash file %s\n", hash_path.string().c_str());
+            SPARK_LOG_ERROR("Could not open hash file %s", hash_path.string().c_str());
             return false;
         }
 
@@ -419,7 +412,7 @@ namespace {
     bool WriteHashToFile(const std::filesystem::path& hash_path, const std::string& hash) {
         std::ofstream hash_file(hash_path, std::ios::out | std::ios::trunc);
         if (!hash_file) {
-            fprintf(stderr, "Error: Could not write hash file %s\n", hash_path.string().c_str());
+            SPARK_LOG_ERROR("Could not write hash file %s", hash_path.string().c_str());
             return false;
         }
 
@@ -450,7 +443,7 @@ extern "C" {
         // Ensure cache directories exist
         if (!EnsureDirectoryExists(compiled_shaders_dir) ||
             !EnsureDirectoryExists(hashed_shaders_dir)) {
-            fprintf(stderr, "Error: Failed to ensure cache directories exist.\n");
+            SPARK_LOG_ERROR("Failed to ensure cache directories exist.");
             return SPARK_ERROR_INVALID;
         }
 
@@ -462,7 +455,7 @@ extern "C" {
         // Read shader source code
         std::string source_code = ReadFile(source_path);
         if (source_code.empty()) {
-            fprintf(stderr, "Error: Shader source is empty or could not be read.\n");
+            SPARK_LOG_ERROR("Shader source is empty or could not be read.");
             return SPARK_ERROR_INVALID;
         }
 
@@ -482,7 +475,7 @@ extern "C" {
                     // Read the compiled SPIR-V binary
                     std::ifstream spirv_file(compiled_spirv_path, std::ios::in | std::ios::binary | std::ios::ate);
                     if (!spirv_file) {
-                        fprintf(stderr, "Error: Could not open compiled SPIR-V file %s\n", compiled_spirv_path.string().c_str());
+                        SPARK_LOG_ERROR("Could not open compiled SPIR-V file %s", compiled_spirv_path.string().c_str());
                         // Proceed to compile if .sprv exists but cannot be opened
                     }
                     else {
@@ -492,36 +485,36 @@ extern "C" {
                         // Allocate memory for SPIR-V data
                         *spirv_data = (SparkBuffer)malloc(size);
                         if (!(*spirv_data)) {
-                            fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
+                            SPARK_LOG_ERROR("Memory allocation failed for SPIR-V data");
                             return SPARK_ERROR_OUT_OF_MEMORY;
                         }
 
                         if (!spirv_file.read(reinterpret_cast<char*>(*spirv_data), size)) {
-                            fprintf(stderr, "Error: Failed to read compiled SPIR-V file %s\n", compiled_spirv_path.string().c_str());
+                            SPARK_LOG_ERROR("Failed to read compiled SPIR-V file %s", compiled_spirv_path.string().c_str());
                             free(*spirv_data);
                             *spirv_data = nullptr;
                             return SPARK_ERROR_INVALID;
                         }
 
                         *spirv_size = static_cast<SparkSize>(size);
-                        fprintf(stdout, "Loaded SPIR-V from cache: %s\n", compiled_spirv_path.string().c_str());
+                        SPARK_LOG_INFO("Loaded SPIR-V from cache: %s", compiled_spirv_path.string().c_str());
                         return SPARK_SUCCESS;
                     }
                 }
                 else {
-                    fprintf(stdout, "Shader source has changed. Recompiling shader: %s\n", source_path.string().c_str());
+                    SPARK_LOG_INFO("Shader source has changed. Recompiling shader: %s", source_path.string().c_str());
                 }
             }
             else {
-                fprintf(stderr, "Error: Failed to read stored hash. Recompiling shader: %s\n", source_path.string().c_str());
+                SPARK_LOG_ERROR("Failed to read stored hash. Recompiling shader: %s", source_path.string().c_str());
             }
         }
         else {
             if (!FileExists(compiled_spirv_path)) {
-                fprintf(stdout, "Compiled SPIR-V file does not exist. Compiling shader: %s\n", source_path.string().c_str());
+                SPARK_LOG_INFO("Compiled SPIR-V file does not exist. Compiling shader: %s", source_path.string().c_str());
             }
             if (!FileExists(hash_file_path)) {
-                fprintf(stdout, "Hash file does not exist. Compiling shader: %s\n", source_path.string().c_str());
+                SPARK_LOG_INFO("Hash file does not exist. Compiling shader: %s", source_path.string().c_str());
             }
         }
 
@@ -550,7 +543,7 @@ extern "C" {
         if (!shader.parse(&resources, default_version, false, messages)) {
             // Compilation failed
             std::string log = shader.getInfoLog();
-            fprintf(stderr, "Shader compilation error:\n%s\n", log.c_str());
+            fprintf(stderr, "Shader compilation error:%s", log.c_str());
             return SPARK_ERROR_INVALID;
         }
 
@@ -561,19 +554,19 @@ extern "C" {
         if (!program.link(messages)) {
             // Linking failed
             std::string log = program.getInfoLog();
-            fprintf(stderr, "Shader linking error:\n%s\n", log.c_str());
+            fprintf(stderr, "Shader linking error:%s", log.c_str());
             return SPARK_ERROR_INVALID;
         }
 
         // Convert to SPIR-V
-        std::vector<uint32_t> spirv;
+        std::vector<SparkU32> spirv;
         glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
 
         // Allocate memory for SPIR-V data
-        size_t byte_size = spirv.size() * sizeof(uint32_t);
+        size_t byte_size = spirv.size() * sizeof(SparkU32);
         *spirv_data = (SparkBuffer)malloc(byte_size);
         if (!(*spirv_data)) {
-            fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
+            SPARK_LOG_ERROR("Memory allocation failed for SPIR-V data");
             return SPARK_ERROR_OUT_OF_MEMORY;
         }
 
@@ -583,22 +576,21 @@ extern "C" {
         // Write the SPIR-V binary to the compiled_shaders directory for caching
         std::ofstream spirv_file_out(compiled_spirv_path, std::ios::out | std::ios::binary | std::ios::trunc);
         if (!spirv_file_out) {
-            fprintf(stderr, "Warning: Could not write compiled SPIR-V cache file %s\n", compiled_spirv_path.string().c_str());
+            SPARK_LOG_WARN("Could not write compiled SPIR-V cache file %s", compiled_spirv_path.string().c_str());
             // Continue without caching
         }
         else {
             spirv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
             spirv_file_out.close();
-            fprintf(stdout, "Compiled and cached SPIR-V: %s\n", compiled_spirv_path.string().c_str());
+            SPARK_LOG_INFO("Compiled and cached SPIR-V: %s", compiled_spirv_path.string().c_str());
         }
 
         // Write the current hash to the hash file
         if (!WriteHashToFile(hash_file_path, current_hash)) {
-            fprintf(stderr, "Warning: Could not write hash file %s\n", hash_file_path.string().c_str());
-            // Continue without storing the hash
+            SPARK_LOG_WARN("Could not write hash file %s", hash_file_path.string().c_str());
         }
         else {
-            fprintf(stdout, "Stored shader hash: %s\n", hash_file_path.string().c_str());
+            SPARK_LOG_INFO("Stored shader hash: %s", hash_file_path.string().c_str());
         }
 
         return SPARK_SUCCESS; // Success

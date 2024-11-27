@@ -33,16 +33,6 @@
 #define SparkAtomicDecrement(data) __sync_sub_and_fetch((data), 1)
 #endif
 
-#ifndef NDEBUG 
-
-#define SparkLog(ARG, ...) SparkLogImpl(ARG, __VA_ARGS__)
-
-#else
-
-#define SparkLog(ARG, ...)
-
-#endif
-
 #pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
@@ -1398,7 +1388,7 @@ SPARKAPI SparkVoid SparkLogImpl(SparkLogLevel log_level, SparkConstString format
 
 SPARKAPI SparkResult SparkCheckSuccess(SparkResult result) {
 	if (result != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, SparkResultToString(result));
+		SPARK_LOG_ERROR(SparkResultToString(result));
 	}
 	return result;
 }
@@ -2686,7 +2676,7 @@ SPARKAPI SparkVector SparkCopyVector(SparkVector vector) {
 SPARKAPI SparkHandle SparkGetElementVector(SparkVector vector,
 	SparkSize index) {
 	if (index >= vector->size || index < 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_NULL;
 	}
 	return vector->elements[index];
@@ -2699,7 +2689,7 @@ SPARKAPI SparkResult SparkPushBackVector(SparkVector vector,
 		vector->elements = vector->allocator->reallocate(
 			vector->elements, vector->capacity * sizeof(SparkHandle));
 		if (vector->elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
+			SPARK_LOG_ERROR("Failed to reallocate vector!");
 			return SPARK_ERROR_INVALID_STATE;
 		}
 	}
@@ -2709,7 +2699,7 @@ SPARKAPI SparkResult SparkPushBackVector(SparkVector vector,
 
 SPARKAPI SparkResult SparkPopBackVector(SparkVector vector) {
 	if (vector->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Vector is empty!");
+		SPARK_LOG_ERROR("Vector is empty!");
 		return SPARK_ERROR_INVALID_STATE;
 	}
 	vector->size--;
@@ -2725,7 +2715,7 @@ SPARKAPI SparkResult SparkPopBackVector(SparkVector vector) {
 SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkSize index,
 	SparkHandle element) {
 	if (index >= vector->size || index < 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (vector->size >= vector->capacity) {
@@ -2733,7 +2723,7 @@ SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkSize index,
 		vector->elements = vector->allocator->reallocate(
 			vector->elements, vector->capacity * sizeof(SparkHandle));
 		if (vector->elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
+			SPARK_LOG_ERROR("Failed to reallocate vector!");
 			return SPARK_ERROR_INVALID_STATE;
 		}
 	}
@@ -2750,11 +2740,11 @@ SPARKAPI SparkResult SparkInsertVector(SparkVector vector, SparkSize index,
 
 SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkSize index) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (index >= vector->size || index < 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -2774,11 +2764,11 @@ SPARKAPI SparkResult SparkRemoveVector(SparkVector vector, SparkSize index) {
 SPARKAPI SparkResult SparkRemoveNoShiftVector(SparkVector vector,
 	SparkSize index) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (index >= vector->size || index < 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -2796,12 +2786,12 @@ SPARKAPI SparkResult SparkRemoveNoShiftVector(SparkVector vector,
 SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin,
 	SparkSize end) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	for (SparkSize i = begin; i < end; i++) {
 		if (i >= vector->size) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+			SPARK_LOG_ERROR("Index out of bounds!");
 			return SPARK_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -2823,11 +2813,11 @@ SPARKAPI SparkResult SparkEraseVector(SparkVector vector, SparkSize begin,
 SPARKAPI SparkResult SparkSetVector(SparkVector vector, SparkSize index,
 	SparkHandle element) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (index >= vector->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -2854,7 +2844,7 @@ SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity) {
 	vector->elements = vector->allocator->reallocate(
 		vector->elements, vector->capacity * sizeof(SparkHandle));
 	if (vector->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
+		SPARK_LOG_ERROR("Failed to reallocate vector!");
 		return SPARK_ERROR_INVALID_STATE;
 	}
 	return SPARK_SUCCESS;
@@ -2862,7 +2852,7 @@ SPARKAPI SparkResult SparkResizeVector(SparkVector vector, SparkSize capacity) {
 
 SPARKAPI SparkResult SparkCompressVector(SparkVector vector) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -2884,7 +2874,7 @@ SPARKAPI SparkResult SparkCompressVector(SparkVector vector) {
 
 SPARKAPI SparkResult SparkClearVector(SparkVector vector) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	// Call destructor on each element if destructor is not SPARK_NULL
@@ -2901,7 +2891,7 @@ SPARKAPI SparkResult SparkPushBackBufferVector(SparkVector vector,
 	SparkConstBuffer buffer,
 	SparkSize buffer_size) {
 	if (!vector) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid vector!");
+		SPARK_LOG_ERROR("Invalid vector!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -2910,7 +2900,7 @@ SPARKAPI SparkResult SparkPushBackBufferVector(SparkVector vector,
 		vector->elements = vector->allocator->reallocate(
 			vector->elements, vector->capacity * sizeof(SparkHandle));
 		if (vector->elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to reallocate vector!");
+			SPARK_LOG_ERROR("Failed to reallocate vector!");
 			return SPARK_ERROR_INVALID_STATE;
 		}
 	}
@@ -2984,7 +2974,7 @@ SPARKAPI SparkVoid SparkDestroyList(SparkList list) {
 
 SPARKAPI SparkHandle SparkGetElementList(SparkList list, SparkIndex index) {
 	if (index >= list->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_NULL;
 	}
 
@@ -3015,7 +3005,7 @@ SPARKAPI SparkResult SparkPushBackList(SparkList list, SparkHandle element) {
 
 SPARKAPI SparkResult SparkPopBackList(SparkList list) {
 	if (list->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "List is empty!");
+		SPARK_LOG_ERROR("List is empty!");
 		return SPARK_ERROR_INVALID_STATE;
 	}
 
@@ -3049,7 +3039,7 @@ SPARKAPI SparkResult SparkPopBackList(SparkList list) {
 SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index,
 	SparkHandle element) {
 	if (index > list->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -3081,7 +3071,7 @@ SPARKAPI SparkResult SparkInsertList(SparkList list, SparkIndex index,
 
 SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index) {
 	if (index >= list->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -3118,7 +3108,7 @@ SPARKAPI SparkResult SparkRemoveList(SparkList list, SparkIndex index) {
 SPARKAPI SparkResult SparkSetList(SparkList list, SparkIndex index,
 	SparkHandle element) {
 	if (index >= list->size) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Index out of bounds!");
+		SPARK_LOG_ERROR("Index out of bounds!");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -3651,7 +3641,7 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
 
 	SparkHashSet hashset = allocator->allocate(sizeof(struct SparkHashSetT));
 	if (hashset == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for hashset!");
+		SPARK_LOG_ERROR("Failed to allocate memory for hashset!");
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
 		}
@@ -3669,7 +3659,7 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
 	hashset->elements =
 		allocator->allocate(hashset->capacity * sizeof(SparkHandle));
 	if (hashset->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for hashset elements!");
 		allocator->free(hashset);
 		if (!external_allocator) {
@@ -3680,7 +3670,7 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
 
 	hashset->hashes = allocator->allocate(hashset->capacity * sizeof(SparkSize));
 	if (hashset->hashes == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for hashset hashes!");
 		allocator->free(hashset->elements);
 		allocator->free(hashset);
@@ -3748,7 +3738,7 @@ SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset,
 		hashset->allocator->allocate(hashset->capacity * sizeof(SparkSize));
 
 	if (hashset->elements == SPARK_NULL || hashset->hashes == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for hashset resizing!");
 
 		// Restore old capacity
@@ -3780,7 +3770,7 @@ SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset,
 			SparkResult res =
 				SparkInsertHashSet(hashset, old_elements[i], hashset->element_size);
 			if (res != SPARK_SUCCESS) {
-				SparkLog(SPARK_LOG_LEVEL_ERROR,
+				SPARK_LOG_ERROR(
 					"Failed to re-insert element during hashset resizing!");
 
 				// Free new elements and hashes
@@ -3890,7 +3880,7 @@ SPARKAPI SparkResult SparkRemoveHashSet(SparkHashSet hashset,
 		}
 	}
 
-	SparkLog(SPARK_LOG_LEVEL_ERROR, "Element not found in hashset!");
+	SPARK_LOG_ERROR("Element not found in hashset!");
 	return SPARK_ERROR_NOT_FOUND;
 }
 
@@ -3932,7 +3922,7 @@ SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (capacity == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Capacity must be greater than zero!");
+		SPARK_LOG_ERROR("Capacity must be greater than zero!");
 		return SPARK_NULL;
 	}
 
@@ -3943,7 +3933,7 @@ SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
 
 	SparkQueue queue = allocator->allocate(sizeof(struct SparkQueueT));
 	if (queue == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for queue!");
+		SPARK_LOG_ERROR("Failed to allocate memory for queue!");
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
 		}
@@ -3960,7 +3950,7 @@ SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
 
 	queue->elements = allocator->allocate(queue->capacity * sizeof(SparkHandle));
 	if (queue->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for queue elements!");
 		allocator->free(queue);
 		if (!external_allocator) {
@@ -4012,7 +4002,7 @@ SPARKAPI SparkResult SparkEnqueueQueue(SparkQueue queue, SparkHandle element) {
 		SparkHandle* new_elements =
 			queue->allocator->allocate(new_capacity * sizeof(SparkHandle));
 		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to allocate memory for queue resizing!");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
@@ -4041,7 +4031,7 @@ SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (queue->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty!");
+		SPARK_LOG_ERROR("Queue is empty!");
 		return SPARK_ERROR_INVALID_STATE;
 	}
 
@@ -4059,7 +4049,7 @@ SPARKAPI SparkResult SparkDequeueQueue(SparkQueue queue) {
 
 SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue) {
 	if (queue == SPARK_NULL || queue->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or SPARK_NULL!");
+		SPARK_LOG_ERROR("Queue is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	return queue->elements[queue->front];
@@ -4067,7 +4057,7 @@ SPARKAPI SparkHandle SparkGetFrontQueue(SparkQueue queue) {
 
 SPARKAPI SparkHandle SparkGetBackQueue(SparkQueue queue) {
 	if (queue == SPARK_NULL || queue->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Queue is empty or SPARK_NULL!");
+		SPARK_LOG_ERROR("Queue is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	SparkSize index = (queue->rear == 0) ? queue->capacity - 1 : queue->rear - 1;
@@ -4108,7 +4098,7 @@ SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
 	SparkBool external_allocator = SPARK_TRUE;
 
 	if (capacity == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Capacity must be greater than zero!");
+		SPARK_LOG_ERROR("Capacity must be greater than zero!");
 		return SPARK_NULL;
 	}
 
@@ -4119,7 +4109,7 @@ SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
 
 	SparkStack stack = allocator->allocate(sizeof(struct SparkStackT));
 	if (stack == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for stack!");
+		SPARK_LOG_ERROR("Failed to allocate memory for stack!");
 		if (!external_allocator) {
 			SparkDestroyAllocator(allocator);
 		}
@@ -4134,7 +4124,7 @@ SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
 
 	stack->elements = allocator->allocate(stack->capacity * sizeof(SparkHandle));
 	if (stack->elements == SPARK_NULL) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for stack elements!");
 		allocator->free(stack);
 		if (!external_allocator) {
@@ -4184,7 +4174,7 @@ SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkHandle element) {
 		SparkHandle* new_elements =
 			stack->allocator->allocate(new_capacity * sizeof(SparkHandle));
 		if (new_elements == SPARK_NULL) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to allocate memory for stack resizing!");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
@@ -4206,7 +4196,7 @@ SPARKAPI SparkResult SparkPopStack(SparkStack stack) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 	if (stack->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Stack is empty!");
+		SPARK_LOG_ERROR("Stack is empty!");
 		return SPARK_ERROR_INVALID_STATE;
 	}
 	stack->size--;
@@ -4223,7 +4213,7 @@ SPARKAPI SparkResult SparkPopStack(SparkStack stack) {
 
 SPARKAPI SparkHandle SparkGetTopStack(SparkStack stack) {
 	if (stack == SPARK_NULL || stack->size == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Stack is empty or SPARK_NULL!");
+		SPARK_LOG_ERROR("Stack is empty or SPARK_NULL!");
 		return SPARK_NULL;
 	}
 	return stack->elements[stack->size - 1];
@@ -4823,7 +4813,7 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		pool->threads[i] = (HANDLE)_beginthreadex(
 			SPARK_NULL, 0, __SparkThreadPoolWorker, pool, 0, &threadID);
 		if (pool->threads[i] == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create thread %zu", i);
+			SPARK_LOG_ERROR("Failed to create thread %zu", i);
 			// Handle error (e.g., clean up and return)
 		}
 #else
@@ -4857,7 +4847,7 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 #ifdef _WIN32
 		DWORD wait_result = WaitForSingleObject(pool->threads[i], INFINITE);
 		if (wait_result != WAIT_OBJECT_0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"WaitForSingleObject failed on thread %zu", i);
 		}
 		CloseHandle(pool->threads[i]);
@@ -5437,9 +5427,9 @@ SPARKAPI SparkClient SparkCreateClient(SparkThreadPool tp,
 #ifdef _WIN32
 	// Use InetPtonA to handle ANSI strings explicitly
 	if (InetPtonA(AF_INET, address, &client->server_address.sin_addr) <= 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Invalid address / Address not supported\n");
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "InetPtonA failed with error: %d\n",
+		SPARK_LOG_ERROR("InetPtonA failed with error: %d\n",
 			WSAGetLastError()); // Detailed error
 		SparkFree(client);
 		return SPARK_NULL;
@@ -6295,10 +6285,10 @@ __SparkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 	const VkDebugUtilsMessengerCallbackDataEXT * callback_data,
 	SparkHandle user_data) {
 	if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, callback_data->pMessage);
+		SPARK_LOG_ERROR(callback_data->pMessage);
 	}
 	else {
-		SparkLog(SPARK_LOG_LEVEL_INFO, callback_data->pMessage);
+		SPARK_LOG_INFO(callback_data->pMessage);
 	}
 	return VK_FALSE;
 }
@@ -6365,7 +6355,7 @@ __SparkSetupDebugMessenger(SparkWindow window) {
 SPARKAPI SPARKSTATIC SparkResult
 __SparkCreateVulkanInstance(VkInstance * instance, SparkConstString title) {
 	if (ENABLE_VALIDATION_LAYERS && !__SparkCheckValidationLayerSupport()) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Validation layers requested, but not available!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -6403,7 +6393,7 @@ __SparkCreateVulkanInstance(VkInstance * instance, SparkConstString title) {
 
 	VkResult result = vkCreateInstance(&create_info, SPARK_NULL, instance);
 	if (result != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
+		SPARK_LOG_ERROR("Failed to create Vulkan instance!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6588,7 +6578,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	vkEnumeratePhysicalDevices(window->instance, &device_count, SPARK_NULL);
 
 	if (!device_count) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find GPUs with Vulkan support!");
+		SPARK_LOG_ERROR("Failed to find GPUs with Vulkan support!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6604,7 +6594,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	}
 
 	if (physical_device == VK_NULL_HANDLE) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find a suitable GPU!");
+		SPARK_LOG_ERROR("Failed to find a suitable GPU!");
 		SparkFree(devices);
 		return SPARK_ERROR_INVALID;
 	}
@@ -6627,7 +6617,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkPickPhysicalDevice(SparkWindow window) {
 	}
 
 	if (physical_device == VK_NULL_HANDLE || max_score == 0) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find a suitable GPU!");
+		SPARK_LOG_ERROR("Failed to find a suitable GPU!");
 		SparkFree(devices);
 		SparkFree(candidates);
 		SparkFree(scores);
@@ -6709,7 +6699,7 @@ __SparkCreateLogicalDevice(SparkWindow window) {
 		&window->device) != VK_SUCCESS) {
 		SparkFree(queue_create_infos);
 		SparkFree(unique_queue_families);
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create logical device!");
+		SPARK_LOG_ERROR("Failed to create logical device!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6777,7 +6767,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 
 	if (vkCreateSwapchainKHR(window->device, &create_info, SPARK_NULL,
 		&window->swap_chain) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create swap chain!");
+		SPARK_LOG_ERROR("Failed to create swap chain!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6792,7 +6782,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSwapChain(SparkWindow window) {
 
 	window->swap_chain_extent = SparkAllocate(sizeof(VkExtent2D));
 	if (!window->swap_chain_extent) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for swap_chain_extent!");
 		return SPARK_ERROR_NULL;
 	}
@@ -6819,7 +6809,7 @@ SPARKAPI SPARKSTATIC VkImageView __SparkCreateImageView(SparkWindow window, VkIm
 
 	VkImageView image_view;
 	if (vkCreateImageView(window->device, &view_info, SPARK_NULL, &image_view) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create texture image view!");
+		SPARK_LOG_ERROR("Failed to create texture image view!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -6848,7 +6838,7 @@ SPARKAPI SPARKSTATIC VkShaderModule __SparkCreateShaderModule(
 	VkShaderModule shader_module;
 	if (vkCreateShaderModule(window->device, &create_info, SPARK_NULL,
 		&shader_module) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create shader module!");
+		SPARK_LOG_ERROR("Failed to create shader module!");
 		return VK_NULL_HANDLE;
 	}
 	return shader_module;
@@ -6893,7 +6883,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 
 	if (vkCreateRenderPass(window->device, &render_pass_info, SPARK_NULL,
 		&window->render_pass) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create render pass!");
+		SPARK_LOG_ERROR("Failed to create render pass!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7009,7 +6999,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication 
 		pipeline_layout_info.pSetLayouts = &window->descriptor_set_layout;
 
 		if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL, &config->pipeline_layout) != VK_SUCCESS) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create pipeline layout!");
+			SPARK_LOG_ERROR("Failed to create pipeline layout!");
 			SparkFree(attribute_descriptions);
 			return SPARK_ERROR_INVALID;
 		}
@@ -7046,7 +7036,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication 
 	}
 
 	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, &config->pipeline) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create graphics pipeline!");
+		SPARK_LOG_ERROR("Failed to create graphics pipeline!");
 		SparkFree(attribute_descriptions);
 		return SPARK_ERROR_INVALID;
 	}
@@ -7075,7 +7065,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateFramebuffers(SparkWindow window) {
 		if (vkCreateFramebuffer(window->device, &framebuffer_info, SPARK_NULL,
 			&window->swap_chain_framebuffers[i]) !=
 			VK_SUCCESS) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffer!");
+			SPARK_LOG_ERROR("Failed to create framebuffer!");
 			return SPARK_ERROR_INVALID;
 		}
 	}
@@ -7094,7 +7084,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 
 	if (vkCreateCommandPool(window->device, &pool_info, SPARK_NULL,
 		&window->command_pool) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command pool!");
+		SPARK_LOG_ERROR("Failed to create command pool!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7112,7 +7102,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to begin recording command buffer!");
+		SPARK_LOG_ERROR("Failed to begin recording command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7188,7 +7178,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	vkCmdEndRenderPass(command_buffer);
 
 	if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to record command buffer!");
+		SPARK_LOG_ERROR("Failed to record command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7205,7 +7195,7 @@ SPARKAPI SPARKSTATIC SparkU32 __SparkFindMemoryType(SparkWindow window, SparkU32
 		}
 	}
 
-	SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to find suitable memory type!");
+	SPARK_LOG_ERROR("Failed to find suitable memory type!");
 	return UINT32_MAX;
 }
 
@@ -7222,7 +7212,7 @@ SPARKAPI SPARKSTATIC VulkanMemoryAllocation __SparkCreateBuffer(SparkWindow wind
 	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	if (vkCreateBuffer(window->device, &buffer_info, SPARK_NULL, &vk_alloc->buffer) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create vertex buffer!");
+		SPARK_LOG_ERROR("Failed to create vertex buffer!");
 		return SPARK_NULL;
 	}
 
@@ -7235,7 +7225,7 @@ SPARKAPI SPARKSTATIC VulkanMemoryAllocation __SparkCreateBuffer(SparkWindow wind
 	alloc_info.memoryTypeIndex = __SparkFindMemoryType(window, mem_requirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(window->device, &alloc_info, SPARK_NULL, &vk_alloc->memory) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate vertex buffer memory!");
+		SPARK_LOG_ERROR("Failed to allocate vertex buffer memory!");
 		return SPARK_NULL;
 	}
 
@@ -7332,7 +7322,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandBuffers(SparkWindow window)
 
 	if (vkAllocateCommandBuffers(window->device, &alloc_info,
 		window->command_buffers) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate command buffers!");
+		SPARK_LOG_ERROR("Failed to allocate command buffers!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7369,7 +7359,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateSyncObjects(SparkWindow window) {
 			VK_SUCCESS ||
 			vkCreateFence(window->device, &fence_info, SPARK_NULL,
 				&window->in_flight_fences[i]) != VK_SUCCESS) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to create synchronization objects!");
 			return SPARK_ERROR_INVALID;
 		}
@@ -7440,7 +7430,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorSetLayout(SparkWindow wi
 	layout_info.pBindings = bindings;
 
 	if (vkCreateDescriptorSetLayout(window->device, &layout_info, SPARK_NULL, &window->descriptor_set_layout) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set layout!");
+		SPARK_LOG_ERROR("Failed to create descriptor set layout!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7487,7 +7477,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorPool(SparkWindow window)
 	pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
 
 	if (vkCreateDescriptorPool(window->device, &pool_info, SPARK_NULL, &window->descriptor_pool) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor pool!");
+		SPARK_LOG_ERROR("Failed to create descriptor pool!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7509,7 +7499,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateDescriptorSets(SparkWindow window)
 	window->descriptor_sets = SparkAllocate(sizeof(VkDescriptorSet) * MAX_FRAMES_IN_FLIGHT);
 
 	if (vkAllocateDescriptorSets(window->device, &alloc_info, window->descriptor_sets) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate descriptor sets!");
+		SPARK_LOG_ERROR("Failed to allocate descriptor sets!");
 		SparkFree(layouts);
 		return SPARK_ERROR_INVALID;
 	}
@@ -7572,7 +7562,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(
 	image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	if (vkCreateImage(device, &image_info, SPARK_NULL, image) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image!");
+		SPARK_LOG_ERROR("Failed to create image!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7585,7 +7575,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(
 	alloc_info.memoryTypeIndex = __SparkFindMemoryType(app->window, mem_requirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(device, &alloc_info, SPARK_NULL, image_memory) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to allocate memory for image!");
+		SPARK_LOG_ERROR("Failed to allocate memory for image!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7628,7 +7618,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkTransitionImageLayout(SparkWindow window
 		dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
 	else {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported layout transition!");
+		SPARK_LOG_ERROR("Unsupported layout transition!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7693,7 +7683,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateTextureSampler(
 	sampler_info.maxLod = max_lod;
 
 	if (vkCreateSampler(window->device, &sampler_info, SPARK_NULL, &texture->texture_sampler) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create texture sampler!");
+		SPARK_LOG_ERROR("Failed to create texture sampler!");
 		return SPARK_ERROR_INVALID;
 	}
 }
@@ -7724,87 +7714,87 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 
 	if (__SparkCreateVulkanInstance(
 		&window->instance, window->window_data->title) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create Vulkan instance!");
+		SPARK_LOG_ERROR("Failed to create Vulkan instance!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkSetupDebugMessenger(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to setup debug messenger!");
+		SPARK_LOG_ERROR("Failed to setup debug messenger!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateSurface(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to setup window surface!");
+		SPARK_LOG_ERROR("Failed to setup window surface!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkPickPhysicalDevice(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to pick physical device!");
+		SPARK_LOG_ERROR("Failed to pick physical device!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateLogicalDevice(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create logical device!");
+		SPARK_LOG_ERROR("Failed to create logical device!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateSwapChain(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create swap chain!");
+		SPARK_LOG_ERROR("Failed to create swap chain!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateImageViews(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create image views!");
+		SPARK_LOG_ERROR("Failed to create image views!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateRenderPass(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create render pass!");
+		SPARK_LOG_ERROR("Failed to create render pass!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateDescriptorSetLayout(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor set!");
+		SPARK_LOG_ERROR("Failed to create descriptor set!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateFramebuffers(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create framebuffers!");
+		SPARK_LOG_ERROR("Failed to create framebuffers!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateCommandPool(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command pool!");
+		SPARK_LOG_ERROR("Failed to create command pool!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateUniformBuffersForWindow(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create uniform buffers!");
+		SPARK_LOG_ERROR("Failed to create uniform buffers!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateDescriptorPool(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor pool!");
+		SPARK_LOG_ERROR("Failed to create descriptor pool!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateDescriptorSets(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create descriptor sets!");
+		SPARK_LOG_ERROR("Failed to create descriptor sets!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkUpdateDescriptorSets(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to update descriptor sets!");
+		SPARK_LOG_ERROR("Failed to update descriptor sets!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateCommandBuffers(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create command buffer!");
+		SPARK_LOG_ERROR("Failed to create command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
 	if (__SparkCreateSyncObjects(window) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create sync objects!");
+		SPARK_LOG_ERROR("Failed to create sync objects!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7894,7 +7884,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 		return __SparkRecreateSwapChain(window);
 	}
 	else if (result != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to acquire swap chain image!");
+		SPARK_LOG_ERROR("Failed to acquire swap chain image!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7930,7 +7920,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 
 	if (vkQueueSubmit(window->graphics_queue, 1, &submit_info,
 		window->in_flight_fences[current_frame]) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to submit draw command buffer!");
+		SPARK_LOG_ERROR("Failed to submit draw command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7952,7 +7942,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 		return __SparkRecreateSwapChain(window);
 	}
 	else if (result != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to present swap chain image!");
+		SPARK_LOG_ERROR("Failed to present swap chain image!");
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -8783,18 +8773,18 @@ SPARKAPI SparkVoid SparkShutdownAudio() {
 
 SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 	if (SparkInitAudio() != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to initialize audio.");
+		SPARK_LOG_ERROR("Failed to initialize audio.");
 		return SPARK_NULL;
 	}
 	if (!file_path) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid file path.");
+		SPARK_LOG_ERROR("Invalid file path.");
 		return SPARK_NULL;
 	}
 
 	SparkAudioBuffer buffer =
 		(SparkAudioBuffer)SparkAllocate(sizeof(struct SparkAudioBufferT));
 	if (!buffer) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for audio buffer.\n");
 		return SPARK_NULL;
 	}
@@ -8811,7 +8801,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		// Load WAV file using dr_wav
 		drwav wav;
 		if (!drwav_init_file(&wav, file_path, SPARK_NULL)) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load WAV file: %s", file_path);
+			SPARK_LOG_ERROR("Failed to load WAV file: %s", file_path);
 			SparkFree(buffer);
 			return SPARK_NULL;
 		}
@@ -8825,7 +8815,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		drwav_uninit(&wav);
 
 		if (samples_read == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to read samples from WAV file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8834,7 +8824,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 
 		format = __SparkGetOpenALFormat(wav.channels, 16);
 		if (format == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported WAV format in file: %s",
+			SPARK_LOG_ERROR("Unsupported WAV format in file: %s",
 				file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8849,7 +8839,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		// Load FLAC file using dr_flac
 		drflac* flac = drflac_open_file(file_path, SPARK_NULL);
 		if (!flac) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load FLAC file: %s",
+			SPARK_LOG_ERROR("Failed to load FLAC file: %s",
 				file_path);
 			SparkFree(buffer);
 			return SPARK_NULL;
@@ -8864,7 +8854,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		drflac_close(flac);
 
 		if (samples_read == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to read samples from FLAC file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8873,7 +8863,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 
 		format = __SparkGetOpenALFormat(flac->channels, 16);
 		if (format == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported FLAC format in file: %s",
+			SPARK_LOG_ERROR("Unsupported FLAC format in file: %s",
 				file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8888,7 +8878,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		// Load MP3 file using dr_mp3
 		drmp3 mp3;
 		if (!drmp3_init_file(&mp3, file_path, SPARK_NULL)) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load MP3 file: %s", file_path);
+			SPARK_LOG_ERROR("Failed to load MP3 file: %s", file_path);
 			SparkFree(buffer);
 			return SPARK_NULL;
 		}
@@ -8904,7 +8894,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		drmp3_uninit(&mp3);
 
 		if (samples_read == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR,
+			SPARK_LOG_ERROR(
 				"Failed to read samples from MP3 file: %s", file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8913,7 +8903,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 
 		format = __SparkGetOpenALFormat(mp3.channels, 16);
 		if (format == 0) {
-			SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported MP3 format in file: %s",
+			SPARK_LOG_ERROR("Unsupported MP3 format in file: %s",
 				file_path);
 			SparkFree(sample_data);
 			SparkFree(buffer);
@@ -8925,7 +8915,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 		size = (SparkI32)(total_sample_count * sizeof(SparkI16));
 	}
 	else {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Unsupported file extension: %s",
+		SPARK_LOG_ERROR("Unsupported file extension: %s",
 			extension);
 		SparkFree(buffer);
 		return SPARK_NULL;
@@ -8934,7 +8924,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 	// Generate OpenAL buffer
 	alGenBuffers(1, &buffer->bufferid);
 	if (alGetError() != AL_NO_ERROR) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL buffer.");
+		SPARK_LOG_ERROR("Failed to generate OpenAL buffer.");
 		SparkFree(data);
 		SparkFree(buffer);
 		return SPARK_NULL;
@@ -8943,7 +8933,7 @@ SPARKAPI SparkAudioBuffer SparkCreateAudioBuffer(SparkConstString file_path) {
 	// Buffer the audio data into OpenAL
 	alBufferData(buffer->bufferid, format, data, size, frequency);
 	if (alGetError() != AL_NO_ERROR) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to buffer audio data into OpenAL.");
+		SPARK_LOG_ERROR("Failed to buffer audio data into OpenAL.");
 		alDeleteBuffers(1, &buffer->bufferid);
 		SparkFree(data);
 		SparkFree(buffer);
@@ -8971,13 +8961,13 @@ SPARKAPI SparkVoid SparkDestroyAudioBuffer(SparkAudioBuffer buffer) {
 
 SPARKAPI SparkAudio SparkCreateAudio(SparkAudioBuffer buffer) {
 	if (!buffer) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid audio buffer.");
+		SPARK_LOG_ERROR("Invalid audio buffer.");
 		return SPARK_NULL;
 	}
 
 	SparkAudio source = (SparkAudio)SparkAllocate(sizeof(struct SparkAudioT));
 	if (!source) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR,
+		SPARK_LOG_ERROR(
 			"Failed to allocate memory for audio source.");
 		return SPARK_NULL;
 	}
@@ -8986,7 +8976,7 @@ SPARKAPI SparkAudio SparkCreateAudio(SparkAudioBuffer buffer) {
 
 	alGenSources(1, &source->sourceid);
 	if (alGetError() != AL_NO_ERROR) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to generate OpenAL source.");
+		SPARK_LOG_ERROR("Failed to generate OpenAL source.");
 		SparkFree(source);
 		return SPARK_NULL;
 	}
@@ -8994,7 +8984,7 @@ SPARKAPI SparkAudio SparkCreateAudio(SparkAudioBuffer buffer) {
 	// Attach buffer to source
 	alSourcei(source->sourceid, AL_BUFFER, buffer->bufferid);
 	if (alGetError() != AL_NO_ERROR) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to attach buffer to source.");
+		SPARK_LOG_ERROR("Failed to attach buffer to source.");
 		alDeleteSources(1, &source->sourceid);
 		SparkFree(source);
 		return SPARK_NULL;
@@ -9097,7 +9087,7 @@ SPARKAPI SparkTexture SparkCreateTexture(SparkApplication app, SparkConstString 
 	stbi_uc* pixels = stbi_load(image_path, &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
 
 	if (!pixels) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to load texture from file: %s", image_path);
+		SPARK_LOG_ERROR("Failed to load texture from file: %s", image_path);
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -9178,7 +9168,7 @@ SPARKAPI SparkVoid SparkDestroyWindowData(SparkWindowData window_data) {
 
 SPARKAPI SPARKSTATIC SparkVoid
 __GlfwErrorCallback(SparkI32 error, SparkConstString description) {
-	SparkLog(SPARK_LOG_LEVEL_ERROR, "GLFW Error (%d): %s", error, description);
+	SPARK_LOG_ERROR("GLFW Error (%d): %s", error, description);
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow * window,
@@ -9291,7 +9281,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 	window->should_close = SPARK_FALSE;
 
 	if (!glfwInit()) {
-		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize GLFW!");
+		SPARK_LOG_FATAL("Failed to initialize GLFW!");
 		SparkFree(window);
 		return SPARK_NULL;
 	}
@@ -9304,7 +9294,7 @@ SPARKAPI SparkWindow SparkCreateWindow(SparkWindowData window_data) {
 		window_data->title, SPARK_NULL, SPARK_NULL);
 
 	if (!window->window) {
-		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to create GLFW window!");
+		SPARK_LOG_FATAL("Failed to create GLFW window!");
 		SparkDestroyWindowData(window->window_data);
 		SparkFree(window);
 		glfwTerminate();
@@ -9370,7 +9360,7 @@ SPARKAPI SparkVoid SparkDestroyResourceManager(SparkResourceManager manager) {
 SPARKAPI SparkResult SparkAddResource(SparkResourceManager manager,
 	SparkResource resource) {
 	if (!manager) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		SPARK_LOG_ERROR("Invalid resource manager.");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -9387,7 +9377,7 @@ SPARKAPI SparkResult SparkAddResource(SparkResourceManager manager,
 
 SPARKAPI SparkResult SparkSetCurrentResource(SparkResourceManager manager, SparkConstString resource_name) {
 	if (!manager) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		SPARK_LOG_ERROR("Invalid resource manager.");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -9398,14 +9388,14 @@ SPARKAPI SparkResult SparkSetCurrentResource(SparkResourceManager manager, Spark
 		return SPARK_SUCCESS;
 	}
 
-	SparkLog(SPARK_LOG_LEVEL_ERROR, "Can not set current resource that does not exist!");
+	SPARK_LOG_ERROR("Can not set current resource that does not exist!");
 	return SPARK_ERROR_INVALID;
 }
 
 SPARKAPI SparkResult SparkRemoveResource(SparkResourceManager manager,
 	SparkConstString name) {
 	if (!manager) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		SPARK_LOG_ERROR("Invalid resource manager.");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -9448,7 +9438,7 @@ SPARKAPI SparkResource SparkCreateResource(SparkResourceManager manager,
 	SparkConstString name,
 	SparkHandle data) {
 	if (!manager) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		SPARK_LOG_ERROR("Invalid resource manager.");
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -9459,7 +9449,7 @@ SPARKAPI SparkResource SparkCreateResource(SparkResourceManager manager,
 	resource->destructor = manager->resource_destructor;
 
 	if (SparkAddResource(manager, resource) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Adding resource: %s", name);
+		SPARK_LOG_ERROR("Adding resource: %s", name);
 	}
 
 	return resource;
@@ -9468,7 +9458,7 @@ SPARKAPI SparkResource SparkCreateResource(SparkResourceManager manager,
 SPARKAPI SparkResource SparkGetResource(SparkResourceManager manager,
 	SparkConstString name) {
 	if (!manager) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Invalid resource manager.");
+		SPARK_LOG_ERROR("Invalid resource manager.");
 		return SPARK_NULL;
 	}
 
@@ -9631,7 +9621,7 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 	create_info.pCode = (SparkU32*)shader->code;
 
 	if (vkCreateShaderModule(shader->device, &create_info, SPARK_NULL, &shader->module) != VK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_ERROR, "Failed to create shader module for %s!", filename);
+		SPARK_LOG_ERROR("Failed to create shader module for %s!", filename);
 		SparkFree(shader->code);
 		SparkFree(shader);
 		return SPARK_NULL;
@@ -9911,7 +9901,7 @@ SPARKAPI SparkApplication SparkCreateApplication(SparkWindow window,
 	SparkInitMutex(app->mutex);
 
 	if (__SparkInitializeVulkan(app) != SPARK_SUCCESS) {
-		SparkLog(SPARK_LOG_LEVEL_FATAL, "Failed to initialize Vulkan!");
+		SPARK_LOG_FATAL("Failed to initialize Vulkan!");
 		glfwDestroyWindow(window->window);
 		SparkDestroyWindowData(window->window_data);
 		SparkFree(window);

@@ -155,7 +155,7 @@ i32 main() {
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
 	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNTHREADED);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNTHREADED);
 	AddStartFunctionApplication(app, CreateShaders, SPARK_UNTHREADED);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
 
