@@ -12,13 +12,13 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
 
 #ifndef DefaultTBuiltInResource
 TBuiltInResource DefaultTBuiltInResource = {
+    // ... [existing initialization] ...
     32,    // maxLights
     6,     // maxClipPlanes
     32,    // maxTextureUnits
@@ -169,6 +169,26 @@ namespace {
         }
     }
 
+    std::string ShaderStageToString(SparkShaderStage stage) {
+        switch (stage) {
+        case SPARK_SHADER_STAGE_VERTEX:
+            return "vertex";
+        case SPARK_SHADER_STAGE_FRAGMENT:
+            return "fragment";
+        case SPARK_SHADER_STAGE_COMPUTE:
+            return "compute";
+        case SPARK_SHADER_STAGE_GEOMETRY:
+            return "geometry";
+        case SPARK_SHADER_STAGE_TESS_CONTROL:
+            return "tess_control";
+        case SPARK_SHADER_STAGE_TESS_EVALUATION:
+            return "tess_evaluation";
+        default:
+            return "unknown";
+        }
+    }
+
+
     std::string ReadFile(const std::filesystem::path& path) {
         std::ifstream file_stream(path, std::ios::in | std::ios::binary);
         if (!file_stream) {
@@ -184,16 +204,228 @@ namespace {
         return string_stream.str();
     }
 
-    inline std::string GetFileExtension(const std::filesystem::path& path) {
-        return path.extension().string();
-    }
-
     inline bool FileExists(const std::filesystem::path& path) {
         return std::filesystem::exists(path);
     }
 
-    inline std::filesystem::path ExtendExtension(const std::filesystem::path& path, const std::string& new_ext) {
-        return path.string() + new_ext;
+    // Helper function to compute SHA-256 hash of a string
+    // For production, use a robust library like OpenSSL or Crypto++
+    // Here is a minimal SHA-256 implementation for demonstration purposes
+    // Note: This is not optimized and is for illustrative purposes only
+
+    // Begin SHA-256 implementation
+    struct SHA256_CTX {
+        uint32_t state[8];
+        uint64_t bitcount;
+        unsigned char buffer[64];
+    };
+
+    const uint32_t k[64] = {
+        0x428a2f98, 0x71374491, 0xb5c0fbcf,
+        0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+        0x923f82a4, 0xab1c5ed5, 0xd807aa98,
+        0x12835b01, 0x243185be, 0x550c7dc3,
+        0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
+        0xc19bf174, 0xe49b69c1, 0xefbe4786,
+        0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+        0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8,
+        0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+        0x06ca6351, 0x14292967, 0x27b70a85,
+        0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e,
+        0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819,
+        0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c,
+        0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+        0x5b9cca4f, 0x682e6ff3, 0x748f82ee,
+        0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2
+    };
+
+    void SHA256_Init(SHA256_CTX* ctx) {
+        ctx->bitcount = 0;
+        ctx->state[0] = 0x6a09e667;
+        ctx->state[1] = 0xbb67ae85;
+        ctx->state[2] = 0x3c6ef372;
+        ctx->state[3] = 0xa54ff53a;
+        ctx->state[4] = 0x510e527f;
+        ctx->state[5] = 0x9b05688c;
+        ctx->state[6] = 0x1f83d9ab;
+        ctx->state[7] = 0x5be0cd19;
+    }
+
+    uint32_t ROTRIGHT(uint32_t a, uint32_t b) {
+        return ((a >> b) | (a << (32 - b)));
+    }
+
+    void SHA256_Transform(SHA256_CTX* ctx, const unsigned char data[]) {
+        uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+        for (i = 0, j = 0; i < 16; ++i, j += 4)
+            m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
+        for (; i < 64; ++i)
+            m[i] = ROTRIGHT(m[i - 2], 17) ^ ROTRIGHT(m[i - 2], 19) ^ (m[i - 2] >> 10) +
+            m[i - 7] + ROTRIGHT(m[i - 15], 7) ^ ROTRIGHT(m[i - 15], 18) ^ (m[i - 15] >> 3) +
+            m[i - 16];
+
+        a = ctx->state[0];
+        b = ctx->state[1];
+        c = ctx->state[2];
+        d = ctx->state[3];
+        e = ctx->state[4];
+        f = ctx->state[5];
+        g = ctx->state[6];
+        h = ctx->state[7];
+
+        for (i = 0; i < 64; ++i) {
+            t1 = h + (ROTRIGHT(e, 6) ^ ROTRIGHT(e, 11) ^ ROTRIGHT(e, 25)) +
+                ((e & f) ^ (~e & g)) + k[i] + m[i];
+            t2 = (ROTRIGHT(a, 2) ^ ROTRIGHT(a, 13) ^ ROTRIGHT(a, 22)) +
+                ((a & b) ^ (a & c) ^ (b & c));
+            h = g;
+            g = f;
+            f = e;
+            e = d + t1;
+            d = c;
+            c = b;
+            b = a;
+            a = t1 + t2;
+        }
+
+        ctx->state[0] += a;
+        ctx->state[1] += b;
+        ctx->state[2] += c;
+        ctx->state[3] += d;
+        ctx->state[4] += e;
+        ctx->state[5] += f;
+        ctx->state[6] += g;
+        ctx->state[7] += h;
+    }
+
+    void SHA256_Update(SHA256_CTX* ctx, const unsigned char data[], size_t len) {
+        size_t i = 0;
+
+        for (i = 0; i < len; ++i) {
+            ctx->buffer[ctx->bitcount / 8 % 64] = data[i];
+            ctx->bitcount += 8;
+            if ((ctx->bitcount / 8) % 64 == 0)
+                SHA256_Transform(ctx, ctx->buffer);
+        }
+    }
+
+    void SHA256_Final(SHA256_CTX* ctx, unsigned char hash[]) {
+        unsigned char finalcount[8];
+        unsigned int i;
+
+        for (i = 0; i < 8; ++i)
+            finalcount[i] = (unsigned char)((ctx->bitcount >> ((7 - i) * 8)) & 0xFF);
+
+        unsigned char c = 0x80;
+        SHA256_Update(ctx, &c, 1);
+
+        while ((ctx->bitcount / 8) % 64 != 56) {
+            c = 0x00;
+            SHA256_Update(ctx, &c, 1);
+        }
+
+        SHA256_Update(ctx, finalcount, 8);
+
+        for (i = 0; i < 8; ++i) {
+            hash[i * 4] = (ctx->state[i] >> 24) & 0xFF;
+            hash[i * 4 + 1] = (ctx->state[i] >> 16) & 0xFF;
+            hash[i * 4 + 2] = (ctx->state[i] >> 8) & 0xFF;
+            hash[i * 4 + 3] = ctx->state[i] & 0xFF;
+        }
+    }
+
+    std::string ComputeSHA256(const std::string& data) {
+        SHA256_CTX ctx;
+        unsigned char hash[32];
+        char buf[3];
+        buf[2] = 0;
+
+        SHA256_Init(&ctx);
+        SHA256_Update(&ctx, reinterpret_cast<const unsigned char*>(data.c_str()), data.size());
+        SHA256_Final(&ctx, hash);
+
+        std::stringstream ss;
+        for (int i = 0; i < 32; ++i) {
+            sprintf(buf, "%02x", hash[i]);
+            ss << buf;
+        }
+
+        return ss.str();
+    }
+    // End SHA-256 implementation
+
+    // Helper function to create directories if they don't exist
+    bool EnsureDirectoryExists(const std::filesystem::path& dir_path) {
+        std::error_code ec;
+        if (!std::filesystem::exists(dir_path, ec)) {
+            if (!std::filesystem::create_directories(dir_path, ec)) {
+                fprintf(stderr, "Error: Could not create directory %s: %s\n",
+                    dir_path.string().c_str(), ec.message().c_str());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Helper function to get cache directories
+    void GetCacheDirectories(const std::filesystem::path& source_path,
+        std::filesystem::path& compiled_shaders_dir,
+        std::filesystem::path& hashed_shaders_dir) {
+        std::filesystem::path source_dir = source_path.parent_path();
+        compiled_shaders_dir = source_dir / "compiled_shaders";
+        hashed_shaders_dir = source_dir / "hashed_shaders";
+    }
+
+    // Helper function to compute the hash of the shader source
+    std::string GetShaderHash(const std::string& source_code) {
+        return ComputeSHA256(source_code);
+    }
+
+    std::filesystem::path GetHashFilePath(const std::filesystem::path& hashed_shaders_dir,
+        const std::filesystem::path& source_path, SparkShaderStage stage) {
+        std::string hash_filename = source_path.stem().string() + "_" +
+            ShaderStageToString(stage) + ".hash";
+        return hashed_shaders_dir / hash_filename;
+    }
+
+    std::filesystem::path GetCompiledSpirvPath(const std::filesystem::path& compiled_shaders_dir,
+        const std::filesystem::path& source_path, SparkShaderStage stage) {
+        std::string spirv_filename = source_path.stem().string() + "_" +
+            ShaderStageToString(stage) + ".spv";
+        return compiled_shaders_dir / spirv_filename;
+    }
+
+    // Helper function to read hash from file
+    bool ReadHashFromFile(const std::filesystem::path& hash_path, std::string& stored_hash) {
+        std::ifstream hash_file(hash_path, std::ios::in);
+        if (!hash_file) {
+            fprintf(stderr, "Error: Could not open hash file %s\n", hash_path.string().c_str());
+            return false;
+        }
+
+        std::getline(hash_file, stored_hash);
+        hash_file.close();
+        return true;
+    }
+
+    // Helper function to write hash to file
+    bool WriteHashToFile(const std::filesystem::path& hash_path, const std::string& hash) {
+        std::ofstream hash_file(hash_path, std::ios::out | std::ios::trunc);
+        if (!hash_file) {
+            fprintf(stderr, "Error: Could not write hash file %s\n", hash_path.string().c_str());
+            return false;
+        }
+
+        hash_file << hash;
+        hash_file.close();
+        return true;
     }
 
 } // anonymous namespace
@@ -210,48 +442,90 @@ extern "C" {
         EShLanguage stage = GetShaderStage(shader_stage);
         std::filesystem::path source_path = std::filesystem::absolute(source);
 
-        // Generate the corresponding .sprv file path
-        std::filesystem::path sprv_path = ExtendExtension(source_path, ".sprv");
+        // Determine cache directories
+        std::filesystem::path compiled_shaders_dir;
+        std::filesystem::path hashed_shaders_dir;
+        GetCacheDirectories(source_path, compiled_shaders_dir, hashed_shaders_dir);
 
-        // Check if the .sprv file exists
-        if (FileExists(sprv_path)) {
-            // Read the existing .sprv file
-            std::ifstream sprv_file(sprv_path, std::ios::in | std::ios::binary | std::ios::ate);
-            if (!sprv_file) {
-                fprintf(stderr, "Error: Could not open SPIR-V file %s\n", sprv_path.string().c_str());
-                // Proceed to compile if .sprv exists but cannot be opened
-            }
-            else {
-                std::streamsize size = sprv_file.tellg();
-                sprv_file.seekg(0, std::ios::beg);
-
-                // Allocate memory for SPIR-V data
-                *spirv_data = (SparkBuffer)malloc(size);
-                if (!(*spirv_data)) {
-                    fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
-                    return SPARK_ERROR_OUT_OF_MEMORY;
-                }
-
-                if (!sprv_file.read(reinterpret_cast<char*>(*spirv_data), size)) {
-                    fprintf(stderr, "Error: Failed to read SPIR-V file %s\n", sprv_path.string().c_str());
-                    free(*spirv_data);
-                    *spirv_data = nullptr;
-                    return SPARK_ERROR_INVALID;
-                }
-
-                *spirv_size = static_cast<SparkSize>(size);
-                fprintf(stdout, "Loaded SPIR-V from cache: %s\n", sprv_path.string().c_str());
-                return SPARK_SUCCESS;
-            }
+        // Ensure cache directories exist
+        if (!EnsureDirectoryExists(compiled_shaders_dir) ||
+            !EnsureDirectoryExists(hashed_shaders_dir)) {
+            fprintf(stderr, "Error: Failed to ensure cache directories exist.\n");
+            return SPARK_ERROR_INVALID;
         }
 
-        // If .sprv does not exist or failed to read, proceed to compile
+        // Determine cache file paths
+        std::filesystem::path compiled_spirv_path = GetCompiledSpirvPath(compiled_shaders_dir, source_path, shader_stage);
+        std::filesystem::path hash_file_path = GetHashFilePath(hashed_shaders_dir, source_path, shader_stage);
 
+
+        // Read shader source code
         std::string source_code = ReadFile(source_path);
         if (source_code.empty()) {
             fprintf(stderr, "Error: Shader source is empty or could not be read.\n");
             return SPARK_ERROR_INVALID;
         }
+
+        // Compute current shader hash
+        std::string current_hash = GetShaderHash(source_code);
+
+        bool use_cache = false;
+
+        // Check if compiled SPIR-V and hash files exist
+        if (FileExists(compiled_spirv_path) && FileExists(hash_file_path)) {
+            // Read stored hash
+            std::string stored_hash;
+            if (ReadHashFromFile(hash_file_path, stored_hash)) {
+                // Compare hashes
+                if (stored_hash == current_hash) {
+                    // Hashes match; cache is valid
+                    // Read the compiled SPIR-V binary
+                    std::ifstream spirv_file(compiled_spirv_path, std::ios::in | std::ios::binary | std::ios::ate);
+                    if (!spirv_file) {
+                        fprintf(stderr, "Error: Could not open compiled SPIR-V file %s\n", compiled_spirv_path.string().c_str());
+                        // Proceed to compile if .sprv exists but cannot be opened
+                    }
+                    else {
+                        std::streamsize size = spirv_file.tellg();
+                        spirv_file.seekg(0, std::ios::beg);
+
+                        // Allocate memory for SPIR-V data
+                        *spirv_data = (SparkBuffer)malloc(size);
+                        if (!(*spirv_data)) {
+                            fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
+                            return SPARK_ERROR_OUT_OF_MEMORY;
+                        }
+
+                        if (!spirv_file.read(reinterpret_cast<char*>(*spirv_data), size)) {
+                            fprintf(stderr, "Error: Failed to read compiled SPIR-V file %s\n", compiled_spirv_path.string().c_str());
+                            free(*spirv_data);
+                            *spirv_data = nullptr;
+                            return SPARK_ERROR_INVALID;
+                        }
+
+                        *spirv_size = static_cast<SparkSize>(size);
+                        fprintf(stdout, "Loaded SPIR-V from cache: %s\n", compiled_spirv_path.string().c_str());
+                        return SPARK_SUCCESS;
+                    }
+                }
+                else {
+                    fprintf(stdout, "Shader source has changed. Recompiling shader: %s\n", source_path.string().c_str());
+                }
+            }
+            else {
+                fprintf(stderr, "Error: Failed to read stored hash. Recompiling shader: %s\n", source_path.string().c_str());
+            }
+        }
+        else {
+            if (!FileExists(compiled_spirv_path)) {
+                fprintf(stdout, "Compiled SPIR-V file does not exist. Compiling shader: %s\n", source_path.string().c_str());
+            }
+            if (!FileExists(hash_file_path)) {
+                fprintf(stdout, "Hash file does not exist. Compiling shader: %s\n", source_path.string().c_str());
+            }
+        }
+
+        // Proceed to compile the shader
 
         const char* shader_source_cstr = source_code.c_str();
 
@@ -306,16 +580,25 @@ extern "C" {
         memcpy(*spirv_data, spirv.data(), byte_size);
         *spirv_size = byte_size;
 
-        // Write the SPIR-V binary to the .sprv file for caching
-        std::ofstream sprv_file_out(sprv_path, std::ios::out | std::ios::binary);
-        if (!sprv_file_out) {
-            fprintf(stderr, "Warning: Could not write SPIR-V cache file %s\n", sprv_path.string().c_str());
+        // Write the SPIR-V binary to the compiled_shaders directory for caching
+        std::ofstream spirv_file_out(compiled_spirv_path, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!spirv_file_out) {
+            fprintf(stderr, "Warning: Could not write compiled SPIR-V cache file %s\n", compiled_spirv_path.string().c_str());
             // Continue without caching
         }
         else {
-            sprv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
-            sprv_file_out.close();
-            fprintf(stdout, "Compiled and cached SPIR-V: %s\n", sprv_path.string().c_str());
+            spirv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
+            spirv_file_out.close();
+            fprintf(stdout, "Compiled and cached SPIR-V: %s\n", compiled_spirv_path.string().c_str());
+        }
+
+        // Write the current hash to the hash file
+        if (!WriteHashToFile(hash_file_path, current_hash)) {
+            fprintf(stderr, "Warning: Could not write hash file %s\n", hash_file_path.string().c_str());
+            // Continue without storing the hash
+        }
+        else {
+            fprintf(stdout, "Stored shader hash: %s\n", hash_file_path.string().c_str());
         }
 
         return SPARK_SUCCESS; // Success
