@@ -2535,18 +2535,155 @@ SPARKAPI SparkQuat SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t) {
 
 #pragma region ALLOCATOR
 
-SPARKAPI SparkHandle SparkAllocate(SparkSize size) { return malloc(size); }
+typedef struct AllocationMetaT {
+	char* file;
+	SparkI32 line;
+	char* func;
+	char* time;
+	void* ptr;
+	size_t size;
+	size_t alloc_number;
+} *AllocationMeta;
 
-SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size) {
-	return realloc(handle, size);
+typedef struct AllocationsT {
+	AllocationMeta* allocations;
+	size_t size;
+	size_t capacity;
+	size_t current_allocation;
+} *Allocations;
+
+Allocations ALLOCATIONS = SPARK_NULL;
+
+SPARKAPI SparkVoid SparkInitializeAllocations() {
+	ALLOCATIONS = malloc(sizeof(struct AllocationsT));
+	ALLOCATIONS->allocations = malloc(sizeof(struct AllocationMetaT));
+	ALLOCATIONS->size = 0;
+	ALLOCATIONS->capacity = 1;
+	ALLOCATIONS->current_allocation = 0;
 }
 
-SPARKAPI SparkVoid SparkFree(SparkHandle handle) { free(handle); }
+SPARKAPI SparkVoid SparkDestroyAllocations() {
+#ifndef NDEBUG
+	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
+		AllocationMeta meta = ALLOCATIONS->allocations[i];
+
+		if (!meta)
+			continue;
+		
+		SPARK_LOG_WARN("----- Memory leak detected -----");
+		SPARK_LOG_WARN("File: %s", meta->file);
+		SPARK_LOG_WARN("Line: %d", meta->line);
+		SPARK_LOG_WARN("Func: %s", meta->func);
+		SPARK_LOG_WARN("Time: %s", meta->time);
+		SPARK_LOG_WARN("Ptr: %p", meta->ptr);
+		SPARK_LOG_WARN("Size: %zu", meta->size);
+		SPARK_LOG_WARN("Alloc number: %zu", meta->alloc_number);
+		printf("\n\n");
+	}
+
+	free(ALLOCATIONS->allocations);
+	free(ALLOCATIONS);
+#endif
+}
+
+SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line, char* func, char* time) {
+#ifndef NDEBUG
+	static SparkBool first_call = SPARK_TRUE;
+
+	if (first_call) {
+		SparkInitializeAllocations();
+		first_call = SPARK_FALSE;
+	}
+
+	if (ALLOCATIONS->size == ALLOCATIONS->capacity) {
+		ALLOCATIONS->capacity *= 2;
+		ALLOCATIONS->allocations = realloc(ALLOCATIONS->allocations, ALLOCATIONS->capacity * sizeof(struct AllocationMetaT));
+	}
+
+	void* ptr = malloc(size);
+
+	AllocationMeta meta = malloc(sizeof(struct AllocationMetaT));
+	meta->file = file;
+	meta->line = line;
+	meta->func = func;
+	meta->time = time;
+	meta->size = size;
+	meta->alloc_number = ++ALLOCATIONS->current_allocation;
+	meta->ptr = ptr;
+
+	ALLOCATIONS->allocations[ALLOCATIONS->size] = meta;
+
+	ALLOCATIONS->size++;
+
+	return ptr;
+#else
+	return malloc(size);
+#endif
+
+}
+
+SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, char* file, SparkI32 line, char* func, char* time)
+{
+#ifndef NDEBUG
+	if (size == 0)
+	{
+		SPARK_LOG_ERROR("Attempt to reallocate to zero size.");
+		return NULL;
+	}
+
+	for (size_t i = 0; i < ALLOCATIONS->size; i++)
+	{
+		AllocationMeta meta = ALLOCATIONS->allocations[i];
+		if (!meta)
+			continue;
+
+		if (meta->ptr == handle)
+		{
+			void* new_ptr = realloc(handle, size);
+			if (new_ptr == NULL)
+			{
+				SPARK_LOG_ERROR("Failed to reallocate memory for pointer %p.", handle);
+				return NULL;
+			}
+
+			meta->ptr = new_ptr;
+			meta->file = file;
+			meta->line = line;
+			meta->func = func;
+			meta->time = time;
+			meta->size = size;
+
+			return new_ptr;
+		}
+	}
+
+	return SparkAllocateImpl(size, file, line, func, time);
+#else
+	return realloc(handle, size);
+#endif
+}
+
+SPARKAPI SparkVoid SparkFree(SparkHandle handle) { 
+#ifndef NDEBUG
+	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
+		AllocationMeta meta = ALLOCATIONS->allocations[i];
+		if (!meta)
+			continue;
+		if (meta->ptr == handle) {
+			free(meta->ptr);
+			free(meta);
+			ALLOCATIONS->allocations[i] = SPARK_NULL;
+		}
+	}
+#else
+	free(handle);
+#endif
+}
 
 SPARKAPI SparkAllocator SparkDefaultAllocator() {
 	SparkAllocator allocator = SparkAllocate(sizeof(struct SparkAllocatorT));
-	allocator->allocate = SparkAllocate;
-	allocator->reallocate = SparkReallocate;
+	allocator->allocate = SparkAllocateImpl;
+	allocator->reallocate = SparkReallocateImpl;
 	allocator->free = SparkFree;
 	return allocator;
 }
@@ -5636,7 +5773,7 @@ SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
         __SparkDestroyComponentArray // Value destructor for component arrays
     );
     ecs->event_handler = event_handler;
-    ecs->signatures = NULL;
+    ecs->signatures = SparkAllocate(sizeof(SparkSignature));
     ecs->entity_count = 0;
     ecs->version = 0;
     ecs->query_caches = SparkCreateVector(4, ecs->allocator, SparkFree);
@@ -5653,8 +5790,7 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	SparkDestroyVector(ecs->systems);
 	SparkDestroyStack(ecs->recycled_ids);
 	SparkDestroyVector(ecs->query_caches);
-	if (ecs->signatures)
-		SparkFree(ecs->signatures);
+	SparkFree(ecs->signatures);
 	SparkFree(ecs);
 }
 
@@ -5896,7 +6032,6 @@ SPARKAPI SparkComponent SparkGetComponent(SparkEcs ecs, SparkEntity entity_id, S
 	SparkComponent component = component_array->dense[index];
 	return component;
 }
-
 
 SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
 	if (!ecs || !system)
@@ -9816,7 +9951,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	SparkWaitThreadPool(app->thread_pool);
 }
 
-
 SPARKAPI SPARKSTATIC SparkResult
 __SparkUpdateApplication(SparkApplication app) {
 	while (__SparkApplicationKeepOpen(app)) {
@@ -9938,6 +10072,8 @@ SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 	if (__SparkUpdateApplication(app) != SPARK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
+
+	SparkDestroyAllocations();
 
 	return SPARK_SUCCESS;
 }

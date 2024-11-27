@@ -339,6 +339,10 @@
 #define SPARK_DEFAULT_ROTATION (SparkQuat){0.0f, 0.0f, 0.0f, 1.0f}
 #define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
 
+
+#define SparkAllocate(size) SparkAllocateImpl(size, __FILE__, __LINE__, __func__, __TIME__)
+#define SparkReallocate(handle, size) SparkReallocateImpl(handle, size, __FILE__, __LINE__, __func__, __TIME__)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2368,9 +2372,11 @@ SPARKAPI SparkI32 SPARKCALL SparkIntegerCompare(SparkConstBuffer a,
 	SparkConstBuffer b,
 	SparkSize b_size);
 
-SPARKAPI SparkHandle SPARKCALL SparkAllocate(SparkSize size);
-SPARKAPI SparkHandle SPARKCALL SparkReallocate(SparkHandle handle,
-	SparkSize size);
+SPARKAPI SparkVoid SPARKCALL SparkInitializeAllocations();
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocations();
+SPARKAPI SparkHandle SPARKCALL SparkAllocateImpl(SparkSize size, char* file, SparkI32 line, char* func, char* time);
+SPARKAPI SparkHandle SPARKCALL SparkReallocateImpl(SparkHandle handle,
+	SparkSize size, char* file, SparkI32 line, char* func, char* time);
 SPARKAPI SparkVoid SPARKCALL SparkFree(SparkHandle handle);
 SPARKAPI SparkAllocator SPARKCALL SparkDefaultAllocator();
 SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(
