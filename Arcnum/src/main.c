@@ -147,10 +147,10 @@ i32 main() {
 	8);
 
 	SparkConstString component_types[] = { POS_COMPONENT, VEL_COMPONENT };
-	SparkQuery movement_query = SparkCreateQuery(component_types, 2);
+	SparkQuery movement_query = SparkCreateQuery(ArrayArg(component_types));
 
 	SparkConstString position_types[] = { POS_COMPONENT };
-	SparkQuery position_query = SparkCreateQuery(position_types, 1);
+	SparkQuery position_query = SparkCreateQuery(ArrayArg(position_types));
 
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
 	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNTHREADED);

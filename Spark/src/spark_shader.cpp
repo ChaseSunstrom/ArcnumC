@@ -133,123 +133,191 @@ TBuiltInResource DefaultTBuiltInResource = {
         true, // generalSamplerIndexing
         true, // generalVariableIndexing
         true  // generalConstantMatrixVectorIndexing
-    }};
-
+    }
+};
 #endif
 
 // Namespace to avoid naming conflicts
 namespace {
 
-class GlslangInitializer {
-public:
-  GlslangInitializer() { glslang::InitializeProcess(); }
-  ~GlslangInitializer() { glslang::FinalizeProcess(); }
-};
+    class GlslangInitializer {
+    public:
+        GlslangInitializer() { glslang::InitializeProcess(); }
+        ~GlslangInitializer() { glslang::FinalizeProcess(); }
+    };
 
-// Ensure that glslang is initialized before use
-static GlslangInitializer glslangInitializer;
+    // Ensure that glslang is initialized before use
+    static GlslangInitializer glslangInitializer;
 
-// Helper function to map ShaderStage enum to glslang stage
-EShLanguage GetShaderStage(SparkShaderStage stage) {
-  switch (stage) {
-  case SPARK_SHADER_STAGE_VERTEX:
-    return EShLangVertex;
-  case SPARK_SHADER_STAGE_FRAGMENT:
-    return EShLangFragment;
-  case SPARK_SHADER_STAGE_COMPUTE:
-    return EShLangCompute;
-  case SPARK_SHADER_STAGE_GEOMETRY:
-    return EShLangGeometry;
-  case SPARK_SHADER_STAGE_TESS_CONTROL:
-    return EShLangTessControl;
-  case SPARK_SHADER_STAGE_TESS_EVALUATION:
-    return EShLangTessEvaluation;
-  default:
-    return EShLangVertex; // Default to vertex shader
-  }
-}
+    // Helper function to map ShaderStage enum to glslang stage
+    EShLanguage GetShaderStage(SparkShaderStage stage) {
+        switch (stage) {
+        case SPARK_SHADER_STAGE_VERTEX:
+            return EShLangVertex;
+        case SPARK_SHADER_STAGE_FRAGMENT:
+            return EShLangFragment;
+        case SPARK_SHADER_STAGE_COMPUTE:
+            return EShLangCompute;
+        case SPARK_SHADER_STAGE_GEOMETRY:
+            return EShLangGeometry;
+        case SPARK_SHADER_STAGE_TESS_CONTROL:
+            return EShLangTessControl;
+        case SPARK_SHADER_STAGE_TESS_EVALUATION:
+            return EShLangTessEvaluation;
+        default:
+            return EShLangVertex; // Default to vertex shader
+        }
+    }
 
-std::string ReadFile(const std::filesystem::path &path) {
-  std::ifstream file_stream(path, std::ios::in | std::ios::binary);
-  if (!file_stream) {
-    // Handle the error: file could not be opened
-    fprintf(stderr, "Error: Could not open file %s\n", path.string().c_str());
-    return "";
-  }
+    std::string ReadFile(const std::filesystem::path& path) {
+        std::ifstream file_stream(path, std::ios::in | std::ios::binary);
+        if (!file_stream) {
+            // Handle the error: file could not be opened
+            fprintf(stderr, "Error: Could not open file %s\n", path.string().c_str());
+            return "";
+        }
 
-  std::stringstream string_stream;
-  string_stream << file_stream.rdbuf();
-  file_stream.close();
+        std::stringstream string_stream;
+        string_stream << file_stream.rdbuf();
+        file_stream.close();
 
-  return string_stream.str();
-}
+        return string_stream.str();
+    }
+
+    inline std::string GetFileExtension(const std::filesystem::path& path) {
+        return path.extension().string();
+    }
+
+    inline bool FileExists(const std::filesystem::path& path) {
+        return std::filesystem::exists(path);
+    }
+
+    inline std::filesystem::path ExtendExtension(const std::filesystem::path& path, const std::string& new_ext) {
+        return path.string() + new_ext;
+    }
+
 } // anonymous namespace
 
 extern "C" {
-SPARKAPI SparkResult SparkCompileShaderToSpirv(SparkConstString source,
-                                               SparkShaderStage shader_stage,
-                                               SparkBuffer *spirv_data,
-                                               SparkSize *spirv_size) {
-  if (!source || !spirv_data || !spirv_size) {
-    return SPARK_ERROR_INVALID_ARGUMENT;
-  }
+    SPARKAPI SparkResult SparkCompileShaderToSpirv(SparkConstString source,
+        SparkShaderStage shader_stage,
+        SparkBuffer* spirv_data,
+        SparkSize* spirv_size) {
+        if (!source || !spirv_data || !spirv_size) {
+            return SPARK_ERROR_INVALID_ARGUMENT;
+        }
 
-  EShLanguage stage = GetShaderStage(shader_stage);
-  std::string source_code = ReadFile(std::filesystem::absolute(source));
-  source = source_code.c_str();
+        EShLanguage stage = GetShaderStage(shader_stage);
+        std::filesystem::path source_path = std::filesystem::absolute(source);
 
-  glslang::TShader shader(stage);
-  SparkConstString shader_strings[1];
-  shader_strings[0] = source;
-  shader.setStrings(shader_strings, 1);
+        // Generate the corresponding .sprv file path
+        std::filesystem::path sprv_path = ExtendExtension(source_path, ".sprv");
 
-  // Set up the environment
-  const SparkI32 default_version = 100;
-  glslang::EShTargetClientVersion client_version = glslang::EShTargetVulkan_1_0;
-  glslang::EShTargetLanguageVersion target_version = glslang::EShTargetSpv_1_0;
+        // Check if the .sprv file exists
+        if (FileExists(sprv_path)) {
+            // Read the existing .sprv file
+            std::ifstream sprv_file(sprv_path, std::ios::in | std::ios::binary | std::ios::ate);
+            if (!sprv_file) {
+                fprintf(stderr, "Error: Could not open SPIR-V file %s\n", sprv_path.string().c_str());
+                // Proceed to compile if .sprv exists but cannot be opened
+            }
+            else {
+                std::streamsize size = sprv_file.tellg();
+                sprv_file.seekg(0, std::ios::beg);
 
-  shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan,
-                     default_version);
-  shader.setEnvClient(glslang::EShClientVulkan, client_version);
-  shader.setEnvTarget(glslang::EShTargetSpv, target_version);
+                // Allocate memory for SPIR-V data
+                *spirv_data = (SparkBuffer)malloc(size);
+                if (!(*spirv_data)) {
+                    fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
+                    return SPARK_ERROR_OUT_OF_MEMORY;
+                }
 
-  TBuiltInResource resources = DefaultTBuiltInResource;
+                if (!sprv_file.read(reinterpret_cast<char*>(*spirv_data), size)) {
+                    fprintf(stderr, "Error: Failed to read SPIR-V file %s\n", sprv_path.string().c_str());
+                    free(*spirv_data);
+                    *spirv_data = nullptr;
+                    return SPARK_ERROR_INVALID;
+                }
 
-  // Parse and compile the shader
-  EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+                *spirv_size = static_cast<SparkSize>(size);
+                fprintf(stdout, "Loaded SPIR-V from cache: %s\n", sprv_path.string().c_str());
+                return SPARK_SUCCESS;
+            }
+        }
 
-  if (!shader.parse(&resources, default_version, false, messages)) {
-    // Compilation failed
-    SparkConstString log = shader.getInfoLog();
-    fprintf(stderr, "Shader compilation error:\n%s\n", log);
-    return -1;
-  }
+        // If .sprv does not exist or failed to read, proceed to compile
 
-  glslang::TProgram program;
-  program.addShader(&shader);
+        std::string source_code = ReadFile(source_path);
+        if (source_code.empty()) {
+            fprintf(stderr, "Error: Shader source is empty or could not be read.\n");
+            return SPARK_ERROR_INVALID;
+        }
 
-  // Link the program
-  if (!program.link(messages)) {
-    // Linking failed
-    SparkConstString log = program.getInfoLog();
-    fprintf(stderr, "Shader linking error:\n%s\n", log);
-    return -1;
-  }
+        const char* shader_source_cstr = source_code.c_str();
 
-  // Convert to SPIR-V
-  std::vector<SparkU32> spirv;
-  glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+        glslang::TShader shader(stage);
+        shader.setStrings(&shader_source_cstr, 1);
 
-  // Allocate memory for SPIR-V data
-  size_t byte_size = spirv.size() * sizeof(SparkU32);
-  *spirv_data = (SparkBuffer)malloc(byte_size);
-  if (!(*spirv_data)) {
-    return -1; // Memory allocation failed
-  }
+        // Set up the environment
+        const int default_version = 100;
+        glslang::EShTargetClientVersion client_version = glslang::EShTargetVulkan_1_0;
+        glslang::EShTargetLanguageVersion target_version = glslang::EShTargetSpv_1_0;
 
-  memcpy(*spirv_data, spirv.data(), byte_size);
-  *spirv_size = byte_size;
+        shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan,
+            default_version);
+        shader.setEnvClient(glslang::EShClientVulkan, client_version);
+        shader.setEnvTarget(glslang::EShTargetSpv, target_version);
 
-  return 0; // Success
-}
+        TBuiltInResource resources = DefaultTBuiltInResource;
+
+        // Parse and compile the shader
+        EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+
+        if (!shader.parse(&resources, default_version, false, messages)) {
+            // Compilation failed
+            std::string log = shader.getInfoLog();
+            fprintf(stderr, "Shader compilation error:\n%s\n", log.c_str());
+            return SPARK_ERROR_INVALID;
+        }
+
+        glslang::TProgram program;
+        program.addShader(&shader);
+
+        // Link the program
+        if (!program.link(messages)) {
+            // Linking failed
+            std::string log = program.getInfoLog();
+            fprintf(stderr, "Shader linking error:\n%s\n", log.c_str());
+            return SPARK_ERROR_INVALID;
+        }
+
+        // Convert to SPIR-V
+        std::vector<uint32_t> spirv;
+        glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+
+        // Allocate memory for SPIR-V data
+        size_t byte_size = spirv.size() * sizeof(uint32_t);
+        *spirv_data = (SparkBuffer)malloc(byte_size);
+        if (!(*spirv_data)) {
+            fprintf(stderr, "Error: Memory allocation failed for SPIR-V data\n");
+            return SPARK_ERROR_OUT_OF_MEMORY;
+        }
+
+        memcpy(*spirv_data, spirv.data(), byte_size);
+        *spirv_size = byte_size;
+
+        // Write the SPIR-V binary to the .sprv file for caching
+        std::ofstream sprv_file_out(sprv_path, std::ios::out | std::ios::binary);
+        if (!sprv_file_out) {
+            fprintf(stderr, "Warning: Could not write SPIR-V cache file %s\n", sprv_path.string().c_str());
+            // Continue without caching
+        }
+        else {
+            sprv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
+            sprv_file_out.close();
+            fprintf(stdout, "Compiled and cached SPIR-V: %s\n", sprv_path.string().c_str());
+        }
+
+        return SPARK_SUCCESS; // Success
+    }
 } // extern "C"

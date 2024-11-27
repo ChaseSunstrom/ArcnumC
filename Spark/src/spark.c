@@ -33,6 +33,16 @@
 #define SparkAtomicDecrement(data) __sync_sub_and_fetch((data), 1)
 #endif
 
+#ifndef NDEBUG 
+
+#define SparkLog(ARG, ...) SparkLogImpl(ARG, __VA_ARGS__)
+
+#else
+
+#define SparkLog(ARG, ...)
+
+#endif
+
 #pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
@@ -1343,7 +1353,7 @@ SPARKAPI SparkVoid SetConsoleColor(SparkU32 color) {}
 
 #endif
 
-SPARKAPI SparkVoid SparkLog(SparkLogLevel log_level, SparkConstString format,
+SPARKAPI SparkVoid SparkLogImpl(SparkLogLevel log_level, SparkConstString format,
 	...) {
 	va_list args;
 	va_start(args, format);

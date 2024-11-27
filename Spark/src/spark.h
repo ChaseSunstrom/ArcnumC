@@ -252,25 +252,25 @@
 
 #if !defined(SPARK_NO_DEBUG) && !defined(NDEBUG) && !defined(RELEASE)
 #define SPARK_LOG_DEBUG(message, ...)                                          \
-  SparkLog(SPARK_LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
+  SparkLogImpl(SPARK_LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
 #else
 #define SPARK_LOG_DEBUG(message, ...)
 #endif
 #ifndef SPARK_NO_INFO
 #define SPARK_LOG_INFO(message, ...)                                           \
-  SparkLog(SPARK_LOG_LEVEL_INFO, message, ##__VA_ARGS__)
+  SparkLogImpl(SPARK_LOG_LEVEL_INFO, message, ##__VA_ARGS__)
 #else
 #define SPARK_LOG_INFO(message, ...)
 #endif
 #ifndef SPARK_NO_WARN
 #define SPARK_LOG_WARN(message, ...)                                           \
-  SparkLog(SPARK_LOG_LEVEL_WARN, message, ##__VA_ARGS__)
+  SparkLogImpl(SPARK_LOG_LEVEL_WARN, message, ##__VA_ARGS__)
 #else
 #define SPARK_LOG_WARN(message, ...)
 #endif
 #ifndef SPARK_NO_ERROR
 #define SPARK_LOG_ERROR(message, ...)                                          \
-  SparkLog(SPARK_LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
+  SparkLogImpl(SPARK_LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
 #else
 #define SPARK_LOG_ERROR(message, ...)
 #endif
@@ -1727,7 +1727,7 @@ SPARKAPI SparkConstString SPARKCALL SparkGetTime();
 SPARKAPI SparkConstString SPARKCALL
 SparkGetFileExtension(SparkConstString filename);
 
-SPARKAPI SparkVoid SPARKCALL SparkLog(SparkLogLevel log_level,
+SPARKAPI SparkVoid SPARKCALL SparkLogImpl(SparkLogLevel log_level,
 	SparkConstString format, ...);
 
 #pragma region MATH
@@ -3237,7 +3237,7 @@ typedef SparkApplication Application;
 
 #if defined(SPARK_DEFINE_FUNCTION_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
 
-#define Log SparkLog
+#define Log SparkLogImpl
 
 #define TypeToString SparkTypeToString
 #define StringToType SparkStringToType
