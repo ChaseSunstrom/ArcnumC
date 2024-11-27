@@ -2556,20 +2556,41 @@ Allocations ALLOCATIONS = SPARK_NULL;
 
 SPARKAPI SparkVoid SparkInitializeAllocations() {
 	ALLOCATIONS = malloc(sizeof(struct AllocationsT));
-	ALLOCATIONS->allocations = malloc(sizeof(struct AllocationMetaT));
+	if (!ALLOCATIONS) {
+		// Handle allocation failure
+		return;
+	}
+
 	ALLOCATIONS->size = 0;
 	ALLOCATIONS->capacity = 1;
 	ALLOCATIONS->current_allocation = 0;
+
+	ALLOCATIONS->allocations = malloc(ALLOCATIONS->capacity * sizeof(AllocationMeta));
+	if (!ALLOCATIONS->allocations) {
+		// Handle allocation failure
+		free(ALLOCATIONS);
+		ALLOCATIONS = SPARK_NULL;
+		return;
+	}
+
+	// Initialize all pointers to NULL
+	for (size_t i = 0; i < ALLOCATIONS->capacity; ++i) {
+		ALLOCATIONS->allocations[i] = SPARK_NULL;
+	}
 }
+
 
 SPARKAPI SparkVoid SparkDestroyAllocations() {
 #ifndef NDEBUG
+	if (!ALLOCATIONS)
+		return;
+
 	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
 		AllocationMeta meta = ALLOCATIONS->allocations[i];
 
 		if (!meta)
 			continue;
-		
+
 		SPARK_LOG_WARN("----- Memory leak detected -----");
 		SPARK_LOG_WARN("File: %s", meta->file);
 		SPARK_LOG_WARN("Line: %d", meta->line);
@@ -2578,11 +2599,15 @@ SPARKAPI SparkVoid SparkDestroyAllocations() {
 		SPARK_LOG_WARN("Ptr: %p", meta->ptr);
 		SPARK_LOG_WARN("Size: %zu", meta->size);
 		SPARK_LOG_WARN("Alloc number: %zu", meta->alloc_number);
-		printf("\n\n");
+		SPARK_LOG_WARN("\n\n");
+
+		// Free the AllocationMeta structure
+		free(meta);
 	}
 
 	free(ALLOCATIONS->allocations);
 	free(ALLOCATIONS);
+	ALLOCATIONS = SPARK_NULL;
 #endif
 }
 
@@ -2597,12 +2622,32 @@ SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line
 
 	if (ALLOCATIONS->size == ALLOCATIONS->capacity) {
 		ALLOCATIONS->capacity *= 2;
-		ALLOCATIONS->allocations = realloc(ALLOCATIONS->allocations, ALLOCATIONS->capacity * sizeof(struct AllocationMetaT));
+		AllocationMeta* temp = realloc(ALLOCATIONS->allocations, ALLOCATIONS->capacity * sizeof(AllocationMeta));
+		if (!temp) {
+			// Handle realloc failure
+			return NULL;
+		}
+		ALLOCATIONS->allocations = temp;
+
+		// Initialize new slots to NULL
+		for (size_t i = ALLOCATIONS->size; i < ALLOCATIONS->capacity; ++i) {
+			ALLOCATIONS->allocations[i] = SPARK_NULL;
+		}
 	}
 
 	void* ptr = malloc(size);
+	if (!ptr) {
+		// Handle malloc failure
+		return NULL;
+	}
 
 	AllocationMeta meta = malloc(sizeof(struct AllocationMetaT));
+	if (!meta) {
+		// Handle malloc failure
+		free(ptr);
+		return NULL;
+}
+
 	meta->file = file;
 	meta->line = line;
 	meta->func = func;
@@ -2612,15 +2657,14 @@ SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line
 	meta->ptr = ptr;
 
 	ALLOCATIONS->allocations[ALLOCATIONS->size] = meta;
-
 	ALLOCATIONS->size++;
 
 	return ptr;
 #else
 	return malloc(size);
 #endif
-
 }
+
 
 SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, char* file, SparkI32 line, char* func, char* time)
 {
@@ -2673,6 +2717,7 @@ SPARKAPI SparkVoid SparkFree(SparkHandle handle) {
 			free(meta->ptr);
 			free(meta);
 			ALLOCATIONS->allocations[i] = SPARK_NULL;
+			return;
 		}
 	}
 #else
