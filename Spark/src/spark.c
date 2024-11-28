@@ -2596,7 +2596,7 @@ SPARKAPI SparkVoid SparkDestroyAllocations() {
 	// Store a local copy of the size before iteration
 	size_t total_size = ALLOCATIONS->size;
 	size_t leak_count = 0;
-
+	
 	for (size_t i = 0; i < total_size; i++) {
 		// Verify ALLOCATIONS is still valid
 		if (!ALLOCATIONS) {
@@ -2634,6 +2634,7 @@ SPARKAPI SparkVoid SparkDestroyAllocations() {
 		// Clear the slot
 		ALLOCATIONS->allocations[i] = SPARK_NULL;
 	}
+	
 
 	SPARK_LOG_WARN("Total memory leaks: %zu", leak_count);
 
@@ -5803,7 +5804,7 @@ SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
 	static SparkU64 next_bit = 1;
 
 	if (!COMPONENT_BITS)
-		COMPONENT_BITS = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, SparkFree);
+		COMPONENT_BITS = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, NULL);
 
 	SparkU64 bit = SparkGetElementHashMap(COMPONENT_BITS, (SparkHandle)component_type, strlen(component_type));
 	if (bit)
@@ -5866,6 +5867,13 @@ SPARKAPI SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
 	SparkFree(arr);
 }
 
+SPARKAPI SparkVoid __SparkDestroyQueryCache(SparkQueryCache query_cache)
+{
+	SparkFree(query_cache->query);
+	SparkDestroyVector(query_cache->entities);
+	SparkFree(query_cache);
+}
+
 SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
     SparkEcs ecs = SparkAllocate(sizeof(struct SparkEcsT));
     if (!ecs)
@@ -5884,7 +5892,7 @@ SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
     ecs->signatures = SparkAllocate(sizeof(SparkSignature));
     ecs->entity_count = 0;
     ecs->version = 0;
-    ecs->query_caches = SparkCreateVector(4, ecs->allocator, SparkFree);
+    ecs->query_caches = SparkCreateVector(4, ecs->allocator, __SparkDestroyQueryCache);
     return ecs;
 }
 
@@ -5899,8 +5907,8 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	SparkDestroyStack(ecs->recycled_ids);
 	SparkDestroyVector(ecs->query_caches);
 	SparkFree(ecs->signatures);
+	SparkDestroyAllocator(ecs->allocator);
 	SparkFree(ecs);
-
 	SparkDestroyHashMap(COMPONENT_BITS);
 }
 

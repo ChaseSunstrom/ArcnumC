@@ -161,8 +161,5 @@ i32 main() {
 
 	StartApplication(app);
 
-	SparkFree(movement_query);
-	SparkFree(position_query);
-
 	return 0;
 }
