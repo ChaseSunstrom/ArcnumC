@@ -2880,12 +2880,15 @@ SPARKAPI SparkVector SparkMemcpyIntoVector(SparkSize size, SparkHandle* elements
 	memcpy(vector->elements, elements, size * sizeof(SparkHandle));
 
 	vector->external_allocator = external_allocator;
+
+	return vector;
 }
 
 SPARKAPI SparkVoid SparkDestroyVector(SparkVector vector) {
 	if (!vector) {
 		return;
 	}
+
 	SparkAllocator allocator = vector->allocator;
 
 	// Call destructor on each element if destructor is not SPARK_NULL
@@ -6060,6 +6063,7 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 	// Update entity's signature
 	ecs->signatures[entity_id] |= GetComponentBit(component->type);
 	ecs->version++; // Increment ECS version
+	SparkInvalidateQueryCaches(ecs); // Invalidate outdated caches
 
 	SparkEventDataComponentAdded event_data = SparkAllocate(sizeof(struct SparkEventDataComponentAddedT));
 	event_data->ecs = ecs;
@@ -6075,7 +6079,7 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
 	if (!ecs || !component_type || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
-
+	 
 	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
 		ecs->components,
 		(SparkHandle)component_type,
@@ -6106,6 +6110,7 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, S
 	// Update entity's signature
 	ecs->signatures[entity_id] &= ~GetComponentBit(component_type);
 	ecs->version++; // Increment ECS version
+	SparkInvalidateQueryCaches(ecs); // Invalidate outdated caches
 
 	// Destroy the component
 	SparkComponent component_to_destroy = component_array->dense[last_index];
@@ -7367,8 +7372,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 
 	SparkResourceManager scene_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SCENE, strlen(SPARK_RESOURCE_TYPE_SCENE));
 	SparkResourceManager smesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
-	SparkResourceManager smodel_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MODEL, strlen(SPARK_RESOURCE_TYPE_STATIC_MODEL));
-	SparkResourceManager dmodel_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_DYNAMIC_MODEL, strlen(SPARK_RESOURCE_TYPE_DYNAMIC_MODEL));
 
 	SparkScene scene = scene_manager->current_resource->data;
 	SparkVec4 sky_color = scene->sky_color;
@@ -7380,9 +7383,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 
 	SparkVector smeshes = SparkGetAllValuesHashMap(smesh_manager->resources);
 	SparkStaticMesh mesh = ((SparkResource)smeshes->elements[0])->data;
-
-	SparkVector smodels = SparkGetAllValuesHashMap(smodel_manager->resources);
-	SparkVector dmodels = SparkGetAllValuesHashMap(dmodel_manager->resources);
 
 	for (SparkSize i = 0; i < gps->size; i++) {
 		SparkResource resource = gps->elements[i];
@@ -7424,8 +7424,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	}
 
 	SparkDestroyVector(smeshes);
-	SparkDestroyVector(smodels);
-	SparkDestroyVector(dmodels);
 
 	vkCmdEndRenderPass(command_buffer);
 
@@ -8209,7 +8207,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 	}
 
 	window->current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 
 	return SPARK_SUCCESS;
 }
@@ -9945,7 +9942,6 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyAIBehavior(SparkAIBehavior behavior) {
 
 typedef struct SparkQueryTaskArgT {
 	SparkApplication app;
-	SparkVector components;
 	SparkApplicationQueryFunction function;
 	SparkVector entities;
 } *SparkQueryTaskArg;
@@ -9958,7 +9954,6 @@ typedef struct SparkApplicationTaskArgT {
 SPARKAPI SPARKSTATIC SparkVoid __SparkQueryTaskFunction(SparkHandle arg) {
 	SparkQueryTaskArg task_arg = (SparkQueryTaskArg)arg;
 	task_arg->function(task_arg->app, task_arg->entities);
-	SparkDestroyVector(task_arg->entities);
 	SparkFree(task_arg);
 }
 
