@@ -200,10 +200,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_WIN32) && defined(_GLFW_BUILD_DLL)
+#if defined(_WIN32) && defined(SPARK_BUILD_DLL)
 /* We are building SPARKAPI as a Win32 DLL */
 #define SPARKAPI __declspec(dllexport)
-#elif defined(_WIN32) && defined(GLFW_DLL)
+#elif defined(_WIN32) && defined(SPARK_DLL)
 /* We are calling a SPARKAPI Win32 DLL */
 #define SPARKAPI __declspec(dllimport)
 #elif defined(__GNUC__) && defined(_GLFW_BUILD_DLL)
@@ -340,8 +340,8 @@
 #define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
 
 
-#define SparkAllocate(size) SparkAllocateImpl(size, __FILE__, __LINE__, __func__, __TIME__)
-#define SparkReallocate(handle, size) SparkReallocateImpl(handle, size, __FILE__, __LINE__, __func__, __TIME__)
+#define SparkAllocate(size) SparkAllocateImpl(size, __FILE__, __LINE__, __func__, SparkGetTime())
+#define SparkReallocate(handle, size) SparkReallocateImpl(handle, size, __FILE__, __LINE__, __func__, SparkGetTime())
 
 #ifdef __cplusplus
 extern "C" {

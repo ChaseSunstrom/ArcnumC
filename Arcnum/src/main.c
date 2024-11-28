@@ -157,9 +157,12 @@ i32 main() {
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNTHREADED);
 	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNTHREADED);
 	AddStartFunctionApplication(app, CreateShaders, SPARK_UNTHREADED);
-	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNTHREADED);
 
 	StartApplication(app);
+
+	SparkFree(movement_query);
+	SparkFree(position_query);
 
 	return 0;
 }

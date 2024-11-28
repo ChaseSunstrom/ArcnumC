@@ -1400,9 +1400,11 @@ SPARKAPI SparkConstString SparkGetTime() {
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	SparkConstString output[50];
+	const SparkI32 output_size = 40;
 
-	snprintf(output, 50, "[%d %d %d %d:%d:%d]", timeinfo->tm_mday,
+	SparkConstString output = malloc(output_size);
+
+	snprintf(output, output_size, "[%d/%d/%d %d:%d:%d]", timeinfo->tm_mday,
 		timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour,
 		timeinfo->tm_min, timeinfo->tm_sec);
 
@@ -2536,11 +2538,11 @@ SPARKAPI SparkQuat SparkQuatSlerp(SparkQuat a, SparkQuat b, SparkScalar t) {
 #pragma region ALLOCATOR
 
 typedef struct AllocationMetaT {
-	char* file;
+	SparkString file;
 	SparkI32 line;
-	char* func;
-	char* time;
-	void* ptr;
+	SparkString func;
+	SparkString time;
+	SparkHandle ptr;
 	size_t size;
 	size_t alloc_number;
 } *AllocationMeta;
@@ -2550,9 +2552,12 @@ typedef struct AllocationsT {
 	size_t size;
 	size_t capacity;
 	size_t current_allocation;
+	size_t free_count;
+	size_t* free_indices;
+	size_t free_capacity;
 } *Allocations;
 
-Allocations ALLOCATIONS = SPARK_NULL;
+static Allocations ALLOCATIONS = SPARK_NULL;
 
 SPARKAPI SparkVoid SparkInitializeAllocations() {
 	ALLOCATIONS = malloc(sizeof(struct AllocationsT));
@@ -2564,75 +2569,116 @@ SPARKAPI SparkVoid SparkInitializeAllocations() {
 	ALLOCATIONS->size = 0;
 	ALLOCATIONS->capacity = 1;
 	ALLOCATIONS->current_allocation = 0;
+	ALLOCATIONS->free_count = 0;
+	ALLOCATIONS->free_capacity = 10; // Initial free list capacity
 
 	ALLOCATIONS->allocations = malloc(ALLOCATIONS->capacity * sizeof(AllocationMeta));
-	if (!ALLOCATIONS->allocations) {
+	ALLOCATIONS->free_indices = malloc(ALLOCATIONS->free_capacity * sizeof(size_t));
+
+	if (!ALLOCATIONS->allocations || !ALLOCATIONS->free_indices) {
 		// Handle allocation failure
+		free(ALLOCATIONS->allocations);
+		free(ALLOCATIONS->free_indices);
 		free(ALLOCATIONS);
 		ALLOCATIONS = SPARK_NULL;
 		return;
 	}
 
-	// Initialize all pointers to NULL
-	for (size_t i = 0; i < ALLOCATIONS->capacity; ++i) {
-		ALLOCATIONS->allocations[i] = SPARK_NULL;
-	}
+	memset(ALLOCATIONS->allocations, 0, ALLOCATIONS->capacity);
 }
-
 
 SPARKAPI SparkVoid SparkDestroyAllocations() {
 #ifndef NDEBUG
+	// Early exit if already null
 	if (!ALLOCATIONS)
 		return;
 
-	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
+	// Store a local copy of the size before iteration
+	size_t total_size = ALLOCATIONS->size;
+	size_t leak_count = 0;
+
+	for (size_t i = 0; i < total_size; i++) {
+		// Verify ALLOCATIONS is still valid
+		if (!ALLOCATIONS) {
+			SPARK_LOG_ERROR("ALLOCATIONS became NULL during iteration %zu", i);
+			break;
+		}
+
+		// Bounds check
+		if (i >= ALLOCATIONS->capacity) {
+			SPARK_LOG_ERROR("Index %zu exceeds capacity %zu", i, ALLOCATIONS->capacity);
+			break;
+		}
+
 		AllocationMeta meta = ALLOCATIONS->allocations[i];
 
 		if (!meta)
 			continue;
 
+		leak_count++;
+
+		// Safe logging with null checks
 		SPARK_LOG_WARN("----- Memory leak detected -----");
-		SPARK_LOG_WARN("File: %s", meta->file);
+		SPARK_LOG_WARN("File: %s", meta->file ? meta->file : "N/A");
 		SPARK_LOG_WARN("Line: %d", meta->line);
-		SPARK_LOG_WARN("Func: %s", meta->func);
-		SPARK_LOG_WARN("Time: %s", meta->time);
+		SPARK_LOG_WARN("Func: %s", meta->func ? meta->func : "N/A");
+		SPARK_LOG_WARN("Time: %s", meta->time ? meta->time : "N/A");
 		SPARK_LOG_WARN("Ptr: %p", meta->ptr);
 		SPARK_LOG_WARN("Size: %zu", meta->size);
 		SPARK_LOG_WARN("Alloc number: %zu", meta->alloc_number);
-		SPARK_LOG_WARN("\n\n");
 
-		// Free the AllocationMeta structure
+		// Free the metadata
+		free(meta->time);
 		free(meta);
+
+		// Clear the slot
+		ALLOCATIONS->allocations[i] = SPARK_NULL;
 	}
 
-	free(ALLOCATIONS->allocations);
-	free(ALLOCATIONS);
-	ALLOCATIONS = SPARK_NULL;
+	SPARK_LOG_WARN("Total memory leaks: %zu", leak_count);
+
+	// Final cleanup
+	if (ALLOCATIONS) {
+		if (ALLOCATIONS->allocations) {
+			free(ALLOCATIONS->allocations);
+		}
+		if (ALLOCATIONS->free_indices) {
+			free(ALLOCATIONS->free_indices);
+		}
+		free(ALLOCATIONS);
+		ALLOCATIONS = SPARK_NULL;
+	}
 #endif
 }
 
-SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line, char* func, char* time) {
+SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, SparkString file, SparkI32 line, SparkString func, SparkString time) {
 #ifndef NDEBUG
-	static SparkBool first_call = SPARK_TRUE;
-
-	if (first_call) {
+	if (!ALLOCATIONS) {
 		SparkInitializeAllocations();
-		first_call = SPARK_FALSE;
 	}
 
-	if (ALLOCATIONS->size == ALLOCATIONS->capacity) {
-		ALLOCATIONS->capacity *= 2;
-		AllocationMeta* temp = realloc(ALLOCATIONS->allocations, ALLOCATIONS->capacity * sizeof(AllocationMeta));
-		if (!temp) {
-			// Handle realloc failure
-			return NULL;
-		}
-		ALLOCATIONS->allocations = temp;
+	size_t index;
+	if (ALLOCATIONS->free_count > 0) {
+		// Reuse a freed slot
+		ALLOCATIONS->free_count--;
+		index = ALLOCATIONS->free_indices[ALLOCATIONS->free_count];
+	}
+	else {
+		// No free slots, expand the allocations array if needed
+		if (ALLOCATIONS->size == ALLOCATIONS->capacity) {
+			ALLOCATIONS->capacity *= 2;
+			AllocationMeta* temp = realloc(ALLOCATIONS->allocations, ALLOCATIONS->capacity * sizeof(AllocationMeta));
+			if (!temp) {
+				// Handle realloc failure
+				return NULL;
+			}
+			ALLOCATIONS->allocations = temp;
 
-		// Initialize new slots to NULL
-		for (size_t i = ALLOCATIONS->size; i < ALLOCATIONS->capacity; ++i) {
-			ALLOCATIONS->allocations[i] = SPARK_NULL;
+			
+			memset(ALLOCATIONS->allocations + ALLOCATIONS->size, 0, ALLOCATIONS->capacity);
 		}
+		index = ALLOCATIONS->size;
+		ALLOCATIONS->size++;
 	}
 
 	void* ptr = malloc(size);
@@ -2646,7 +2692,7 @@ SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line
 		// Handle malloc failure
 		free(ptr);
 		return NULL;
-}
+	}
 
 	meta->file = file;
 	meta->line = line;
@@ -2656,8 +2702,7 @@ SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line
 	meta->alloc_number = ++ALLOCATIONS->current_allocation;
 	meta->ptr = ptr;
 
-	ALLOCATIONS->allocations[ALLOCATIONS->size] = meta;
-	ALLOCATIONS->size++;
+	ALLOCATIONS->allocations[index] = meta;
 
 	return ptr;
 #else
@@ -2665,8 +2710,41 @@ SPARKAPI SparkHandle SparkAllocateImpl(SparkSize size, char* file, SparkI32 line
 #endif
 }
 
+SPARKAPI SparkVoid SparkFree(SparkHandle handle) {
+#ifndef NDEBUG
+	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
+		AllocationMeta meta = ALLOCATIONS->allocations[i];
+		if (!meta)
+			continue;
+		if (meta->ptr == handle) {
+			free(meta->ptr);
+			free(meta);
+			ALLOCATIONS->allocations[i] = SPARK_NULL;
 
-SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, char* file, SparkI32 line, char* func, char* time)
+			// Add this index to the free list
+			if (ALLOCATIONS->free_count == ALLOCATIONS->free_capacity) {
+				// Expand free_indices array
+				size_t new_free_capacity = ALLOCATIONS->free_capacity * 2;
+				size_t* temp = realloc(ALLOCATIONS->free_indices, new_free_capacity * sizeof(size_t));
+				if (temp) {
+					ALLOCATIONS->free_indices = temp;
+					ALLOCATIONS->free_capacity = new_free_capacity;
+				}
+				else {
+					// Handle realloc failure (optional: log error)
+					return;
+				}
+			}
+			ALLOCATIONS->free_indices[ALLOCATIONS->free_count++] = i;
+			return;
+		}
+	}
+#else
+	free(handle);
+#endif
+}
+
+SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, SparkString file, SparkI32 line, SparkString func, SparkString time)
 {
 #ifndef NDEBUG
 	if (size == 0)
@@ -2694,6 +2772,8 @@ SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, cha
 			meta->file = file;
 			meta->line = line;
 			meta->func = func;
+
+
 			meta->time = time;
 			meta->size = size;
 
@@ -2704,24 +2784,6 @@ SPARKAPI SparkHandle SparkReallocateImpl(SparkHandle handle, SparkSize size, cha
 	return SparkAllocateImpl(size, file, line, func, time);
 #else
 	return realloc(handle, size);
-#endif
-}
-
-SPARKAPI SparkVoid SparkFree(SparkHandle handle) { 
-#ifndef NDEBUG
-	for (size_t i = 0; i < ALLOCATIONS->size; i++) {
-		AllocationMeta meta = ALLOCATIONS->allocations[i];
-		if (!meta)
-			continue;
-		if (meta->ptr == handle) {
-			free(meta->ptr);
-			free(meta);
-			ALLOCATIONS->allocations[i] = SPARK_NULL;
-			return;
-		}
-	}
-#else
-	free(handle);
 #endif
 }
 
@@ -3614,6 +3676,9 @@ SPARKAPI SparkHashMap SparkCreateHashMap(SparkSize capacity,
 SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
 	if (!hashmap)
 		return;
+
+	SparkAllocator allocator = hashmap->allocator;
+
 	for (SparkSize i = 0; i < hashmap->capacity; ++i) {
 		SparkHashMapNode node = hashmap->buckets[i];
 		while (node) {
@@ -3624,17 +3689,16 @@ SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
 			if (hashmap->value_destructor) {
 				hashmap->value_destructor(node->value);
 			}
-			hashmap->allocator->free(node);
+			allocator->free(node);
 			node = next;
 		}
 	}
-	hashmap->allocator->free(hashmap->buckets);
-	SparkAllocator allocator = hashmap->allocator;
+	allocator->free(hashmap->buckets);
 	SparkBool external_allocator = hashmap->external_allocator;
-	hashmap->allocator->free(hashmap);
+	allocator->free(hashmap);
 
 	if (!external_allocator) {
-		allocator->free(allocator);
+		SparkDestroyAllocator(allocator);
 	}
 }
 
@@ -5455,7 +5519,7 @@ SPARKAPI SparkResult SparkStartServer(SparkServer server) {
 	SparkI32 opt = 1;
 	if (
 #ifdef _WIN32
-		setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt,
+		setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, (SparkString)&opt,
 			sizeof(opt))
 #else
 		setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
@@ -5707,6 +5771,7 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 #pragma region ECS
 
 #define MAX_COMPONENT_TYPES 64
+static SparkHashMap COMPONENT_BITS = NULL;
 
 SPARKAPI SparkVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	// Check if query result is cached
@@ -5735,23 +5800,21 @@ SPARKAPI SparkVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 }
 
 SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
-	static SparkHashMap component_bits = NULL;
 	static SparkU64 next_bit = 1;
 
-	if (!component_bits)
-		component_bits = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, SparkFree);
+	if (!COMPONENT_BITS)
+		COMPONENT_BITS = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, SparkFree);
 
-	SparkU64* bit = SparkGetElementHashMap(component_bits, (SparkHandle)component_type, strlen(component_type));
+	SparkU64 bit = SparkGetElementHashMap(COMPONENT_BITS, (SparkHandle)component_type, strlen(component_type));
 	if (bit)
-		return *bit;
+		return bit;
 
-	SparkU64* new_bit = SparkAllocate(sizeof(SparkU64));
-	*new_bit = next_bit;
+	SparkU64 new_bit = next_bit;
 	next_bit <<= 1;
 
-	SparkInsertHashMap(component_bits, (SparkHandle)component_type, strlen(component_type), new_bit);
+	SparkInsertHashMap(COMPONENT_BITS, (SparkHandle)component_type, strlen(component_type), new_bit);
 
-	return *new_bit;
+	return new_bit;
 }
 
 SPARKAPI SparkVoid SparkInvalidateQueryCaches(SparkEcs ecs) {
@@ -5837,6 +5900,8 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	SparkDestroyVector(ecs->query_caches);
 	SparkFree(ecs->signatures);
 	SparkFree(ecs);
+
+	SparkDestroyHashMap(COMPONENT_BITS);
 }
 
 SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
@@ -5891,7 +5956,6 @@ SPARKAPI SparkEntity SparkCreateEntity(SparkEcs ecs) {
 
 	return entity_id;
 }
-
 
 SPARKAPI SparkResult SparkDestroyEntity(SparkEcs ecs, SparkEntity entity_id) {
 	if (!ecs || entity_id == SPARK_INVALID)
@@ -6685,11 +6749,11 @@ SPARKAPI SPARKSTATIC VkExtent2D __SparkChooseSwapExtent(
 
 		VkExtent2D actual_extent = { width, height };
 		actual_extent.width =
-			SparkClamp((SparkScalar)actual_extent.width,
+			SparkClampS((SparkScalar)actual_extent.width,
 				(SparkScalar)capabilities->minImageExtent.width,
 				(SparkScalar)capabilities->maxImageExtent.width);
 		actual_extent.height =
-			SparkClamp((SparkScalar)actual_extent.height,
+			SparkClampS((SparkScalar)actual_extent.height,
 				(SparkScalar)capabilities->minImageExtent.height,
 				(SparkScalar)capabilities->maxImageExtent.height);
 		return actual_extent;
@@ -7563,6 +7627,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCleanupSwapChain(SparkWindow window) {
 
 	SparkFree(window->swap_chain_framebuffers);
 	SparkFree(window->swap_chain_image_views);
+	SparkFree(window->swap_chain_images);
 	SparkFree(window->swap_chain_extent);
 
 	return SPARK_SUCCESS;
@@ -7983,6 +8048,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeVulkan(SparkApplication app) {
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDeviceWaitIdle(window->device);
+
 	
 	__SparkCleanupSwapChain(window);
 
@@ -7990,10 +8056,6 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 		vkDestroyBuffer(window->device, window->uniform_buffers[i], SPARK_NULL);
 		vkFreeMemory(window->device, window->uniform_buffers_memory[i], SPARK_NULL);
 	}
-
-	SparkFree(window->uniform_buffers);
-	SparkFree(window->uniform_buffers_memory);
-	SparkFree(window->uniform_buffers_mapped);
 
 	vkDestroyDescriptorPool(window->device, window->descriptor_pool, SPARK_NULL);
 
@@ -8021,6 +8083,18 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVulkan(SparkWindow window) {
 	vkDestroySurfaceKHR(window->instance, window->surface, SPARK_NULL);
 
 	vkDestroyInstance(window->instance, SPARK_NULL);
+
+
+	SparkFree(window->uniform_buffers);
+	SparkFree(window->uniform_buffers_memory);
+	SparkFree(window->uniform_buffers_mapped);
+
+	SparkFree(window->image_available_semaphores);
+	SparkFree(window->render_finished_semaphores);
+	SparkFree(window->in_flight_fences);
+
+	SparkFree(window->command_buffers);
+	SparkFree(window->descriptor_sets);
 }
 
 SPARKAPI SPARKSTATIC SparkResult __SparkUpdateUniformBuffer(SparkWindow window, SparkU32 current_image) {
@@ -10107,6 +10181,7 @@ SPARKAPI SparkVoid SparkDestroyApplication(SparkApplication app) {
 	SparkDestroyWindow(app->window);
 	SparkDestroyMutex(app->mutex);
 	SparkFree(app);
+	SparkDestroyAllocations();
 }
 
 SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
@@ -10117,8 +10192,6 @@ SPARKAPI SparkResult SparkStartApplication(SparkApplication app) {
 	if (__SparkUpdateApplication(app) != SPARK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
-
-	SparkDestroyAllocations();
 
 	return SPARK_SUCCESS;
 }
