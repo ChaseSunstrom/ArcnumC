@@ -9,6 +9,14 @@
 #include <glslang/SPIRV/GlslangToSpv.h>
 
 #include <filesystem>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <limits.h>
+#endif
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -367,14 +375,51 @@ namespace {
         return true;
     }
 
-    // Helper function to get cache directories
-    void GetCacheDirectories(const std::filesystem::path& source_path,
+
+    // Helper function to get the executable directory
+    std::filesystem::path GetExecutablePath() {
+#ifdef _WIN32
+        char path[MAX_PATH];
+        HMODULE hModule = GetModuleHandle(nullptr);
+        if (hModule != nullptr) {
+            DWORD length = GetModuleFileNameA(hModule, path, MAX_PATH);
+            if (length > 0 && length < MAX_PATH) {
+                return std::filesystem::path(path).parent_path();
+            }
+            else {
+                // Handle error
+                return std::filesystem::current_path();
+            }
+        }
+        else {
+            // Handle error
+            return std::filesystem::current_path();
+        }
+#else
+        char result[PATH_MAX];
+        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+        if (count != -1) {
+            return std::filesystem::path(std::string(result, count)).parent_path();
+        }
+        else {
+            // Handle error
+            return std::filesystem::current_path();
+        }
+#endif
+    }
+
+    // Modify the GetCacheDirectories function
+    void GetCacheDirectories(const std::filesystem::path& /*source_path*/,
         std::filesystem::path& compiled_shaders_dir,
         std::filesystem::path& hashed_shaders_dir) {
-        std::filesystem::path source_dir = source_path.parent_path();
-        compiled_shaders_dir = source_dir / "compiled_shaders";
-        hashed_shaders_dir = source_dir / "hashed_shaders";
+        // Get the executable directory
+        std::filesystem::path exe_dir = GetExecutablePath();
+
+        // Set the cache directories inside the executable directory
+        compiled_shaders_dir = exe_dir / "compiled_shaders";
+        hashed_shaders_dir = exe_dir / "hashed_shaders";
     }
+
 
     // Helper function to compute the hash of the shader source
     std::string GetShaderHash(const std::string& source_code) {
@@ -450,7 +495,6 @@ extern "C" {
         // Determine cache file paths
         std::filesystem::path compiled_spirv_path = GetCompiledSpirvPath(compiled_shaders_dir, source_path, shader_stage);
         std::filesystem::path hash_file_path = GetHashFilePath(hashed_shaders_dir, source_path, shader_stage);
-
 
         // Read shader source code
         std::string source_code = ReadFile(source_path);

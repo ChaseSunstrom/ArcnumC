@@ -339,10 +339,6 @@
 #define SPARK_DEFAULT_ROTATION (SparkQuat){0.0f, 0.0f, 0.0f, 1.0f}
 #define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
 
-
-#define SparkAllocate(size) SparkAllocateImpl(size, __FILE__, __LINE__, __func__, SparkGetTime())
-#define SparkReallocate(handle, size) SparkReallocateImpl(handle, size, __FILE__, __LINE__, __func__, SparkGetTime())
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1057,6 +1053,7 @@ typedef struct SparkAllocatorT {
 	SparkAllocateFunction allocate;
 	SparkReallocateFunction reallocate;
 	SparkFreeFunction free;
+	SparkU32 ref_count;
 } *SparkAllocator;
 
 typedef struct SparkPairT {
@@ -1071,7 +1068,6 @@ typedef struct SparkVectorT {
 	SparkFreeFunction destructor;
 	SparkHandle* elements;
 	SparkAllocator allocator;
-	SparkBool external_allocator;
 } *SparkVector;
 
 typedef struct SparkVectorIteratorT {
@@ -1092,7 +1088,6 @@ typedef struct SparkListT {
 	SparkListNode head;
 	SparkListNode tail;
 	SparkAllocator allocator;
-	SparkBool external_allocator;
 } *SparkList;
 
 typedef struct SparkListIteratorT {
@@ -1118,7 +1113,6 @@ typedef struct SparkHashMapT {
 	SparkCompareFunction compare_function;
 	SparkFreeFunction key_destructor;
 	SparkFreeFunction value_destructor;
-	SparkBool external_allocator;
 } *SparkHashMap;
 
 typedef struct SparkHashMapIteratorT {
@@ -1142,7 +1136,6 @@ typedef struct SparkSetT {
 	SparkSize size;
 	SparkFreeFunction destructor;
 	SparkHandle* elements;
-	SparkBool external_allocator;
 } *SparkSet;
 
 typedef struct SparkHashSetT {
@@ -1154,7 +1147,6 @@ typedef struct SparkHashSetT {
 	SparkHandle* elements;
 	SparkSize* hashes;
 	SparkHashFunction hash_function;
-	SparkBool external_allocator;
 } *SparkHashSet;
 
 typedef struct SparkQueueT {
@@ -1165,7 +1157,6 @@ typedef struct SparkQueueT {
 	SparkSize rear;
 	SparkFreeFunction destructor;
 	SparkHandle* elements;
-	SparkBool external_allocator;
 } *SparkQueue;
 
 typedef struct SparkStackT {
@@ -1174,7 +1165,6 @@ typedef struct SparkStackT {
 	SparkSize size;
 	SparkFreeFunction destructor;
 	SparkHandle* elements;
-	SparkBool external_allocator;
 } *SparkStack;
 
 typedef struct SparkIteratorT {
@@ -2374,15 +2364,16 @@ SPARKAPI SparkI32 SPARKCALL SparkIntegerCompare(SparkConstBuffer a,
 
 SPARKAPI SparkVoid SPARKCALL SparkInitializeAllocations();
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocations();
-SPARKAPI SparkHandle SPARKCALL SparkAllocateImpl(SparkSize size, char* file, SparkI32 line, char* func, char* time);
-SPARKAPI SparkHandle SPARKCALL SparkReallocateImpl(SparkHandle handle,
-	SparkSize size, char* file, SparkI32 line, char* func, char* time);
+SPARKAPI SparkHandle SPARKCALL SparkAllocate(SparkSize size);
+SPARKAPI SparkHandle SPARKCALL SparkReallocate(SparkHandle handle,
+	SparkSize size);
 SPARKAPI SparkVoid SPARKCALL SparkFree(SparkHandle handle);
 SPARKAPI SparkAllocator SPARKCALL SparkDefaultAllocator();
 SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(
 	SparkAllocateFunction allocate, SparkReallocateFunction reallocate,
 	SparkFreeFunction free);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocator(SparkAllocator allocator);
+SPARKAPI SparkAllocator SPARKCALL SparkCopyAllocator(SparkAllocator allocator);
 
 SPARKAPI SparkPair* SPARKCALL SparkCreatePair(SparkHandle first,
 	SparkHandle second);

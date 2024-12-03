@@ -132,10 +132,14 @@ void CreateEntities(SparkApplication app) {
 }
 
 void QueryEntities(SparkApplication app, SparkVector query) {
+	if (!query)
+		return;
 	SPARK_LOG_DEBUG("Amount of entities with position and velocity: %d", query->size);
 }
 
 void QueryEntitiesWithPosition(SparkApplication app, SparkVector query) {
+	if (!query)
+		return;
 	SPARK_LOG_DEBUG("Amount of entities with position: %d", query->size);
 }
 
