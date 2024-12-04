@@ -2550,6 +2550,10 @@ SPARKAPI SparkHandle SparkReallocate(SparkHandle handle, SparkSize size) {
 	return realloc(handle, size);
 }
 
+SPARKAPI SparkHandle SparkCallocate(SparkSize count, SparkSize size) {
+	return calloc(count, size);
+}
+
 SPARKAPI SparkAllocator SparkDefaultAllocator() {
 	static SparkAllocator allocator = SPARK_NULL;
 	if (!allocator) {

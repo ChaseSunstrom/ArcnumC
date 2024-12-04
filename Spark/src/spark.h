@@ -2362,11 +2362,10 @@ SPARKAPI SparkI32 SPARKCALL SparkIntegerCompare(SparkConstBuffer a,
 	SparkConstBuffer b,
 	SparkSize b_size);
 
-SPARKAPI SparkVoid SPARKCALL SparkInitializeAllocations();
-SPARKAPI SparkVoid SPARKCALL SparkDestroyAllocations();
 SPARKAPI SparkHandle SPARKCALL SparkAllocate(SparkSize size);
 SPARKAPI SparkHandle SPARKCALL SparkReallocate(SparkHandle handle,
 	SparkSize size);
+SPARKAPI SparkHandle SPARKCALL SparkCallocate(SparkSize count, SparkSize size);
 SPARKAPI SparkVoid SPARKCALL SparkFree(SparkHandle handle);
 SPARKAPI SparkAllocator SPARKCALL SparkDefaultAllocator();
 SPARKAPI SparkAllocator SPARKCALL SparkCreateAllocator(
