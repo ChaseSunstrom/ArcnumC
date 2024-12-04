@@ -3185,7 +3185,19 @@ typedef SparkHashMapIterator HashMapIterator;
 typedef SparkIterator SparkIterator;
 typedef SparkIteratorState IteratorState;
 
+typedef SparkVec2 Vec2;
+typedef SparkVec3 Vec3;
+typedef SparkVec4 Vec4;
+typedef SparkIVec2 IVec2;
+typedef SparkIVec3 IVec3;
+typedef SparkIVec4 IVec4;
+typedef SparkMat2 Mat2;
+typedef SparkMat3 Mat3;
+typedef SparkMat4 Mat4;
+typedef SparkQuat Quat;
+
 typedef SparkEntity Entity;
+typedef SparkQuery Query;
 typedef SparkComponentArray ComponentArray;
 typedef SparkComponent Component;
 typedef SparkSystem System;

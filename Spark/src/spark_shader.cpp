@@ -156,7 +156,7 @@ namespace {
 	};
 
 	// Ensure that glslang is initialized before use
-	static GlslangInitializer glslangInitializer;
+	static GlslangInitializer glslang_initializer;
 
 	// Helper function to map ShaderStage enum to glslang stage
 	EShLanguage GetShaderStage(SparkShaderStage stage) {
@@ -196,7 +196,6 @@ namespace {
 			return "unknown";
 		}
 	}
-
 
 	std::string ReadFile(const std::filesystem::path& path) {
 		std::ifstream file_stream(path, std::ios::in | std::ios::binary);

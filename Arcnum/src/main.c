@@ -62,32 +62,17 @@ void ResourceCreater(Application app) {
 		20,21,22, 22,23,20,
 	};
 
-	Resource res =
-		CreateResourceApplication(app, StaticMeshResourceType, "Cube",
-			CreateStaticMeshI(app, ArrayArg(vertices), ArrayArg(indices)));
-
-	StaticMesh mesh = res->data;
-
-	for (size_t i = 0; i < mesh->vertex_count; i++) {
-		Vertex curr_vertex = mesh->vertices[i];
-		LogDebug("Vertex %d: %f, %f, %f, %f, %f, %f, %f, %f", i,
-			curr_vertex.position.x, curr_vertex.position.y,
-			curr_vertex.position.z, curr_vertex.normal.x, curr_vertex.normal.y,
-			curr_vertex.normal.z, curr_vertex.texcoord.x,
-			curr_vertex.texcoord.y);
-	}
+	CreateResourceApplication(app, StaticMeshResourceType, "Cube",
+		CreateStaticMeshI(app, ArrayArg(vertices), ArrayArg(indices)));
 }
 
 void CreateShaders(Application app) {
 	Shader vshader = CreateShader(app, SPARK_SHADER_VERTEX, "src/shader.vert");
 	Shader fshader = CreateShader(app, SPARK_SHADER_FRAGMENT, "src/shader.frag");
 
-	Resource vres = CreateResourceApplication(app, SPARK_RESOURCE_TYPE_SHADER, "vshader", vshader);
-	Resource fres = CreateResourceApplication(app, SPARK_RESOURCE_TYPE_SHADER, "fshader", fshader);
-
 	SparkGraphicsPipelineConfig gp = SparkCreateGraphicsPipelineConfig(app, vshader, fshader, SPARK_NULL, SPARK_NULL, SPARK_NULL, SPARK_NULL);
 
-	Resource res = CreateResourceApplication(app, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, "default", gp);
+	CreateResourceApplication(app, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, "default", gp);
 }
 
 void ExitOnEscape(Application app, Event event) {
@@ -99,45 +84,45 @@ void ExitOnEscape(Application app, Event event) {
 }
 
 typedef struct PositionComponent {
-	SparkIVec3 pos;
+	 IVec3 pos;
 } PositionComponent;
 
 typedef struct VelocityComponent {
-	SparkIVec3 vel;
+	IVec3 vel;
 } VelocityComponent;
 
 #define POS_COMPONENT "PositionComponent"
 #define VEL_COMPONENT "VelocityComponent"
 
-void CreateEntities(SparkApplication app) {
+void CreateEntities(Application app) {
 	for (size_t i = 0; i < 2000; i++) {
-		SparkEcs ecs = app->ecs;
-		SparkEntity entity = SparkCreateEntity(ecs);
+		Ecs ecs = app->ecs;
+		Entity entity = CreateEntity(ecs);
 
 		PositionComponent* pos = malloc(sizeof(PositionComponent));
 		pos->pos = (SparkIVec3){ i, i, i };
 
-		SparkComponent pos_component = SparkCreateComponent(POS_COMPONENT, "Position", pos, free);
-		SparkAddComponent(ecs, entity, pos_component);
+		SparkComponent pos_component = CreateComponent(POS_COMPONENT, "Position", pos, free);
+		AddComponent(ecs, entity, pos_component);
 
 		if (i < 1000) {
 			VelocityComponent* vel = malloc(sizeof(VelocityComponent));
 			vel->vel = (SparkIVec3){ i, i, i };
 
-			SparkComponent vel_component = SparkCreateComponent(VEL_COMPONENT, "Velocity", vel, free);
+			SparkComponent vel_component = CreateComponent(VEL_COMPONENT, "Velocity", vel, free);
 
-			SparkAddComponent(ecs, entity, vel_component);
+			AddComponent(ecs, entity, vel_component);
 		}
 	}
 }
 
-void QueryEntities(SparkApplication app, SparkVector query) {
+void QueryEntities(Application app, Vector query) {
 	if (!query)
 		return;
 	SPARK_LOG_DEBUG("Amount of entities with position and velocity: %d", query->size);
 }
 
-void QueryEntitiesWithPosition(SparkApplication app, SparkVector query) {
+void QueryEntitiesWithPosition(Application app, Vector query) {
 	if (!query)
 		return;
 	SPARK_LOG_DEBUG("Amount of entities with position: %d", query->size);
@@ -150,18 +135,18 @@ i32 main() {
 		), 
 	8);
 
-	SparkConstString component_types[] = { POS_COMPONENT, VEL_COMPONENT };
-	SparkQuery movement_query = SparkCreateQuery(ArrayArg(component_types));
+	const_string_t component_types[] = { POS_COMPONENT, VEL_COMPONENT };
+	Query movement_query = SparkCreateQuery(ArrayArg(component_types));
 
-	SparkConstString position_types[] = { POS_COMPONENT };
-	SparkQuery position_query = SparkCreateQuery(ArrayArg(position_types));
+	const_string_t position_types[] = { POS_COMPONENT };
+	Query position_query = SparkCreateQuery(ArrayArg(position_types));
 
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
-	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNTHREADED);
-	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNTHREADED);
-	AddStartFunctionApplication(app, CreateShaders, SPARK_UNTHREADED);
-	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNTHREADED);
+	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
+	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, ResourceCreater, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, CreateShaders, SPARK_UNBLOCKED_PARRALLELISM);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
 
 	StartApplication(app);
 
