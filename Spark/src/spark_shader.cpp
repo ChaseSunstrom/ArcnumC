@@ -1,14 +1,11 @@
-// shader_compiler.cpp
-
 #include "spark_shader.h"
 #include "spark.h"
 
-// Include glslang headers
 #include <glslang/Include/ResourceLimits.h>
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
-
-#include <filesystem>
+#include <SPIRV/spirv_cross.hpp>
+#include <SPIRV/spirv_glsl.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -18,6 +15,7 @@
 #endif
 
 #include <fstream>
+#include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -374,7 +372,6 @@ namespace {
 		return true;
 	}
 
-
 	// Helper function to get the executable directory
 	std::filesystem::path GetExecutablePath() {
 #ifdef _WIN32
@@ -407,7 +404,6 @@ namespace {
 #endif
 	}
 
-	// Modify the GetCacheDirectories function
 	void GetCacheDirectories(const std::filesystem::path& /*source_path*/,
 		std::filesystem::path& compiled_shaders_dir,
 		std::filesystem::path& hashed_shaders_dir) {
@@ -418,7 +414,6 @@ namespace {
 		compiled_shaders_dir = exe_dir / "compiled_shaders";
 		hashed_shaders_dir = exe_dir / "hashed_shaders";
 	}
-
 
 	// Helper function to compute the hash of the shader source
 	std::string GetShaderHash(const std::string& source_code) {

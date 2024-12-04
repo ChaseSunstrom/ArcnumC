@@ -44,6 +44,9 @@ project "Spark"
         "vulkan-1.lib",
         "ws2_32.lib",
         "Avrt.lib",  
+        "lib/spirv-cross-core.lib",
+        "lib/spirv-cross-glsl.lib",
+        "lib/spirv-cross-reflect.lib"
     }
 
     filter "configurations:Debug"
