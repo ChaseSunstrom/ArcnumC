@@ -44,9 +44,6 @@ project "Spark"
         "vulkan-1.lib",
         "ws2_32.lib",
         "Avrt.lib",  
-        "lib/spirv-cross-core.lib",
-        "lib/spirv-cross-glsl.lib",
-        "lib/spirv-cross-reflect.lib"
     }
 
     filter "configurations:Debug"
@@ -60,6 +57,9 @@ project "Spark"
             "SPIRV-Tools-optd.lib",
             "OSDependentd.lib",
             "lib/OpenAL32D.lib",
+        "spirv-cross-cored.lib",
+        "spirv-cross-glsld.lib",
+        "spirv-cross-reflectd.lib"
         }
 
     filter "configurations:Release"
@@ -72,7 +72,10 @@ project "Spark"
             "SPIRV-Tools.lib",
             "SPIRV-Tools-opt.lib",
             "OSDependent.lib",
-            "lib/OpenAL32.lib"
+            "lib/OpenAL32.lib",
+        "spirv-cross-core.lib",
+        "spirv-cross-glsl.lib",
+        "spirv-cross-reflect.lib"
         }
 
 
@@ -107,7 +110,3 @@ project "Arcnum"
         defines "NDEBUG"
         runtime "Release"
         optimize "on"
-
-    postbuildcommands {
-        "{COPY} %{wks.location}/lib/*.dll %{cfg.targetdir}"
-    }

@@ -14,9 +14,16 @@
   <ItemGroup>
     <ClInclude Include="src\spark.h" />
     <ClInclude Include="src\spark_shader.h" />
+    <ClInclude Include="src\spark_shader_reflection.h" />
+    <ClInclude Include="src\spark_types.h" />
+    <ClInclude Include="src\spark_assert.h" />
+    <ClInclude Include="src\spark_aliases.h" />
+    <ClInclude Include="src\spark_defines.h" />
+    <ClInclude Include="src\spark_util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\spark.c" />
     <ClCompile Include="src\spark_shader.cpp" />
+    <ClCompile Include="src\spark_shader_reflection.cpp" />
   </ItemGroup>
 </Project>

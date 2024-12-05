@@ -1,6 +1,6 @@
 #define SPARK_IMPLEMENTATION
 #include "spark.h"
-#include "spark_shader.h"
+#include "spark_shader_reflection.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -9607,6 +9607,8 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 	SparkConstString filename,
 	SparkConstString entry) {
 	SparkShader shader = SparkAllocate(sizeof(struct SparkShaderT));
+	shader->shader_data = SparkAllocate(sizeof(struct SparkShaderReflectionDataT));
+	memset(shader->shader_data, 0, sizeof(struct SparkShaderReflectionDataT));
 	shader->type = type;
 	shader->entry_point = entry;
 	shader->device = app->window->device;
@@ -9614,17 +9616,18 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 
 	SparkCompileShaderToSpirv(filename,
 		type,
-		&shader->code,
-		&shader->code_size);
+		shader->shader_data);
+
+	SparkPrintShaderReflectionData(shader->shader_data);
 
 	VkShaderModuleCreateInfo create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	create_info.codeSize = shader->code_size;
-	create_info.pCode = (SparkU32*)shader->code;
+	create_info.codeSize = shader->shader_data->spirv_size;
+	create_info.pCode = (SparkU32*)shader->shader_data->spirv_data;
 
 	if (vkCreateShaderModule(shader->device, &create_info, SPARK_NULL, &shader->module) != VK_SUCCESS) {
 		SPARK_LOG_ERROR("Failed to create shader module for %s!", filename);
-		SparkFree(shader->code);
+		SparkFree(shader->shader_data->spirv_data);
 		SparkFree(shader);
 		return SPARK_NULL;
 	}
@@ -9636,7 +9639,10 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader) {
 	if (!shader) return;
 
 	vkDestroyShaderModule(shader->device, shader->module, SPARK_NULL);
-	SparkFree(shader->code);
+
+	SparkDestroyShaderReflectionData(shader->shader_data);
+	SparkFree(shader->shader_data);
+
 	SparkFree(shader);
 }
 

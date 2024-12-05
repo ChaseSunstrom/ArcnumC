@@ -1,11 +1,16 @@
 #include "spark_shader.h"
+#define SPARK_SHADER_REFLECTION_IMPL
+#include "spark_shader_reflection.h"
+
+
 #include "spark.h"
 
+
 #include <glslang/Include/ResourceLimits.h>
-#include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
-#include <SPIRV/spirv_cross.hpp>
-#include <SPIRV/spirv_glsl.hpp>
+#include <glslang/Public/ShaderLang.h>
+#include <spirv_cross/spirv_cross.hpp>
+#include <spirv_cross/spirv_glsl.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -461,7 +466,7 @@ namespace {
 	}
 
 	SparkResult SparkGetCodeFromCache(
-		SparkBuffer* spirv_data,
+		SparkHandle* spirv_data,
 		SparkSize* spirv_size,
 		SparkConstString compiled_spirv_path) {
 
@@ -497,11 +502,12 @@ namespace {
 } // anonymous namespace
 
 extern "C" {
-	SPARKAPI SparkResult SparkCompileShaderToSpirv(SparkConstString source,
+	SPARKAPI SparkResult SparkCompileShaderToSpirv(
+		SparkConstString source,
 		SparkShaderStage shader_stage,
-		SparkBuffer* spirv_data,
-		SparkSize* spirv_size) {
-		if (!source || !spirv_data || !spirv_size) {
+		SparkShaderReflectionData reflection_data) {
+
+		if (!source || !reflection_data) {
 			return SPARK_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -523,81 +529,78 @@ extern "C" {
 		// Determine cache file paths
 		std::filesystem::path compiled_spirv_path = GetCompiledSpirvPath(compiled_shaders_dir, source_path, shader_stage);
 		std::filesystem::path hash_file_path = GetHashFilePath(hashed_shaders_dir, source_path, shader_stage);
-
-		std::string compiled_spirv_path_str = compiled_spirv_path.string();
-		SparkConstString compiled_spirv_path_cstr = compiled_spirv_path_str.c_str();
+		std::filesystem::path reflection_path = compiled_shaders_dir /
+			(source_path.stem().string() + "_" + ShaderStageToString(shader_stage) + ".ref");
 
 		// Read shader source code
 		std::string source_code = ReadFile(source_path);
-		// Reading the source code failed, so we try to read the cache if it exists
 		if (source_code.empty()) {
 			SPARK_LOG_ERROR("Shader source is empty or could not be read.");
 
-			if (FileExists(compiled_spirv_path)) {
-				return SparkGetCodeFromCache(spirv_data, spirv_size, compiled_spirv_path_cstr);
+			// Try loading from cache if available
+			std::string stored_hash;
+			if (FileExists(compiled_spirv_path) && FileExists(hash_file_path) && ReadHashFromFile(hash_file_path, stored_hash)) {
+				SparkResult res = SparkGetCodeFromCache(&reflection_data->spirv_data, &reflection_data->spirv_size, compiled_spirv_path.string().c_str());
+				if (res == SPARK_SUCCESS && FileExists(reflection_path)) {
+					// Load reflection data from cache
+					if (!SparkReadReflectionDataFromFile(reflection_path, reflection_data)) {
+						SPARK_LOG_WARN("Failed to load reflection data from cache. Reflection data might be missing.");
+					}
+				}
+				return res;
 			}
 			return SPARK_ERROR_INVALID;
 		}
 
 		// Compute current shader hash
-		std::string current_hash = GetShaderHash(source_code);
+		std::string current_hash = ComputeSHA256(source_code);
 
-		bool use_cache = false;
-
-		// Check if compiled SPIR-V and hash files exist
-		if (!FileExists(compiled_spirv_path) && !FileExists(hash_file_path)) {
-			SPARK_LOG_INFO("Compiled SPIR-V file does not exist. Compiling shader: %s", source_path.string().c_str());
-			SPARK_LOG_INFO("Hash file does not exist. Compiling shader: %s", source_path.string().c_str());
-		}
-
+		// Check if we can use the cached version
 		std::string stored_hash;
+		ReadHashFromFile(hash_file_path, stored_hash);
 
-		if (!ReadHashFromFile(hash_file_path, stored_hash)) {
-			SPARK_LOG_ERROR("Failed to read stored hash. Recompiling shader: %s", source_path.string().c_str());
+		if (!stored_hash.empty() && stored_hash == current_hash && FileExists(compiled_spirv_path) && FileExists(reflection_path)) {
+			// Load from cache
+			SparkResult res = SparkGetCodeFromCache(&reflection_data->spirv_data, &reflection_data->spirv_size, compiled_spirv_path.string().c_str());
+			if (res == SPARK_SUCCESS) {
+				// Load reflection data
+				if (!SparkReadReflectionDataFromFile(reflection_path, reflection_data)) {
+					SPARK_LOG_WARN("Failed to load reflection data from cache. Will need to re-reflect if needed.");
+				}
+			}
+			return res;
 		}
 
-		if (stored_hash == current_hash) {
-			return SparkGetCodeFromCache(spirv_data, spirv_size, compiled_spirv_path_cstr);
-		}
-		else {
-			SPARK_LOG_INFO("Shader source has changed. Recompiling shader: %s", source_path.string().c_str());
-		}
+		SPARK_LOG_INFO("Hash mismatch or missing cache. Recompiling shader: %s", source_path.string().c_str());
 
 		SparkConstString shader_source_cstr = source_code.c_str();
 
 		glslang::TShader shader(stage);
 		shader.setStrings(&shader_source_cstr, 1);
 
-		// Set up the environment
 		const SparkI32 default_version = 100;
 		glslang::EShTargetClientVersion client_version = glslang::EShTargetVulkan_1_0;
 		glslang::EShTargetLanguageVersion target_version = glslang::EShTargetSpv_1_0;
 
-		shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan,
-			default_version);
+		shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, default_version);
 		shader.setEnvClient(glslang::EShClientVulkan, client_version);
 		shader.setEnvTarget(glslang::EShTargetSpv, target_version);
 
 		TBuiltInResource resources = DefaultTBuiltInResource;
-
-		// Parse and compile the shader
 		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
 		if (!shader.parse(&resources, default_version, false, messages)) {
-			// Compilation failed
 			std::string log = shader.getInfoLog();
-			fprintf(stderr, "Shader compilation error:%s", log.c_str());
+			fprintf(stderr, "Shader compilation error:%s\n", log.c_str());
 			return SPARK_ERROR_INVALID;
 		}
 
 		glslang::TProgram program;
 		program.addShader(&shader);
 
-		// Link the program
 		if (!program.link(messages)) {
-			// Linking failed
 			std::string log = program.getInfoLog();
-			fprintf(stderr, "Shader linking error:%s", log.c_str());
+			fprintf(stderr, "Shader linking error:%s\n", log.c_str());
 			return SPARK_ERROR_INVALID;
 		}
 
@@ -607,25 +610,41 @@ extern "C" {
 
 		// Allocate memory for SPIR-V data
 		size_t byte_size = spirv.size() * sizeof(SparkU32);
-		*spirv_data = (SparkBuffer)malloc(byte_size);
-		if (!(*spirv_data)) {
+		reflection_data->spirv_data = (SparkBuffer)malloc(byte_size);
+		if (!reflection_data->spirv_data) {
 			SPARK_LOG_ERROR("Memory allocation failed for SPIR-V data");
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
 
-		memcpy(*spirv_data, spirv.data(), byte_size);
-		*spirv_size = byte_size;
+		memcpy(reflection_data->spirv_data, spirv.data(), byte_size);
+		reflection_data->spirv_size = byte_size;
+		reflection_data->stage = shader_stage;
 
-		// Write the SPIR-V binary to the compiled_shaders directory for caching
-		std::ofstream spirv_file_out(compiled_spirv_path, std::ios::out | std::ios::binary | std::ios::trunc);
-		if (!spirv_file_out) {
-			SPARK_LOG_WARN("Could not write compiled SPIR-V cache file %s", compiled_spirv_path.string().c_str());
-			// Continue without caching
+		// Write SPIR-V to cache
+		{
+			std::ofstream spirv_file_out(compiled_spirv_path, std::ios::out | std::ios::binary | std::ios::trunc);
+			if (!spirv_file_out) {
+				SPARK_LOG_WARN("Could not write compiled SPIR-V cache file %s", compiled_spirv_path.string().c_str());
+			}
+			else {
+				spirv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
+				spirv_file_out.close();
+				SPARK_LOG_INFO("Compiled and cached SPIR-V: %s", compiled_spirv_path.string().c_str());
+			}
+		}
+
+		// Reflection extraction
+		{
+			spirv_cross::Compiler comp(spirv);
+			SparkExtractAllResources(comp, reflection_data);
+		}
+
+		// Write reflection data to cache
+		if (!SparkWriteReflectionDataToFile(reflection_path, reflection_data)) {
+			SPARK_LOG_WARN("Could not write reflection data cache file %s", reflection_path.string().c_str());
 		}
 		else {
-			spirv_file_out.write(reinterpret_cast<const char*>(spirv.data()), byte_size);
-			spirv_file_out.close();
-			SPARK_LOG_INFO("Compiled and cached SPIR-V: %s", compiled_spirv_path.string().c_str());
+			SPARK_LOG_INFO("Compiled and cached reflection data: %s", reflection_path.string().c_str());
 		}
 
 		// Write the current hash to the hash file
