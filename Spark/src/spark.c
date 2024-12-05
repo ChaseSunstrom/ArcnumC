@@ -9618,7 +9618,9 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 		type,
 		shader->shader_data);
 
+#ifndef NDEBUG
 	SparkPrintShaderReflectionData(shader->shader_data);
+#endif
 
 	VkShaderModuleCreateInfo create_info = { 0 };
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
