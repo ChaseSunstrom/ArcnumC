@@ -128,6 +128,17 @@ void QueryEntitiesWithPosition(Application app, Vector query) {
 	SPARK_LOG_DEBUG("Amount of entities with position: %d", query->size);
 }
 
+void LogKeyPress(Application app, Event event) {
+	if (event.type == SPARK_EVENT_MOUSE_MOVED) {
+		EventDataMouseMoved mouse_data = event.data;
+		SPARK_LOG_INFO("Mouse Moved  X: %f   Y: %f", mouse_data->xpos, mouse_data->ypos);
+	}
+	else if (event.type == SPARK_EVENT_KEY_PRESSED) {
+		EventDataKeyPressed key_data = event.data;
+		SPARK_LOG_INFO("Key Pressed: %s", KeyToString(key_data->key));
+	}
+}
+
 i32 main() {
 	Application app = CreateApplication(
 		CreateWindow(
@@ -141,12 +152,13 @@ i32 main() {
 	const_string_t position_types[] = { POS_COMPONENT };
 	Query position_query = SparkCreateQuery(ArrayArg(position_types));
 
-	AddStartFunctionApplication(app, CreateEntities, SPARK_UNTHREADED);
+	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);
 	AddStartFunctionApplication(app, ResourceCreater, SPARK_BLOCKED_PARRALLELISM);
 	AddStartFunctionApplication(app, CreateShaders, SPARK_BLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
+	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_MOUSE_MOVED, LogKeyPress, SPARK_UNBLOCKED_PARRALLELISM);
 
 	StartApplication(app);
 

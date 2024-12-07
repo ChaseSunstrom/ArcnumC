@@ -931,6 +931,39 @@ SPARKAPI SparkResult SPARKCALL SparkPushBackBufferVector(
 	SparkVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
 SPARKAPI SparkResult SPARKCALL SparkClearVector(SparkVector vector);
 
+SPARKAPI SparkAtomicVector SPARKCALL SparkDefaultAtomicVector();
+SPARKAPI SparkAtomicVector SPARKCALL SparkCreateAtomicVector(SparkSize capacity,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor);
+SPARKAPI SparkAtomicVector SPARKCALL SparkMemcpyIntoAtomicVector(SparkSize size, SparkHandle* elements, SparkAllocator allocator, SparkFreeFunction destructor);
+SPARKAPI SparkVoid SPARKCALL SparkDestroyAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkAtomicVector SPARKCALL SparkCopyAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkAtomicVector SPARKCALL SparkDeepCopyAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkHandle SPARKCALL SparkGetElementAtomicVector(SparkAtomicVector vector,
+	SparkIndex index);
+SPARKAPI SparkResult SPARKCALL SparkPushBackAtomicVector(SparkAtomicVector vector,
+	SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkPopBackAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkResult SPARKCALL SparkInsertAtomicVector(SparkAtomicVector vector,
+	SparkIndex index,
+	SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkRemoveAtomicVector(SparkAtomicVector vector,
+	SparkIndex index);
+SPARKAPI SparkResult SPARKCALL SparkRemoveNoShiftAtomicVector(SparkAtomicVector vector,
+	SparkSize index);
+SPARKAPI SparkResult SPARKCALL SparkCompressAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkResult SPARKCALL SparkEraseAtomicVector(SparkAtomicVector vector,
+	SparkIndex start,
+	SparkIndex end);
+SPARKAPI SparkResult SPARKCALL SparkSetAtomicVector(SparkAtomicVector vector,
+	SparkIndex index,
+	SparkHandle element);
+SPARKAPI SparkResult SPARKCALL SparkResizeAtomicVector(SparkAtomicVector vector,
+	SparkSize capacity);
+SPARKAPI SparkResult SPARKCALL SparkPushBackBufferAtomicVector(
+	SparkAtomicVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
+SPARKAPI SparkResult SPARKCALL SparkClearAtomicVector(SparkAtomicVector vector);
+
 SPARKAPI SparkList SPARKCALL SparkDefaultList();
 SPARKAPI SparkList SPARKCALL SparkCreateList(SparkAllocator allocator,
 	SparkFreeFunction destructor);
@@ -1490,6 +1523,9 @@ SPARKAPI SparkResult SPARKCALL SparkStopApplication(SparkApplication app);
 SPARKAPI SparkMaterial SPARKCALL SparkGetMaterialApplication(SparkApplication app, SparkConstString name);
 SPARKAPI SparkStaticMesh SPARKCALL SparkGetStaticMeshApplication(SparkApplication app, SparkConstString name);
 SPARKAPI SparkDynamicMesh SPARKCALL SparkGetDynamicMeshApplication(SparkApplication app, SparkConstString name);
+
+SPARKAPI SparkVoid SPARKCALL SparkLockAllMutexes(SparkApplication app);
+SPARKAPI SparkVoid SPARKCALL SparkUnlockAllMutexes(SparkApplication app);
 
 #ifdef __cplusplus
 }

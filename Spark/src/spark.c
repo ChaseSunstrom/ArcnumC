@@ -33,6 +33,29 @@
 #define SparkAtomicDecrement(data) __sync_sub_and_fetch((data), 1)
 #endif
 
+#ifdef _WIN32
+#define SparkInitMutex(mutex) InitializeCriticalSection(&(mutex))
+#define SparkLockMutex(mutex) EnterCriticalSection(&(mutex))
+#define SparkUnlockMutex(mutex) LeaveCriticalSection(&(mutex))
+#define SparkDestroyMutex(mutex) DeleteCriticalSection(&(mutex))
+#define SparkInitCondition(cond) InitializeConditionVariable(&(cond))
+#define SparkWaitCondition(cond, mutex)                                        \
+  SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
+#define SparkSignalCondition(cond) WakeConditionVariable(&(cond))
+#define SparkDestroyCondition(cond) /* No-op */
+#define SparkBroadcastCondition(cond) WakeAllConditionVariable(&(cond))
+#else
+#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), SPARK_NULL)
+#define SparkLockMutex(mutex) pthread_mutex_lock(&(mutex))
+#define SparkUnlockMutex(mutex) pthread_mutex_unlock(&(mutex))
+#define SparkDestroyMutex(mutex) pthread_mutex_destroy(&(mutex))
+#define SparkInitCondition(cond) pthread_cond_init(&(cond), SPARK_NULL)
+#define SparkWaitCondition(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
+#define SparkSignalCondition(cond) pthread_cond_signal(&(cond))
+#define SparkDestroyCondition(cond) pthread_cond_destroy(&(cond))
+#define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
+#endif
+
 #pragma region ENUM
 
 SPARKAPI SparkConstString SparkTypeToString(SparkType type) {
@@ -1026,8 +1049,8 @@ SPARKAPI SparkCursor SparkStringToCursor(SparkConstString string) {
 		return (SparkCursor)-1;
 }
 
-SPARKAPI SparkConstString SparkEventTypeToString(SparkEventType eventType) {
-	switch (eventType) {
+SPARKAPI SparkConstString SparkEventTypeToString(SparkEventType event_type) {
+	switch (event_type) {
 	case SPARK_EVENT_NONE:
 		return "SPARK_EVENT_NONE";
 	case SPARK_EVENT_WINDOW_CLOSE:
@@ -1417,6 +1440,18 @@ SPARKAPI SparkConstString SparkGetFileExtension(SparkConstString filename) {
 	if (!dot || dot == filename)
 		return "";
 	return dot + 1;
+}
+
+SPARKAPI SparkVoid SparkLockAllMutexes(SparkApplication app) {
+	SparkLockMutex(app->mutex);
+	SparkLockMutex(app->event_handler->mutex);
+	SparkLockMutex(app->ecs->mutex);
+}
+
+SPARKAPI SparkVoid SparkUnlockAllMutexes(SparkApplication app) {
+	SparkUnlockMutex(app->ecs->mutex);
+	SparkUnlockMutex(app->event_handler->mutex);
+	SparkUnlockMutex(app->mutex);
 }
 
 #pragma endregion
@@ -2682,7 +2717,7 @@ SPARKAPI SparkVector SparkCopyVector(SparkVector vector) {
 	// Null for destructor as we are only shallow copying the vectors elements,
 	// not the elements themselves
 	SparkVector copy =
-		SparkCreateVector(vector->capacity, vector->allocator, SPARK_NULL);
+		SparkCreateVector(vector->capacity, SparkCopyAllocator(vector->allocator), SPARK_NULL);
 	for (SparkSize i = 0; i < vector->size; i++) {
 		SparkPushBackVector(copy, vector->elements[i]);
 	}
@@ -2927,6 +2962,86 @@ SPARKAPI SparkResult SparkPushBackBufferVector(SparkVector vector,
 
 	return SPARK_SUCCESS;
 }
+
+#pragma endregion
+
+#pragma region ATOMIC_VECTOR
+
+SPARKAPI SparkAtomicVector  SparkDefaultAtomicVector() {
+	return SparkCreateAtomicVector(4, SPARK_NULL, SPARK_NULL);
+}
+
+SPARKAPI SparkAtomicVector  SparkCreateAtomicVector(SparkSize capacity,
+	SparkAllocator allocator,
+	SparkFreeFunction destructor) {
+	SparkAtomicVector atomic_vector = allocator->allocate(sizeof(struct SparkAtomicVectorT));
+	atomic_vector->ref_count = allocator->allocate(sizeof(SparkSize));
+	atomic_vector->vector = SparkCreateVector(capacity, allocator, destructor);
+	SparkInitMutex(atomic_vector->mutex);
+	return atomic_vector;
+}
+
+SPARKAPI SparkAtomicVector SparkMemcpyIntoAtomicVector(SparkSize size, SparkHandle* elements, SparkAllocator allocator, SparkFreeFunction destructor);
+
+SPARKAPI SparkVoid  SparkDestroyAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+
+	if (--*vector->ref_count > 0) {
+		SparkUnlockMutex(vector->mutex);
+		return;
+	}
+
+	SparkAllocator allocator = vector->vector->allocator;
+	SparkVector internal_vector = vector->vector;
+
+	allocator->free(vector->ref_count);
+
+	SparkUnlockMutex(vector->mutex);
+	SparkDestroyMutex(vector->mutex);
+
+	allocator->free(vector);
+
+	SparkDestroyVector(internal_vector);
+}
+
+SPARKAPI SparkAtomicVector  SparkCopyAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+	++*vector->ref_count;
+	SparkUnlockMutex(vector->mutex);
+	return vector;
+}
+
+SPARKAPI SparkAtomicVector SparkDeepCopyAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+	SparkAtomicVector result = SparkCreateAtomicVector(vector->vector->capacity, SparkCopyAllocator(vector->vector->allocator), vector->vector->destructor);
+	for (Sp)
+	SparkUnlockMutex(vector->mutex);
+}
+
+SPARKAPI SparkHandle  SparkGetElementAtomicVector(SparkAtomicVector vector,
+	SparkIndex index);
+SPARKAPI SparkResult  SparkPushBackAtomicVector(SparkAtomicVector vector,
+	SparkHandle element);
+SPARKAPI SparkResult  SparkPopBackAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkResult  SparkInsertAtomicVector(SparkAtomicVector vector,
+	SparkIndex index,
+	SparkHandle element);
+SPARKAPI SparkResult  SparkRemoveAtomicVector(SparkAtomicVector vector,
+	SparkIndex index);
+SPARKAPI SparkResult  SparkRemoveNoShiftAtomicVector(SparkAtomicVector vector,
+	SparkSize index);
+SPARKAPI SparkResult  SparkCompressAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkResult  SparkEraseAtomicVector(SparkAtomicVector vector,
+	SparkIndex start,
+	SparkIndex end);
+SPARKAPI SparkResult  SparkSetAtomicVector(SparkAtomicVector vector,
+	SparkIndex index,
+	SparkHandle element);
+SPARKAPI SparkResult  SparkResizeAtomicVector(SparkAtomicVector vector,
+	SparkSize capacity);
+SPARKAPI SparkResult  SparkPushBackBufferAtomicVector(
+	SparkAtomicVector vector, SparkConstBuffer buffer, SparkSize buffer_size);
+SPARKAPI SparkResult  SparkClearAtomicVector(SparkAtomicVector vector);
 
 #pragma endregion
 
@@ -4697,28 +4812,6 @@ SPARKAPI SparkBool SparkHasPreviousHashMapIterator(SparkHashMapIterator it) {
 
 #pragma region THREAD
 
-#ifdef _WIN32
-#define SparkInitMutex(mutex) InitializeCriticalSection(&(mutex))
-#define SparkLockMutex(mutex) EnterCriticalSection(&(mutex))
-#define SparkUnlockMutex(mutex) LeaveCriticalSection(&(mutex))
-#define SparkDestroyMutex(mutex) DeleteCriticalSection(&(mutex))
-#define SparkInitCondition(cond) InitializeConditionVariable(&(cond))
-#define SparkWaitCondition(cond, mutex)                                        \
-  SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
-#define SparkSignalCondition(cond) WakeConditionVariable(&(cond))
-#define SparkDestroyCondition(cond) /* No-op */
-#define SparkBroadcastCondition(cond) WakeAllConditionVariable(&(cond))
-#else
-#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), SPARK_NULL)
-#define SparkLockMutex(mutex) pthread_mutex_lock(&(mutex))
-#define SparkUnlockMutex(mutex) pthread_mutex_unlock(&(mutex))
-#define SparkDestroyMutex(mutex) pthread_mutex_destroy(&(mutex))
-#define SparkInitCondition(cond) pthread_cond_init(&(cond), SPARK_NULL)
-#define SparkWaitCondition(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
-#define SparkSignalCondition(cond) pthread_cond_signal(&(cond))
-#define SparkDestroyCondition(cond) pthread_cond_destroy(&(cond))
-#define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
-#endif
 
 #ifdef _WIN32
 DWORD WINAPI __SparkThreadPoolWorker(LPVOID arg) {
@@ -4796,9 +4889,9 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 
 	for (SparkSize i = 0; i < thread_count; ++i) {
 #ifdef _WIN32
-		unsigned threadID;
+		SparkU32 thread_id;
 		pool->threads[i] = (HANDLE)_beginthreadex(
-			SPARK_NULL, 0, __SparkThreadPoolWorker, pool, 0, &threadID);
+			SPARK_NULL, 0, __SparkThreadPoolWorker, pool, 0, &thread_id);
 		if (pool->threads[i] == 0) {
 			SPARK_LOG_ERROR("Failed to create thread %zu", i);
 			// Handle error (e.g., clean up and return)
@@ -4810,7 +4903,7 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		}
 
 	return pool;
-	}
+}
 
 SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 	if (pool == SPARK_NULL)
@@ -5512,7 +5605,7 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 #pragma region ECS
 
 #define MAX_COMPONENT_TYPES 64
-static SparkHashMap COMPONENT_BITS = NULL;
+SPARKSTATIC SparkHashMap COMPONENT_BITS = NULL;
 
 SPARKAPI SparkVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	// Check if query result is cached
@@ -5633,6 +5726,7 @@ SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
 	ecs->entity_count = 0;
 	ecs->version = 0;
 	ecs->query_caches = SparkCreateVector(4, ecs->allocator, __SparkDestroyQueryCache);
+	SparkInitMutex(ecs->mutex);
 	return ecs;
 }
 
@@ -5648,6 +5742,7 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	SparkDestroyVector(ecs->query_caches);
 	SparkFree(ecs->signatures);
 	SparkDestroyAllocator(ecs->allocator);
+	SparkDestroyMutex(ecs->mutex);
 	SparkFree(ecs);
 	SparkDestroyHashMap(COMPONENT_BITS);
 }
@@ -7955,6 +8050,12 @@ SPARKAPI SPARKSTATIC SparkResult __SparkWaitIdle(SparkWindow window) {
 
 #pragma region EVENT
 
+typedef struct SparkEventTaskT {
+	SparkApplication app;
+	SparkApplicationEventFunction function;
+	SparkEvent event;
+} *SparkEventTask;
+
 typedef struct SparkQueryEventTaskArgT {
 	SparkApplication app;
 	SparkVector entities;
@@ -7969,12 +8070,14 @@ SPARKAPI SparkEventHandler SparkCreateEventHandler() {
 	event_handler->query_functions =
 		SparkCreateHashMap(4, SparkIntegerHash, SparkIntegerCompare, SPARK_NULL,
 			SPARK_NULL, SparkDestroyVector);
+	SparkInitMutex(event_handler->mutex);
 	return event_handler;
 }
 
 SPARKAPI SparkResult SparkDestroyEventHandler(SparkEventHandler event_handler) {
 	SparkDestroyVector(event_handler->event_functions);
 	SparkDestroyHashMap(event_handler->query_functions);
+	SparkDestroyMutex(event_handler->mutex);
 	SparkFree(event_handler);
 }
 
@@ -8111,19 +8214,12 @@ SPARKAPI SparkResult SparkRemoveQueryEventListener(
 	return SPARK_ERROR_NOT_FOUND;
 }
 
-
-typedef struct SparkEventTaskT {
-	SparkApplication app;
-	SparkApplicationEventFunction function;
-	SparkEvent event;
-} *SparkEventTask;
-
 SPARKAPI SPARKSTATIC SparkVoid __SparkEventTask(SparkHandle task) {
 	SparkEventTask task_arg = task;
 
-	SparkLockMutex(task_arg->app->mutex);
+	SparkLockAllMutexes(task_arg->app);
 	task_arg->function(task_arg->app, task_arg->event);
-	SparkUnlockMutex(task_arg->app->mutex);
+	SparkUnlockAllMutexes(task_arg->app);
 
 	if (SparkAtomicDecrement(task_arg->event.ref_count) == 0) {
 		SparkDestroyEvent(task_arg->event);
@@ -8134,7 +8230,10 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkEventTask(SparkHandle task) {
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkQueryEventTaskFunction(SparkHandle arg) {
 	SparkQueryEventTaskArg task_arg = (SparkQueryEventTaskArg)arg;
+
+	SparkLockAllMutexes(task_arg->app);
 	task_arg->function(task_arg->app, task_arg->entities, task_arg->event);
+	SparkUnlockAllMutexes(task_arg->app);
 
 	// Clean up
 	SparkDestroyVector(task_arg->entities);
@@ -8183,15 +8282,14 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 			SparkVector matching_entities = SparkPerformQuery(event_handler->ecs, query);
 
 			if (query_handler->thread_settings.first) {
-				// Asynchronous handling
+				// Increment event ref_count for asynchronous handling
+				SparkAtomicIncrement(event.ref_count);
+
 				SparkQueryEventTaskArg task_arg = SparkAllocate(sizeof(struct SparkQueryEventTaskArgT));
 				task_arg->app = event_handler->application;
 				task_arg->entities = matching_entities;
 				task_arg->function = query_handler->function;
 				task_arg->event = event;
-
-				// Increment event ref_count for asynchronous handling
-				SparkAtomicIncrement(event.ref_count);
 
 				SparkAddTaskThreadPool(
 					event_handler->application->thread_pool,
@@ -8203,7 +8301,6 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 			else {
 				// Synchronous handling
 				query_handler->function(event_handler->application, matching_entities, event);
-				SparkDestroyVector(matching_entities);
 			}
 		}
 	}
@@ -8215,7 +8312,6 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 
 	return SPARK_SUCCESS;
 }
-
 
 SPARKAPI SparkEvent SparkCreateEvent(SparkEventType event_type,
 	SparkHandle event_data,
@@ -9603,16 +9699,17 @@ SPARKAPI SparkShader SparkCreateShader(SparkApplication app,
 }
 
 SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
-	SparkShaderType type,
-	SparkConstString filename,
-	SparkConstString entry) {
+												  SparkShaderType type,
+												  SparkConstString filename,
+												  SparkConstString entry) {
 	SparkShader shader = SparkAllocate(sizeof(struct SparkShaderT));
 	shader->shader_data = SparkAllocate(sizeof(struct SparkShaderReflectionDataT));
-	memset(shader->shader_data, 0, sizeof(struct SparkShaderReflectionDataT));
 	shader->type = type;
 	shader->entry_point = entry;
 	shader->device = app->window->device;
 	shader->filename = filename;
+
+	memset(shader->shader_data, 0, sizeof(struct SparkShaderReflectionDataT));
 
 	SparkCompileShaderToSpirv(filename,
 		type,
@@ -9703,8 +9800,12 @@ typedef struct SparkApplicationTaskArgT {
 } *SparkApplicationTaskArg;
 
 SPARKAPI SPARKSTATIC SparkVoid __SparkQueryTaskFunction(SparkHandle arg) {
-	SparkQueryTaskArg task_arg = (SparkQueryTaskArg)arg;
+	SparkQueryTaskArg task_arg = arg;
+
+	SparkLockAllMutexes(task_arg->app);
 	task_arg->function(task_arg->app, task_arg->entities);
+	SparkUnlockAllMutexes(task_arg->app);
+
 	SparkFree(task_arg);
 }
 
@@ -9712,11 +9813,9 @@ SPARKAPI SPARKSTATIC SparkVoid
 __SparkApplicationTaskFunction(SparkHandle task) {
 	SparkApplicationTaskArg task_arg = task;
 
-	SparkLockMutex(task_arg->app->mutex);
-
+	SparkLockAllMutexes(task_arg->app);
 	task_arg->function(task_arg->app);
-
-	SparkUnlockMutex(task_arg->app->mutex);
+	SparkUnlockAllMutexes(task_arg->app);
 
 	SparkFree(task_arg);
 }

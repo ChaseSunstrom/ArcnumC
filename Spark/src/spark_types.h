@@ -904,6 +904,19 @@ typedef struct SparkHashMapT {
 	SparkFreeFunction value_destructor;
 } *SparkHashMap;
 
+typedef struct SparkAtomicVectorT {
+	SparkMutex mutex;
+	SparkVector vector;
+	volatile SparkSize* ref_count;
+} *SparkAtomicVector;
+
+typedef struct SparkAtomicHashMapT {
+	SparkMutex mutex;
+	SparkCondition condition;
+	SparkHashMap hashmap;
+	volatile SparkSize* ref_count;
+} *SparkAtomicHashMap;
+
 typedef struct SparkHashMapIteratorT {
 	SparkIteratorState state;
 	SparkHashMap hash_map;
@@ -1067,6 +1080,7 @@ typedef struct SparkEventHandlerT {
 	SparkHashMap query_functions;
 	struct SparkApplicationT* application;
 	struct SparkEcsT* ecs;
+	SparkMutex mutex;
 } *SparkEventHandler;
 
 typedef struct SparkShaderT {
@@ -1139,6 +1153,7 @@ typedef struct SparkEcsT {
 	SparkSize entity_count;          // Total number of entities
 	SparkSize version;               // Version for cache invalidation
 	SparkVector query_caches;        // Vector<SparkQueryCache>
+	SparkMutex mutex;
 } *SparkEcs;
 
 typedef struct SparkEventDataEntityCreatedT {
