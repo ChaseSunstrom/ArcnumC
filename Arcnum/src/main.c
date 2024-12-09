@@ -116,16 +116,36 @@ void CreateEntities(Application app) {
 	}
 }
 
-void QueryEntities(Application app, Vector query) {
+void QueryEntities(Application app, AtomicVector query) {
 	if (!query)
 		return;
-	SPARK_LOG_DEBUG("Amount of entities with position and velocity: %d", query->size);
+	SparkLockMutex(query->mutex);
+	LogDebug("Entities with position and velocity: %d", query->vector->size);
+	SparkUnlockMutex(query->mutex);
 }
 
-void QueryEntitiesWithPosition(Application app, Vector query) {
+void CreateEntitiesOnFrame(Application app) {
+	static i64 i = 0;
+	i++;
+
+	if (i % 1 == 0) {
+		Entity entity = CreateEntity(app->ecs);
+
+		PositionComponent* pos = malloc(sizeof(PositionComponent));
+		pos->pos = (IVec3){ i, i, i };
+
+		SparkComponent pos_component = CreateComponent(POS_COMPONENT, "Position", pos, free);
+		AddComponent(app->ecs, entity, pos_component);
+	}
+}
+
+void QueryEntitiesWithPosition(Application app, AtomicVector query) {
 	if (!query)
 		return;
-	SPARK_LOG_DEBUG("Amount of entities with position: %d", query->size);
+
+	SparkLockMutex(query->mutex);
+	LogDebug("Entities with position: %d", query->vector->size);
+	SparkUnlockMutex(query->mutex);
 }
 
 void LogKeyPress(Application app, Event event) {
@@ -152,6 +172,8 @@ i32 main() {
 	const_string_t position_types[] = { POS_COMPONENT };
 	Query position_query = SparkCreateQuery(ArrayArg(position_types));
 
+	LogInfo("Position and Velocity bit: %zu, %zu", GetComponentBit(POS_COMPONENT), GetComponentBit(VEL_COMPONENT));
+
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);
@@ -159,6 +181,7 @@ i32 main() {
 	AddStartFunctionApplication(app, CreateShaders, SPARK_BLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_MOUSE_MOVED, LogKeyPress, SPARK_UNBLOCKED_PARRALLELISM);
+	AddUpdateFunctionApplication(app, CreateEntitiesOnFrame, SPARK_UNTHREADED);
 
 	StartApplication(app);
 

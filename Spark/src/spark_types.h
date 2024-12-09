@@ -809,9 +809,9 @@ typedef SparkVoid(*SparkApplicationStopFunction)(
 typedef SparkVoid(*SparkApplicationEventFunction)(
 	struct SparkApplicationT* app, struct SparkEventT event);
 typedef SparkVoid(*SparkApplicationQueryFunction)(
-	struct SparkApplicationT* app, struct SparkVectorT* query);
+	struct SparkApplicationT* app, struct SparkAtomicVectorT* query);
 typedef SparkVoid(*SparkApplicationQueryEventFunction)(
-	struct ApplicationT* app, struct SparkVectorT* query,
+	struct ApplicationT* app, struct SparkAtomicVectorT* query,
 	struct SparkEventT event);
 typedef SparkVoid(*SparkServerReceiveCallback)(
 	struct SparkServerT* server, struct SparkClientConnectionT* client,
@@ -1138,7 +1138,7 @@ typedef struct SparkSystemT {
 
 typedef struct SparkQueryCacheT {
 	SparkQuery query;
-	SparkVector entities;  // Cached entities matching the query
+	SparkAtomicVector entities;  // Cached entities matching the query
 	SparkSize version;     // ECS version at the time of caching
 } *SparkQueryCache;
 

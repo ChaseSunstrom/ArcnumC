@@ -1290,7 +1290,7 @@ SPARKAPI SparkQuery SPARKCALL SparkCreateQuery(
 	SparkConstString* component_types,
 	SparkSize component_count
 );
-SPARKAPI SparkVector SPARKCALL SparkPerformQuery(
+SPARKAPI SparkAtomicVector SPARKCALL SparkPerformQuery(
 	SparkEcs ecs,
 	SparkQuery query
 );

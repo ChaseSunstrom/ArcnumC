@@ -71,6 +71,7 @@ typedef SparkSystemStopFunction SystemStopFunction;
 
 typedef SparkAllocator Allocator;
 typedef SparkVector Vector;
+typedef SparkAtomicVector AtomicVector;
 typedef SparkList List;
 typedef SparkMap Map;
 typedef SparkHashMap HashMap;

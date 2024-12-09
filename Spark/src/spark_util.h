@@ -94,4 +94,27 @@
 #define SPARK_DEFAULT_ROTATION (SparkQuat){0.0f, 0.0f, 0.0f, 1.0f}
 #define SPARK_DEFAULT_SCALE (SparkVec3){0.0f, 0.0f, 0.0f}
 
+#ifdef _WIN32
+#define SparkInitMutex(mutex) InitializeCriticalSection(&(mutex))
+#define SparkLockMutex(mutex) EnterCriticalSection(&(mutex))
+#define SparkUnlockMutex(mutex) LeaveCriticalSection(&(mutex))
+#define SparkDestroyMutex(mutex) DeleteCriticalSection(&(mutex))
+#define SparkInitCondition(cond) InitializeConditionVariable(&(cond))
+#define SparkWaitCondition(cond, mutex)                                        \
+  SleepConditionVariableCS(&(cond), &(mutex), INFINITE)
+#define SparkSignalCondition(cond) WakeConditionVariable(&(cond))
+#define SparkDestroyCondition(cond) /* No-op */
+#define SparkBroadcastCondition(cond) WakeAllConditionVariable(&(cond))
+#else
+#define SparkInitMutex(mutex) pthread_mutex_init(&(mutex), SPARK_NULL)
+#define SparkLockMutex(mutex) pthread_mutex_lock(&(mutex))
+#define SparkUnlockMutex(mutex) pthread_mutex_unlock(&(mutex))
+#define SparkDestroyMutex(mutex) pthread_mutex_destroy(&(mutex))
+#define SparkInitCondition(cond) pthread_cond_init(&(cond), SPARK_NULL)
+#define SparkWaitCondition(cond, mutex) pthread_cond_wait(&(cond), &(mutex))
+#define SparkSignalCondition(cond) pthread_cond_signal(&(cond))
+#define SparkDestroyCondition(cond) pthread_cond_destroy(&(cond))
+#define SparkBroadcastCondition(cond) pthread_cond_broadcast(&(cond))
+#endif
+
 #endif
