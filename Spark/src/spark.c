@@ -5669,13 +5669,14 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 SPARKSTATIC SparkHashMap COMPONENT_BITS = NULL;
 
 SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
-
+	SparkLockMutex(ecs->mutex);
 	// Check if query result is cached
-	for (SparkSize i = 0; i < ecs->query_caches->size; ++i) {
+	for (SparkSize i = 0; i < ecs->query_caches->size; i++) {
 		SparkQueryCache cache = ecs->query_caches->elements[i];
 		if (cache->query->signature == query->signature && cache->version == ecs->version)
 		{
-			return cache->entities; // Return cached result
+			SparkUnlockMutex(ecs->mutex);
+			return SparkCopyAtomicVector(cache->entities); // Return cached result
 		}
 	}
 
@@ -5690,9 +5691,11 @@ SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	// Cache the result
 	SparkQueryCache new_cache = SparkAllocate(sizeof(struct SparkQueryCacheT));
 	new_cache->query = query;
-	new_cache->entities = matching_entities;
+	new_cache->entities = SparkCopyAtomicVector(matching_entities);
 	new_cache->version = ecs->version;
 	SparkPushBackVector(ecs->query_caches, new_cache);
+
+	SparkUnlockMutex(ecs->mutex);
 
 	return matching_entities;
 }
@@ -9995,7 +9998,7 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 	for (SparkSize i = 0; i < app->query_functions->size; ++i) {
 		SparkQueryHandlerFunction handler = app->query_functions->elements[i];
 		SparkQuery query = handler->query;
-		SparkAtomicVector matching_entities = SparkCopyAtomicVector(SparkPerformQuery(app->ecs, query));
+		SparkAtomicVector matching_entities = SparkPerformQuery(app->ecs, query);
 
 		if (handler->thread_settings.first) {
 			// Prepare arguments for the thread function
