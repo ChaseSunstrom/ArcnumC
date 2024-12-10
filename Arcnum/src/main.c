@@ -1,7 +1,5 @@
-/* main.c */
-#define SPARK_DEFINE_ALL_ALIASES
+#define SPARK_DEFINE_ALIASES
 #include "spark.h"
-#include <stdbool.h>
 
 void ResourceCreater(Application app) {
 	Vertex vertices[] = {
@@ -12,16 +10,16 @@ void ResourceCreater(Application app) {
 		MakeVertex(-0.5f,  0.5f,  0.5f,  0.4f,  0.0f,  1.0f,  0.0f, 1.0f),
 
 		// Back face
-		MakeVertex(-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f),
-		MakeVertex(-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f),
-		MakeVertex(0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f),
-		MakeVertex(0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f),
+		MakeVertex(-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 0.0f),
+		MakeVertex(-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f),
+		MakeVertex(0.5f,  0.5f, -0.5f,  0.0f,  1.0f, 1.0f,  0.0f, 1.0f),
+		MakeVertex(0.5f, -0.5f, -0.5f,  0.0f,  1.0f, 1.0f,  0.0f, 0.0f),
 
 		// Left face
-		MakeVertex(-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f),
-		MakeVertex(-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f),
-		MakeVertex(-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f),
-		MakeVertex(-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f),
+		MakeVertex(-0.5f, -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 0.0f),
+		MakeVertex(-0.5f, -0.5f,  0.5f, 1.0f,  1.0f,  0.0f,  1.0f, 0.0f),
+		MakeVertex(-0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  1.0f,  1.0f, 1.0f),
+		MakeVertex(-0.5f,  0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f),
 
 		// Right face
 		MakeVertex(0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  1.0f,  1.0f, 0.0f),
@@ -36,10 +34,10 @@ void ResourceCreater(Application app) {
 		MakeVertex(0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f),
 
 		// Bottom face
-		MakeVertex(-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f),
-		MakeVertex(0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f),
-		MakeVertex(0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f),
-		MakeVertex(-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f)
+		MakeVertex(-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  1.0f,  1.0f, 1.0f),
+		MakeVertex(0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f),
+		MakeVertex(0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  1.0f,  0.0f, 0.0f),
+		MakeVertex(-0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 0.0f)
 	};
 
 	SparkU16 indices[] = {
@@ -95,7 +93,7 @@ typedef struct VelocityComponent {
 #define VEL_COMPONENT "VelocityComponent"
 
 void CreateEntities(Application app) {
-	for (size_t i = 0; i < 2000000; i++) {
+	for (size_t i = 0; i < 100000; i++) {
 		Ecs ecs = app->ecs;
 		Entity entity = CreateEntity(ecs);
 
@@ -119,34 +117,28 @@ void CreateEntities(Application app) {
 void QueryEntities(Application app, AtomicVector query) {
 	if (!query)
 		return;
-	SparkLockMutex(query->mutex);
-	LogDebug("Entities with position and velocity: %d", query->vector->size);
-	SparkUnlockMutex(query->mutex);
+
+	LogDebug("Entities with position and velocity: %d", SparkGetSizeAtomicVector(query));
 }
 
 void CreateEntitiesOnFrame(Application app) {
-	static i64 i = 0;
-	i++;
+	for (i64 j = 0; j < 100; j++) {
+		Entity entity = CreateEntity(app->ecs);
 
-	Entity entity = CreateEntity(app->ecs);
+		PositionComponent* pos = malloc(sizeof(PositionComponent));
+		pos->pos = (IVec3){ j, j, j };
 
-	PositionComponent* pos = malloc(sizeof(PositionComponent));
-	pos->pos = (IVec3){ i, i, i };
-
-	SparkComponent pos_component = CreateComponent(POS_COMPONENT, "Position", pos, free);
-	AddComponent(app->ecs, entity, pos_component);
+		SparkComponent pos_component = CreateComponent(POS_COMPONENT, "Position", pos, free);
+		AddComponent(app->ecs, entity, pos_component);
+	}
 }
 
 void QueryEntitiesWithPosition(Application app, AtomicVector query) {
 	if (!query)
 		return;
 
-	SparkLockMutex(query->mutex);
-
-	if (query->vector->size % 10000 == 0)
-		LogInfo("Entities with position: %d", query->vector->size);
-
-	SparkUnlockMutex(query->mutex);
+	if (SparkGetSizeAtomicVector(query) % 1000 == 0)
+		LogInfo("Entities with position: %d", SparkGetSizeAtomicVector(query));
 }
 
 void LogKeyPress(Application app, Event event) {
@@ -165,7 +157,8 @@ i32 main() {
 		CreateWindow(
 			CreateWindowData("Hello", 1080, 1080, SPARK_FALSE, SPARK_PRESENT_MODE_MAILBOX)
 		),
-		8);
+		16
+	);
 
 	const_string_t component_types[] = { POS_COMPONENT, VEL_COMPONENT };
 	Query movement_query = SparkCreateQuery(ArrayArg(component_types));
@@ -182,7 +175,7 @@ i32 main() {
 	AddStartFunctionApplication(app, CreateShaders, SPARK_BLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_MOUSE_MOVED, LogKeyPress, SPARK_UNBLOCKED_PARRALLELISM);
-	//AddUpdateFunctionApplication(app, CreateEntitiesOnFrame, SPARK_UNBLOCKED_PARRALLELISM);
+	AddUpdateFunctionApplication(app, CreateEntitiesOnFrame, SPARK_UNTHREADED);
 
 	StartApplication(app);
 

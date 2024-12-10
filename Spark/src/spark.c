@@ -2980,7 +2980,28 @@ SPARKAPI SparkAtomicVector SparkMemcpyIntoAtomicVector(SparkSize size, SparkHand
 	return atomic_vector;
 }
 
-SPARKAPI SparkVoid  SparkDestroyAtomicVector(SparkAtomicVector vector) {
+SPARKAPI SparkSize SparkGetSizeAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+	SparkSize size = vector->vector->size;
+	SparkUnlockMutex(vector->mutex);
+	return size;
+}
+
+SPARKAPI SparkSize SparkGetCapacityAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+	SparkSize capacity = vector->vector->capacity;
+	SparkUnlockMutex(vector->mutex);
+	return capacity;
+}
+
+SPARKAPI SparkHandle* SparkGetElementsAtomicVector(SparkAtomicVector vector) {
+	SparkLockMutex(vector->mutex);
+	SparkHandle* elements = vector->vector->elements;
+	SparkUnlockMutex(vector->mutex);
+	return elements;
+}
+
+SPARKAPI SparkVoid SparkDestroyAtomicVector(SparkAtomicVector vector) {
 	SparkLockMutex(vector->mutex);
 
 	if (--*vector->ref_count > 0) {
@@ -3001,7 +3022,7 @@ SPARKAPI SparkVoid  SparkDestroyAtomicVector(SparkAtomicVector vector) {
 	SparkDestroyVector(internal_vector);
 }
 
-SPARKAPI SparkAtomicVector  SparkCopyAtomicVector(SparkAtomicVector vector) {
+SPARKAPI SparkAtomicVector SparkCopyAtomicVector(SparkAtomicVector vector) {
 	SparkLockMutex(vector->mutex);
 	++*vector->ref_count;
 	SparkUnlockMutex(vector->mutex);
@@ -5662,6 +5683,7 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 }
 
 #pragma endregion
+
 #pragma region ECS
 
 #define MAX_COMPONENT_TYPES 64
@@ -5680,7 +5702,7 @@ SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	}
 
 	// Perform the query
-	SparkAtomicVector matching_entities = SparkCreateAtomicVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
+	SparkAtomicVector matching_entities = ecs->entity_count == 0 ? SparkDefaultAtomicVector() : SparkCreateAtomicVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
 	for (SparkEntity entity = 0; entity < ecs->entity_count; ++entity) {
 		if ((ecs->signatures[entity] & query->signature) == query->signature) {
 			SparkPushBackAtomicVector(matching_entities, (SparkHandle)(uintptr_t)entity);
@@ -5748,7 +5770,7 @@ SPARKAPI SparkComponentArray SparkCreateComponentArray(SparkSize initial_sparse_
 	return array;
 }
 
-SPARKAPI SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
 	SparkComponentArray arr = (SparkComponentArray)handle;
 	if (!arr)
 		return;
@@ -5766,9 +5788,16 @@ SPARKAPI SparkVoid __SparkDestroyComponentArray(SparkHandle handle) {
 	SparkFree(arr);
 }
 
-SPARKAPI SparkVoid __SparkDestroyQueryCache(SparkQueryCache query_cache) {
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyQueryCache(SparkQueryCache query_cache) {
 	SparkDestroyAtomicVector(query_cache->entities);
 	SparkFree(query_cache);
+}
+
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyQueryCacheQueries(SparkEcs ecs) {
+	for (SparkSize i = 0; i < ecs->query_caches->size; i++) {
+		SparkQueryCache cache = ecs->query_caches->elements[i];
+		SparkFree(cache->query);
+	}
 }
 
 SPARKAPI SparkEcs SparkCreateEcs(SparkEventHandler event_handler) {
@@ -5803,6 +5832,7 @@ SPARKAPI SparkVoid SparkDestroyEcs(SparkEcs ecs) {
 	SparkDestroyVector(ecs->entities);
 	SparkDestroyVector(ecs->systems);
 	SparkDestroyStack(ecs->recycled_ids);
+	__SparkDestroyQueryCacheQueries(ecs);
 	SparkDestroyVector(ecs->query_caches);
 	SparkFree(ecs->signatures);
 	SparkDestroyAllocator(ecs->allocator);
@@ -5923,11 +5953,7 @@ SPARKAPI SPARKSTATIC SparkVoid UpdateQueryCachesForEntity(SparkEcs ecs, SparkEnt
 		}
 
 		if (!old_match && new_match) {
-			// Add entity to cache->entities if not already there
-			SparkLockMutex(cache->entities->mutex);
-			// Just push back since we don't guarantee order
-			SparkPushBackVector(cache->entities->vector, (SparkHandle)(uintptr_t)entity_id);
-			SparkUnlockMutex(cache->entities->mutex);
+			SparkPushBackAtomicVector(cache->entities, entity_id);
 			cache->version = ecs->version;
 		}
 		else if (old_match && !new_match) {
@@ -8395,7 +8421,9 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 			}
 			else {
 				// Synchronous handler; no need to adjust ref_count
+				SparkLockAllMutexes(event_handler->application);
 				function->function(event_handler->application, event);
+				SparkUnlockAllMutexes(event_handler->application);
 			}
 		}
 	}
@@ -8431,7 +8459,9 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 			}
 			else {
 				// Synchronous handling
+				SparkLockAllMutexes(event_handler->application);
 				query_handler->function(event_handler->application, matching_entities, event);
+				SparkUnlockAllMutexes(event_handler->application);
 			}
 
 			SparkDestroyAtomicVector(matching_entities);
@@ -10023,7 +10053,9 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 		}
 		else {
 			// Run directly
+			SparkLockAllMutexes(app);
 			function->function(app);
+			SparkUnlockAllMutexes(app);
 		}
 	}
 
@@ -10050,7 +10082,9 @@ SPARKAPI SPARKSTATIC SparkVoid __SparkRunUpdateFunctions(SparkApplication app) {
 		}
 		else {
 			// Run directly
+			SparkLockAllMutexes(app);
 			handler->function(app, matching_entities);
+			SparkUnlockAllMutexes(app);
 		}
 
 		SparkDestroyAtomicVector(matching_entities);

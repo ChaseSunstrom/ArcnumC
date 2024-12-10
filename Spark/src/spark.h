@@ -182,7 +182,9 @@
 
 #include "spark_defines.h"
 #include "spark_types.h"
+#ifdef SPARK_DEFINE_ALIASES
 #include "spark_aliases.h"
+#endif
 #include "spark_assert.h"
 #include "spark_shader.h"
 #include "spark_util.h"
@@ -935,6 +937,9 @@ SPARKAPI SparkAtomicVector SPARKCALL SparkDefaultAtomicVector();
 SPARKAPI SparkAtomicVector SPARKCALL SparkCreateAtomicVector(SparkSize capacity,
 	SparkAllocator allocator,
 	SparkFreeFunction destructor);
+SPARKAPI SparkSize SPARKCALL SparkGetSizeAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkSize SPARKCALL SparkGetCapacityAtomicVector(SparkAtomicVector vector);
+SPARKAPI SparkHandle* SPARKCALL SparkGetElementsAtomicVector(SparkAtomicVector vector);
 SPARKAPI SparkAtomicVector SPARKCALL SparkMemcpyIntoAtomicVector(SparkSize size, SparkHandle* elements, SparkAllocator allocator, SparkFreeFunction destructor);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyAtomicVector(SparkAtomicVector vector);
 SPARKAPI SparkAtomicVector SPARKCALL SparkCopyAtomicVector(SparkAtomicVector vector);

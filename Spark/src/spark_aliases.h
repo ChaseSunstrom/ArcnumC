@@ -3,7 +3,7 @@
 
 #include "spark_types.h"
 
-#if defined(SPARK_DEFINE_BASIC_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+/* Basic Aliases */
 
 typedef SparkU8 u8;
 typedef SparkI8 i8;
@@ -33,9 +33,7 @@ typedef SparkDuration duration_t;
 typedef SparkFrequency frequency_t;
 typedef SparkRate rate_t;
 
-#endif
-
-#if defined(SPARK_DEFINE_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+/* Additional Aliases */
 
 typedef SparkType Type;
 typedef SparkError Error;
@@ -133,6 +131,7 @@ typedef SparkFileSerializer FileSerializer;
 typedef SparkFileDeserializer FileDeserializer;
 typedef SparkApplication Application;
 
+/* Template-like macros for containers */
 #define Vector(type) SparkVector
 #define List(type) SparkList
 #define Map(key, value) SparkMap
@@ -142,9 +141,7 @@ typedef SparkApplication Application;
 #define Queue(type) SparkQueue
 #define Stack(type) SparkStack
 
-#endif
-
-#if defined(SPARK_DEFINE_FUNCTION_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+/* Function Aliases */
 
 #define Log SparkLogImpl
 
@@ -400,7 +397,6 @@ typedef SparkApplication Application;
 #define AddStartFunctionApplication SparkAddStartFunctionApplication
 #define AddUpdateFunctionApplication SparkAddUpdateFunctionApplication
 #define AddStopFunctionApplication SparkAddStopFunctionApplication
-#define AddEventFunctionApplication SparkAddEventFunctionApplication
 #define AddQueryFunctionApplication SparkAddQueryFunctionApplication
 #define AddQueryEventFunctionApplication SparkAddQueryEventFunctionApplication
 #define CreateResourceApplication SparkCreateResourceApplication
@@ -409,9 +405,7 @@ typedef SparkApplication Application;
 #define AddResourceManagerApplication SparkAddResourceManagerApplication
 #define RemoveResourceApplication SparkRemoveResourceApplication
 
-#endif
-
-#if defined(SPARK_DEFINE_MACRO_ALIASES) || defined(SPARK_DEFINE_ALL_ALIASES)
+/* Macro Aliases */
 
 #define LogDebug SPARK_LOG_DEBUG
 #define LogInfo SPARK_LOG_INFO
@@ -446,9 +440,7 @@ typedef SparkApplication Application;
 
 #define ArrayArg SPARK_ARRAY_ARG
 #define NoIndices SPARK_NULL, 0
-#define MakeVertex(x, y, z, nx, ny, nz, u, v)                                  \
-  SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)
+#define MakeVertex(x, y, z, nx, ny, nz, u, v) SPARK_MAKE_VERTEX(x, y, z, nx, ny, nz, u, v)
 
-#endif
+#endif /* __SPARK_ALIASES_H__ */
 
-#endif
