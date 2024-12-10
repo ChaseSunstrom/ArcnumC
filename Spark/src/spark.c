@@ -5662,7 +5662,6 @@ SPARKAPI SparkResult SparkSendToServer(SparkClient client,
 }
 
 #pragma endregion
-
 #pragma region ECS
 
 #define MAX_COMPONENT_TYPES 64
@@ -5702,16 +5701,6 @@ SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 
 SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
 	static SparkU64 next_bit = 1;
-	static SparkMutex bit_mutex = { 0 };
-	static SparkBool initialized = SPARK_FALSE;
-
-	if (!initialized)
-	{
-		SparkInitMutex(bit_mutex);
-		initialized = SPARK_TRUE;
-	}
-
-	SparkLockMutex(bit_mutex);
 
 	if (!COMPONENT_BITS)
 		COMPONENT_BITS = SparkCreateHashMap(16, SparkStringHash, SparkStringCompare, NULL, NULL, NULL);
@@ -5719,7 +5708,6 @@ SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
 	SparkU64 bit = SparkGetElementHashMap(COMPONENT_BITS, (SparkHandle)component_type, strlen(component_type));
 	if (bit)
 	{
-		SparkUnlockMutex(bit_mutex);
 		return bit;
 	}
 
@@ -5728,12 +5716,13 @@ SPARKAPI SparkU64 GetComponentBit(SparkConstString component_type) {
 
 	SparkInsertHashMap(COMPONENT_BITS, (SparkHandle)component_type, strlen(component_type), (SparkHandle)(uintptr_t)new_bit);
 
-	SparkUnlockMutex(bit_mutex);
-
 	return new_bit;
 }
 
 SPARKAPI SparkVoid SparkInvalidateQueryCaches(SparkEcs ecs) {
+	// This function remains for compatibility,
+	// but we won't call it after every add/remove component anymore.
+	// We will leave it as is if needed for explicit invalidations.
 	SparkClearVector(ecs->query_caches);
 }
 
@@ -5921,11 +5910,49 @@ SPARKAPI SparkComponent SparkCreateComponent(SparkConstString type,
 	return component;
 }
 
+SPARKAPI SPARKSTATIC SparkVoid UpdateQueryCachesForEntity(SparkEcs ecs, SparkEntity entity_id, SparkSignature old_signature, SparkSignature new_signature) {
+	for (SparkSize i = 0; i < ecs->query_caches->size; i++) {
+		SparkQueryCache cache = ecs->query_caches->elements[i];
+		SparkSignature query_sig = cache->query->signature;
+		// Check if entity matched query before
+		SparkBool old_match = ((old_signature & query_sig) == query_sig) ? SPARK_TRUE : SPARK_FALSE;
+		SparkBool new_match = ((new_signature & query_sig) == query_sig) ? SPARK_TRUE : SPARK_FALSE;
+
+		if (old_match == new_match) {
+			continue;
+		}
+
+		if (!old_match && new_match) {
+			// Add entity to cache->entities if not already there
+			SparkLockMutex(cache->entities->mutex);
+			// Just push back since we don't guarantee order
+			SparkPushBackVector(cache->entities->vector, (SparkHandle)(uintptr_t)entity_id);
+			SparkUnlockMutex(cache->entities->mutex);
+			cache->version = ecs->version;
+		}
+		else if (old_match && !new_match) {
+			SparkLockMutex(cache->entities->mutex);
+			for (SparkSize j = 0; j < cache->entities->vector->size; j++) {
+				SparkEntity cached_entity = (SparkEntity)(uintptr_t)cache->entities->vector->elements[j];
+				if (cached_entity == entity_id) {
+					SparkRemoveVector(cache->entities->vector, j);
+					break;
+				}
+			}
+			SparkUnlockMutex(cache->entities->mutex);
+			cache->version = ecs->version;
+		}
+	}
+}
+
 SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, SparkComponent component) {
 	if (!ecs || !component || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
 
 	component->entity = entity_id;
+
+	// Remember old signature
+	SparkSignature old_signature = ecs->signatures[entity_id];
 
 	// Get or create component array
 	SparkComponentArray component_array = SparkGetElementHashMap(
@@ -5938,7 +5965,6 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 		component_array = SparkCreateComponentArray(ecs->entity_count);
 		if (!component_array)
 		{
-			SparkUnlockMutex(ecs->mutex);
 			return SPARK_ERROR_OUT_OF_MEMORY;
 		}
 
@@ -5976,7 +6002,9 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 	// Update entity's signature
 	ecs->signatures[entity_id] |= GetComponentBit(component->type);
 	ecs->version++; // Increment ECS version
-	SparkInvalidateQueryCaches(ecs); // Invalidate outdated caches
+
+	// Update query caches for this entity only
+	UpdateQueryCachesForEntity(ecs, entity_id, old_signature, ecs->signatures[entity_id]);
 
 	SparkEventDataComponentAdded event_data = SparkAllocate(sizeof(struct SparkEventDataComponentAddedT));
 	event_data->ecs = ecs;
@@ -5992,6 +6020,9 @@ SPARKAPI SparkResult SparkAddComponent(SparkEcs ecs, SparkEntity entity_id, Spar
 SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, SparkConstString component_type, SparkConstString component_name) {
 	if (!ecs || !component_type || entity_id == SPARK_INVALID)
 		return SPARK_ERROR_INVALID_ARGUMENT;
+
+	// Remember old signature
+	SparkSignature old_signature = ecs->signatures[entity_id];
 
 	SparkComponentArray component_array = (SparkComponentArray)SparkGetElementHashMap(
 		ecs->components,
@@ -6017,6 +6048,7 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, S
 
 	// Swap with last component
 	SparkSize last_index = component_array->size - 1;
+	SparkComponent component_to_destroy = component_array->dense[index]; // Store this now before we swap
 	if (index != last_index) {
 		component_array->dense[index] = component_array->dense[last_index];
 		component_array->entities[index] = component_array->entities[last_index];
@@ -6029,10 +6061,11 @@ SPARKAPI SparkResult SparkRemoveComponent(SparkEcs ecs, SparkEntity entity_id, S
 	// Update entity's signature
 	ecs->signatures[entity_id] &= ~GetComponentBit(component_type);
 	ecs->version++; // Increment ECS version
-	SparkInvalidateQueryCaches(ecs); // Invalidate outdated caches
+
+	// Update query caches for this entity only
+	UpdateQueryCachesForEntity(ecs, entity_id, old_signature, ecs->signatures[entity_id]);
 
 	// Destroy the component
-	SparkComponent component_to_destroy = component_array->dense[last_index];
 	if (component_to_destroy->destructor)
 		component_to_destroy->destructor(component_to_destroy->data);
 
@@ -6086,7 +6119,7 @@ SPARKAPI SparkResult SparkAddSystem(SparkEcs ecs, SparkSystem system) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 
 	SparkPushBackVector(ecs->systems, system);
-	
+
 	return SPARK_SUCCESS;
 }
 
@@ -8377,7 +8410,7 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 		for (SparkSize i = 0; i < handlers->size; ++i) {
 			SparkQueryEventHandlerFunction query_handler = handlers->elements[i];
 			SparkQuery query = query_handler->query;
-			SparkAtomicVector matching_entities = SparkCopyAtomicVector(SparkPerformQuery(event_handler->ecs, query));
+			SparkAtomicVector matching_entities = SparkPerformQuery(event_handler->ecs, query);
 
 			if (query_handler->thread_settings.first) {
 				// Increment event ref_count for asynchronous handling
@@ -8385,7 +8418,7 @@ SPARKAPI SparkResult SparkDispatchEvent(SparkEventHandler event_handler,
 
 				SparkQueryEventTaskArg task_arg = SparkAllocate(sizeof(struct SparkQueryEventTaskArgT));
 				task_arg->app = event_handler->application;
-				task_arg->entities = matching_entities;
+				task_arg->entities = SparkCopyAtomicVector(matching_entities);
 				task_arg->function = query_handler->function;
 				task_arg->event = event;
 

@@ -95,7 +95,7 @@ typedef struct VelocityComponent {
 #define VEL_COMPONENT "VelocityComponent"
 
 void CreateEntities(Application app) {
-	for (size_t i = 0; i < 2000; i++) {
+	for (size_t i = 0; i < 2000000; i++) {
 		Ecs ecs = app->ecs;
 		Entity entity = CreateEntity(ecs);
 
@@ -143,7 +143,7 @@ void QueryEntitiesWithPosition(Application app, AtomicVector query) {
 
 	SparkLockMutex(query->mutex);
 
-	if (query->vector->size % 1000 == 0)
+	if (query->vector->size % 10000 == 0)
 		LogInfo("Entities with position: %d", query->vector->size);
 
 	SparkUnlockMutex(query->mutex);
@@ -176,13 +176,13 @@ i32 main() {
 	LogInfo("Position and Velocity bit: %zu, %zu", GetComponentBit(POS_COMPONENT), GetComponentBit(VEL_COMPONENT));
 
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
-	AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
+	//AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);
 	AddStartFunctionApplication(app, ResourceCreater, SPARK_BLOCKED_PARRALLELISM);
 	AddStartFunctionApplication(app, CreateShaders, SPARK_BLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED, ExitOnEscape, SPARK_UNBLOCKED_PARRALLELISM);
 	AddEventFunctionApplication(app, SPARK_EVENT_KEY_PRESSED | SPARK_EVENT_MOUSE_MOVED, LogKeyPress, SPARK_UNBLOCKED_PARRALLELISM);
-	AddUpdateFunctionApplication(app, CreateEntitiesOnFrame, SPARK_UNBLOCKED_PARRALLELISM);
+	//AddUpdateFunctionApplication(app, CreateEntitiesOnFrame, SPARK_UNBLOCKED_PARRALLELISM);
 
 	StartApplication(app);
 
