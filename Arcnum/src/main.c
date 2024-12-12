@@ -144,11 +144,11 @@ void QueryEntitiesWithPosition(Application app, AtomicVector query) {
 void LogKeyPress(Application app, Event event) {
 	if (event.type == SPARK_EVENT_MOUSE_MOVED) {
 		EventDataMouseMoved mouse_data = event.data;
-		SPARK_LOG_INFO("Mouse Moved  X: %f   Y: %f", mouse_data->xpos, mouse_data->ypos);
+		LogInfo("Mouse Moved  X: %f   Y: %f", mouse_data->xpos, mouse_data->ypos);
 	}
 	else if (event.type == SPARK_EVENT_KEY_PRESSED) {
 		EventDataKeyPressed key_data = event.data;
-		SPARK_LOG_INFO("Key Pressed: %s", KeyToString(key_data->key));
+		LogInfo("Key Pressed: %s", KeyToString(key_data->key));
 	}
 }
 
@@ -167,7 +167,6 @@ i32 main() {
 	Query position_query = SparkCreateQuery(ArrayArg(position_types));
 
 	LogInfo("Position and Velocity bit: %zu, %zu", GetComponentBit(POS_COMPONENT), GetComponentBit(VEL_COMPONENT));
-
 	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	//AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);

@@ -5694,15 +5694,14 @@ SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	// Check if query result is cached
 	for (SparkSize i = 0; i < ecs->query_caches->size; i++) {
 		SparkQueryCache cache = ecs->query_caches->elements[i];
-		if (cache->query->signature == query->signature && cache->version == ecs->version)
-		{
+		if (cache->query->signature == query->signature && cache->version == ecs->version) {
 			SparkUnlockMutex(ecs->mutex);
 			return SparkCopyAtomicVector(cache->entities); // Return cached result
 		}
 	}
 
 	// Perform the query
-	SparkAtomicVector matching_entities = ecs->entity_count == 0 ? SparkDefaultAtomicVector() : SparkCreateAtomicVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
+	SparkAtomicVector matching_entities = SparkCreateAtomicVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
 	for (SparkEntity entity = 0; entity < ecs->entity_count; ++entity) {
 		if ((ecs->signatures[entity] & query->signature) == query->signature) {
 			SparkPushBackAtomicVector(matching_entities, (SparkHandle)(uintptr_t)entity);

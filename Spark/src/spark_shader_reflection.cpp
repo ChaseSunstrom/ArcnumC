@@ -13,7 +13,6 @@
 #define strdup _strdup
 #endif
 
-
 SPARKAPI  const SparkU32 REFLECTION_FILE_VERSION = 1;
 
 // Extract arrays
