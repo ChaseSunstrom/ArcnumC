@@ -93,25 +93,16 @@ typedef struct VelocityComponent {
 #define VEL_COMPONENT "VelocityComponent"
 
 void CreateEntities(Application app) {
-	for (size_t i = 0; i < 100000; i++) {
-		Ecs ecs = app->ecs;
-		Entity entity = CreateEntity(ecs);
+	Ecs ecs = app->ecs;
+	Entity entity = CreateEntity(ecs);
 
-		PositionComponent* pos = malloc(sizeof(PositionComponent));
-		pos->pos = (SparkIVec3){ i, i, i };
+	SparkComponent transform = SparkDefaultTransformComponent(TransformComponent);
+	SparkComponent mesh = SparkCreateStaticMeshComponent("Cube");
+	SparkComponent material = SparkCreateMaterialComponent("Material");
 
-		SparkComponent pos_component = CreateComponent(POS_COMPONENT, "Position", pos, free);
-		AddComponent(ecs, entity, pos_component);
-
-		if (i < 1000) {
-			VelocityComponent* vel = malloc(sizeof(VelocityComponent));
-			vel->vel = (SparkIVec3){ i, i, i };
-
-			SparkComponent vel_component = CreateComponent(VEL_COMPONENT, "Velocity", vel, free);
-
-			AddComponent(ecs, entity, vel_component);
-		}
-	}
+	AddComponent(ecs, entity, transform);
+	AddComponent(ecs, entity, mesh);
+	AddComponent(ecs, entity, material);
 }
 
 void QueryEntities(Application app, AtomicVector query) {
@@ -167,7 +158,7 @@ i32 main() {
 	Query position_query = SparkCreateQuery(ArrayArg(position_types));
 
 	LogInfo("Position and Velocity bit: %zu, %zu", GetComponentBit(POS_COMPONENT), GetComponentBit(VEL_COMPONENT));
-	AddStartFunctionApplication(app, CreateEntities, SPARK_UNBLOCKED_PARRALLELISM);
+	AddStartFunctionApplication(app, CreateEntities, SPARK_BLOCKED_PARRALLELISM);
 	//AddQueryFunctionApplication(app, movement_query, QueryEntities, SPARK_UNBLOCKED_PARRALLELISM);
 	AddQueryFunctionApplication(app, position_query, QueryEntitiesWithPosition, SPARK_UNBLOCKED_PARRALLELISM);
 	AddStartFunctionApplication(app, ResourceCreater, SPARK_BLOCKED_PARRALLELISM);

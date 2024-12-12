@@ -2594,7 +2594,7 @@ SPARKAPI SparkVoid SparkDestroyAllocator(SparkAllocator allocator) {
 	if (allocator)
 		allocator->ref_count--;
 
-	if (!allocator->ref_count) 
+	if (!allocator->ref_count)
 		allocator->free(allocator);
 }
 
@@ -2954,7 +2954,7 @@ SPARKAPI SparkAtomicVector  SparkCreateAtomicVector(SparkSize capacity,
 	if (!allocator) {
 		allocator = SparkDefaultAllocator();
 	}
-	
+
 	SparkAtomicVector atomic_vector = allocator->allocate(sizeof(struct SparkAtomicVectorT));
 	atomic_vector->ref_count = allocator->allocate(sizeof(SparkSize));
 	*atomic_vector->ref_count = 1;
@@ -3176,7 +3176,7 @@ SPARKAPI SparkVoid SparkDestroyList(SparkList list) {
 
 	allocator->free(list);
 
-		SparkDestroyAllocator(allocator);
+	SparkDestroyAllocator(allocator);
 }
 
 SPARKAPI SparkHandle SparkGetElementList(SparkList list, SparkIndex index) {
@@ -3658,7 +3658,7 @@ SPARKAPI SparkVoid SparkDestroyHashMap(SparkHashMap hashmap) {
 	allocator->free(hashmap->buckets);
 	allocator->free(hashmap);
 
-		SparkDestroyAllocator(allocator);
+	SparkDestroyAllocator(allocator);
 }
 
 SPARKAPI SparkResult SparkInsertHashMap(SparkHashMap hashmap, SparkHandle key,
@@ -3866,7 +3866,7 @@ SPARKAPI SparkHashSet SparkCreateHashSet(SparkSize capacity,
 		SPARK_LOG_ERROR(
 			"Failed to allocate memory for hashset elements!");
 		allocator->free(hashset);
-			SparkDestroyAllocator(allocator);
+		SparkDestroyAllocator(allocator);
 		return SPARK_NULL;
 	}
 
@@ -3920,7 +3920,7 @@ SPARKAPI SparkVoid SparkDestroyHashSet(SparkHashSet hashset) {
 	allocator->free(hashset);
 	hashset = SPARK_NULL;
 
-		SparkDestroyAllocator(allocator);
+	SparkDestroyAllocator(allocator);
 }
 
 SPARKAPI SPARKSTATIC SparkResult SparkHashSetResize(SparkHashSet hashset,
@@ -4150,7 +4150,7 @@ SPARKAPI SparkQueue SparkCreateQueue(SparkSize capacity,
 		SPARK_LOG_ERROR(
 			"Failed to allocate memory for queue elements!");
 		allocator->free(queue);
-			SparkDestroyAllocator(allocator);
+		SparkDestroyAllocator(allocator);
 		return SPARK_NULL;
 	}
 	return queue;
@@ -4180,7 +4180,7 @@ SPARKAPI SparkVoid SparkDestroyQueue(SparkQueue queue) {
 
 	allocator->free(queue);
 
-		SparkDestroyAllocator(allocator);
+	SparkDestroyAllocator(allocator);
 }
 
 SPARKAPI SparkResult SparkEnqueueQueue(SparkQueue queue, SparkHandle element) {
@@ -4317,7 +4317,7 @@ SPARKAPI SparkStack SparkCreateStack(SparkSize capacity,
 		SPARK_LOG_ERROR(
 			"Failed to allocate memory for stack elements!");
 		allocator->free(stack);
-			SparkDestroyAllocator(allocator);
+		SparkDestroyAllocator(allocator);
 		return SPARK_NULL;
 	}
 	return stack;
@@ -4346,7 +4346,7 @@ SPARKAPI SparkVoid SparkDestroyStack(SparkStack stack) {
 
 	allocator->free(stack);
 
-		SparkDestroyAllocator(allocator);
+	SparkDestroyAllocator(allocator);
 }
 
 SPARKAPI SparkResult SparkPushStack(SparkStack stack, SparkHandle element) {
@@ -4982,7 +4982,7 @@ SPARKAPI SparkThreadPool SparkCreateThreadPool(SparkSize thread_count) {
 		pthread_create(&pool->threads[i], SPARK_NULL, __SparkThreadPoolWorker,
 			pool);
 #endif
-		}
+	}
 
 	return pool;
 }
@@ -5016,7 +5016,7 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 #else
 		pthread_join(pool->threads[i], SPARK_NULL);
 #endif
-		}
+	}
 
 	SparkDestroyVector(pool->shutdown_callbacks);
 	SparkDestroyVector(pool->shutdown_callback_args);
@@ -5028,7 +5028,7 @@ SPARKAPI SparkVoid SparkDestroyThreadPool(SparkThreadPool pool) {
 	SparkDestroyCondition(pool->pending_task_cond);
 	SparkFree(pool->threads);
 	SparkFree(pool);
-	}
+}
 
 SPARKAPI SparkVoid SparkWaitThreadPool(SparkThreadPool pool) {
 	SparkLockMutex(pool->pending_task_mutex);
@@ -5701,7 +5701,7 @@ SPARKAPI SparkAtomicVector SparkPerformQuery(SparkEcs ecs, SparkQuery query) {
 	}
 
 	// Perform the query
-	SparkAtomicVector matching_entities = SparkCreateAtomicVector(ecs->entity_count, SPARK_NULL, SPARK_NULL);
+	SparkAtomicVector matching_entities = SparkCreateAtomicVector(2, SPARK_NULL, SPARK_NULL);
 	for (SparkEntity entity = 0; entity < ecs->entity_count; ++entity) {
 		if ((ecs->signatures[entity] & query->signature) == query->signature) {
 			SparkPushBackAtomicVector(matching_entities, (SparkHandle)(uintptr_t)entity);
@@ -5747,7 +5747,7 @@ SPARKAPI SparkVoid SparkInvalidateQueryCaches(SparkEcs ecs) {
 	SparkClearVector(ecs->query_caches);
 }
 
-SPARKAPI SparkQuery SparkCreateQuery(SparkConstString* component_types, SparkSize component_count) {
+SPARKAPI SparkQuery SparkCreateQuery(SparkConstString * component_types, SparkSize component_count) {
 	SparkQuery query = SparkAllocate(sizeof(struct SparkQueryT));
 	query->signature = 0;
 	for (SparkSize i = 0; i < component_count; ++i) {
@@ -6311,7 +6311,6 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyDynamicModelComponent(SparkDynamicModel
 	SparkFree(comp);
 }
 
-
 #pragma endregion
 
 #pragma region VULKAN
@@ -6350,14 +6349,6 @@ struct VulkanSwapChainSupportDetails {
 	SparkU32 formats_size;
 	SparkU32 present_modes_size;
 };
-
-typedef struct VulkanMemoryAllocationT {
-	VkDevice device;
-	VkBuffer buffer;
-	VkDeviceMemory memory;
-	SparkHandle raw_data;
-	SparkU32 size;
-} *VulkanMemoryAllocation;
 
 struct VulkanUniformBufferObject {
 	SparkMat4 model;
@@ -6409,26 +6400,29 @@ SPARKAPI SPARKSTATIC VkVertexInputBindingDescription __SparkGetBindingDescriptio
 	return binding_description;
 }
 
-SPARKAPI SPARKSTATIC VkVertexInputAttributeDescription* __SparkGetAttributeDescriptions() {
-	VkVertexInputAttributeDescription* attribute_descriptions =
-		SparkAllocate(3 * sizeof(VkVertexInputAttributeDescription));
+SPARKAPI SPARKSTATIC SparkVertexInputAttributeDescriptors __SparkCreateVertexInputAttributeDescriptors(
+	SparkVertexInputAttribute* attributes,
+	SparkSize attributes_size
+) {
+	SparkVertexInputAttributeDescriptors descriptors = SparkAllocate(sizeof(struct SparkVertexInputAttributeDescriptorsT));
+	descriptors->attributes = attributes;
+	descriptors->size = attributes_size;
+	return descriptors;
+}
 
-	attribute_descriptions[0].binding = 0;
-	attribute_descriptions[0].location = 0;
-	attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attribute_descriptions[0].offset = offsetof(SparkVertex, position);
+SPARKAPI SPARKSTATIC SparkVoid __SparkDestroyVertexInputAttributeDescriptors(SparkVertexInputAttributeDescriptors descriptors) {
+	SparkFree(descriptors->attributes);
+	SparkFree(descriptors);
+}
 
-	attribute_descriptions[1].binding = 0;
-	attribute_descriptions[1].location = 1;
-	attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attribute_descriptions[1].offset = offsetof(SparkVertex, normal);
+SPARKAPI SparkVertexInputAttribute* SparkCreateVertexInputAttributes(
+	SparkVertexInputAttribute attributes[],
+	SparkSize attributes_size
+) {
+	SparkVertexInputAttribute* descriptions = SparkAllocate(attributes_size * sizeof(SparkVertexInputAttribute));
+	memcpy(descriptions, attributes, attributes_size * sizeof(SparkVertexInputAttribute));
 
-	attribute_descriptions[2].binding = 0;
-	attribute_descriptions[2].location = 2;
-	attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-	attribute_descriptions[2].offset = offsetof(SparkVertex, texcoord);
-
-	return attribute_descriptions;
+	return __SparkCreateVertexInputAttributeDescriptors(descriptions, attributes_size);
 }
 
 SPARKAPI SPARKSTATIC SparkBool
@@ -7138,7 +7132,33 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateRenderPass(SparkWindow window) {
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication app, SparkGraphicsPipelineConfig config) {
 	SparkWindow window = app->window;
 	VkVertexInputBindingDescription binding_description = __SparkGetBindingDescription(VK_VERTEX_INPUT_RATE_VERTEX);
-	VkVertexInputAttributeDescription* attribute_descriptions = __SparkGetAttributeDescriptions();
+
+	SparkVertexInputAttribute attributes[] = {
+		{
+			.binding = 0,
+			.location = 0,
+			.format = SPARK_FORMAT_R32G32B32_SFLOAT,
+			.offset = 0
+		},
+		{
+			.binding = 0,
+			.location = 1,
+			.format = SPARK_FORMAT_R32G32B32_SFLOAT,
+			.offset = offsetof(SparkVertex, normal),
+		},
+		{
+			.binding = 0,
+			.location = 2,
+			.format = SPARK_FORMAT_R32G32_SFLOAT,
+			.offset = offsetof(SparkVertex, texcoord),
+		}
+	};
+
+	SparkVertexInputAttributeDescriptors attribute_descriptions = SparkCreateVertexInputAttributes(
+		SPARK_ARRAY_ARG(
+			attributes
+		)
+	);
 
 	VkPipelineShaderStageCreateInfo shader_stages[5];
 	uint32_t shader_stage_count = 0;
@@ -7194,7 +7214,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication 
 	vertex_input_info.vertexBindingDescriptionCount = 1;
 	vertex_input_info.vertexAttributeDescriptionCount = 3;
 	vertex_input_info.pVertexBindingDescriptions = &binding_description;
-	vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions;
+	vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions->attributes;
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = { 0 };
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -7245,7 +7265,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication 
 
 		if (vkCreatePipelineLayout(window->device, &pipeline_layout_info, SPARK_NULL, &config->pipeline_layout) != VK_SUCCESS) {
 			SPARK_LOG_ERROR("Failed to create pipeline layout!");
-			SparkFree(attribute_descriptions);
+			__SparkDestroyVertexInputAttributeDescriptors(attribute_descriptions);
 			return SPARK_ERROR_INVALID;
 		}
 		config->owns_pipeline_layout = SPARK_TRUE;
@@ -7282,11 +7302,11 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateGraphicsPipeline(SparkApplication 
 
 	if (vkCreateGraphicsPipelines(window->device, VK_NULL_HANDLE, 1, &pipeline_info, SPARK_NULL, &config->pipeline) != VK_SUCCESS) {
 		SPARK_LOG_ERROR("Failed to create graphics pipeline!");
-		SparkFree(attribute_descriptions);
+		__SparkDestroyVertexInputAttributeDescriptors(attribute_descriptions);
 		return SPARK_ERROR_INVALID;
 	}
 
-	SparkFree(attribute_descriptions);
+	__SparkDestroyVertexInputAttributeDescriptors(attribute_descriptions);
 
 	return SPARK_SUCCESS;
 }
@@ -7342,11 +7362,24 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 	SparkU32 image_index,
 	SparkVector gps
 ) {
+	static SparkBool initialized_query = SPARK_FALSE;
+	static SparkQuery entity_query = SPARK_NULL;
+
+	if (!initialized_query) {
+		SparkConstString params[] = { SPARK_TRANSFORM_COMPONENT, SPARK_STATIC_MESH_COMPONENT, SPARK_MATERIAL_COMPONENT };
+		entity_query = SparkCreateQuery(SPARK_ARRAY_ARG(params));
+		initialized_query = SPARK_TRUE;
+	}
+
+	SparkAtomicVector entity_res = SparkPerformQuery(app->ecs, entity_query);
+
 	SparkWindow window = app->window;
+	SparkEcs ecs = app->ecs;
 	VkCommandBufferBeginInfo begin_info = { 0 };
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
+		SparkDestroyAtomicVector(entity_res);
 		SPARK_LOG_ERROR("Failed to begin recording command buffer!");
 		return SPARK_ERROR_INVALID;
 	}
@@ -7360,6 +7393,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 
 	SparkResourceManager scene_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SCENE, strlen(SPARK_RESOURCE_TYPE_SCENE));
 	SparkResourceManager smesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
+	SparkResourceManager material_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_MATERIAL, strlen(SPARK_RESOURCE_TYPE_MATERIAL));
 
 	SparkScene scene = scene_manager->current_resource->data;
 	SparkVec4 sky_color = scene->sky_color;
@@ -7369,15 +7403,18 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 
 	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-	SparkVector smeshes = SparkGetAllValuesHashMap(smesh_manager->resources);
-	SparkStaticMesh mesh = ((SparkResource)smeshes->elements[0])->data;
+	SparkResource resource = gps->elements[0];
+	SparkGraphicsPipelineConfig gp = resource->data;
 
-	for (SparkSize i = 0; i < gps->size; i++) {
-		SparkResource resource = gps->elements[i];
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
 
-		SparkGraphicsPipelineConfig gp = resource->data;
+	for (SparkSize i = 0; i < SparkGetSizeAtomicVector(entity_res); i++) {
+		SparkEntity entity = SparkGetElementAtomicVector(entity_res, i);
+		SparkComponent transform_comp = SparkGetComponent(ecs, entity, SPARK_TRANSFORM_COMPONENT, strlen(SPARK_TRANSFORM_COMPONENT));
+		SparkComponent mesh_comp = SparkGetComponent(ecs, entity, SPARK_STATIC_MESH_COMPONENT, strlen(SPARK_STATIC_MESH_COMPONENT));
+		SparkComponent material_comp = SparkGetComponent(ecs, entity, SPARK_MATERIAL_COMPONENT, strlen(SPARK_MATERIAL_COMPONENT));
 
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
+		SparkStaticMesh mesh = SparkGetResource(smesh_manager, mesh_comp->data)->data;
 
 		VkViewport viewport = { 0 };
 		viewport.width = (SparkF32)window->swap_chain_extent->width;
@@ -7411,9 +7448,9 @@ SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
 		vkCmdDrawIndexed(command_buffer, mesh->index_count, 1, 0, 0, 0);
 	}
 
-	SparkDestroyVector(smeshes);
-
 	vkCmdEndRenderPass(command_buffer);
+
+	SparkDestroyAtomicVector(entity_res);
 
 	if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
 		SPARK_LOG_ERROR("Failed to record command buffer!");
@@ -7780,8 +7817,8 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateImage(
 	VkImageType image_type,
 	VkSampleCountFlagBits samples,
 	SparkU32 mip_levels,
-	VkImage * image,
-	VkDeviceMemory * image_memory
+	VkImage* image,
+	VkDeviceMemory* image_memory
 ) {
 	VkDevice device = app->window->device;
 
@@ -8514,7 +8551,7 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
 	if (event.timestamp) {
 		SparkFree(event.timestamp);
 	}
-		
+
 	if (event.ref_count) {
 		SparkFree(event.ref_count);
 	}
@@ -8525,8 +8562,8 @@ SPARKAPI SparkResult SparkDestroyEvent(SparkEvent event) {
 
 #pragma region FILE
 
-SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer * buffer,
-	SparkSize * capacity) {
+SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer* buffer,
+	SparkSize* capacity) {
 	if (!buffer || !capacity) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -8541,7 +8578,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkInitializeBuffer(SparkBuffer * buffer,
 
 // Ensure the buffer has enough capacity to hold additional data
 SPARKAPI SPARKSTATIC SparkResult
-__SparkEnsureCapacity(SparkBuffer * buffer, SparkSize * capacity,
+__SparkEnsureCapacity(SparkBuffer* buffer, SparkSize* capacity,
 	SparkSize current_size, SparkSize additional_size) {
 	if (!buffer || !capacity) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
@@ -8821,7 +8858,7 @@ SPARKAPI SparkResult SparkDeserializeRawData(SparkFileDeserializer deserializer,
 
 // Deserialize Data with Size Prefix
 SPARKAPI SparkResult SparkDeserializeData(SparkFileDeserializer deserializer,
-	SparkHandle * data, SparkSize * size) {
+	SparkHandle* data, SparkSize* size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -8909,8 +8946,8 @@ SPARKAPI SparkResult SparkDeserializeTrivial(SparkFileDeserializer deserializer,
 }
 
 SPARKAPI SparkResult SparkDeserializeString(SparkFileDeserializer deserializer,
-	SparkBuffer * data,
-	SparkSize * size) {
+	SparkBuffer* data,
+	SparkSize* size) {
 	if (!deserializer || !deserializer->data || !data) {
 		return SPARK_ERROR_INVALID_ARGUMENT; // Indicate invalid argument
 	}
@@ -8947,7 +8984,7 @@ SPARKAPI SparkResult SparkDeserializeString(SparkFileDeserializer deserializer,
 }
 
 SPARKAPI SparkResult SparkDeserializeVector(SparkFileDeserializer deserializer,
-	SparkVector * vector) {
+	SparkVector* vector) {
 	if (!deserializer || !deserializer->data || !vector) {
 		return SPARK_ERROR_INVALID_ARGUMENT;
 	}
@@ -9431,7 +9468,7 @@ __GlfwErrorCallback(SparkI32 error, SparkConstString description) {
 	SPARK_LOG_ERROR("GLFW Error (%d): %s", error, description);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow * window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow* window,
 	SparkI32 key,
 	SparkI32 scancode,
 	SparkI32 action,
@@ -9471,7 +9508,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetKeyCallback(GLFWwindow * window,
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow * window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow* window,
 	double xpos,
 	double ypos) {
 	SparkWindow data = glfwGetWindowUserPointer(window);
@@ -9485,7 +9522,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetCursorPosCallback(GLFWwindow * window,
 	SparkDispatchEvent(data->window_data->event_handler, event);
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow * window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow* window,
 	SparkI32 button,
 	SparkI32 action,
 	SparkI32 mods) {
@@ -9513,7 +9550,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetMouseButtonCallback(GLFWwindow * window,
 	}
 }
 
-SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow * window,
+SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow* window,
 	SparkF64 xoffset,
 	SparkF64 yoffset) {
 	SparkWindow data = glfwGetWindowUserPointer(window);
@@ -9528,7 +9565,7 @@ SPARKAPI SPARKSTATIC SparkVoid __GlfwSetScrollCallback(GLFWwindow * window,
 }
 
 SPARKAPI SPARKSTATIC SparkVoid __GlfwSetFramebufferResizeCallback(
-	GLFWwindow * window, SparkI32 width, SparkI32 height) {
+	GLFWwindow* window, SparkI32 width, SparkI32 height) {
 	SparkWindow data = window;
 	data->framebuffer_resized = SPARK_TRUE;
 }
@@ -9811,12 +9848,19 @@ SPARKAPI SparkVoid SparkDestroyDynamicMesh(SparkDynamicMesh mesh) {
 	SparkFree(mesh);
 }
 
+SPARKAPI SparkComponent SparkCreateStaticMeshComponent(SparkConstString mesh_name) {
+	return SparkCreateComponent(SPARK_STATIC_MESH_COMPONENT, mesh_name, mesh_name, SPARK_NULL);
+}
 
 #pragma endregion
 
 #pragma region MATERIAL
 
-SPARKAPI SparkMaterial SparkCreateMaterial() { return SPARK_NULL; }
+SPARKAPI SparkMaterial SparkCreateMaterial() { return SparkAllocate(sizeof(struct SparkMaterialT)); }
+
+SPARKAPI SparkComponent SparkCreateMaterialComponent(SparkConstString material_name) {
+	return SparkCreateComponent(SPARK_MATERIAL_COMPONENT, material_name, material_name, SPARK_NULL);
+}
 
 SPARKAPI SparkVoid SparkDestroyMaterial(SparkMaterial material) {
 	SparkFree(material);
@@ -9861,9 +9905,9 @@ SPARKAPI SparkShader SparkCreateShader(SparkApplication app,
 }
 
 SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
-												  SparkShaderType type,
-												  SparkConstString filename,
-												  SparkConstString entry) {
+	SparkShaderType type,
+	SparkConstString filename,
+	SparkConstString entry) {
 	SparkShader shader = SparkAllocate(sizeof(struct SparkShaderT));
 	shader->shader_data = SparkAllocate(sizeof(struct SparkShaderReflectionDataT));
 	shader->type = type;

@@ -1180,6 +1180,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyTexture(SparkTexture texture);
 
 SPARKAPI SparkStaticMesh SparkCreateStaticMesh(SparkApplication app, SparkVertex vertices[],
 	SparkU32 vertices_size);
+SPARKAPI SparkComponent SparkCreateStaticMeshComponent(SparkConstString mesh_name);
 SPARKAPI SparkStaticMesh SPARKCALL
 SparkCreateStaticMeshI(SparkApplication app, SparkVertex vertices[], SparkU32 vertices_size,
 	SparkU32 indices[], SparkU32 indices_size);
@@ -1335,6 +1336,7 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyFont(SparkFont font);
 SPARKAPI SparkVoid SPARKCALL SparkRenderText(SparkText* text);
 
 SPARKAPI SparkMaterial SPARKCALL SparkCreateMaterial();
+SPARKAPI SparkComponent SPARKCALL SparkCreateMaterialComponent(SparkConstString material_name);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyMaterial(SparkMaterial material);
 
 SPARKAPI SparkStaticModel SPARKCALL
