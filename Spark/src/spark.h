@@ -482,7 +482,6 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Subtract(SparkMat4 a, SparkMat4 b);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Multiply(SparkMat4 a, SparkMat4 b);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Scale(SparkMat4 m, SparkScalar s);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Transpose(SparkMat4 m);
-SPARKAPI SparkScalar SPARKCALL SparkMat4Determinant(SparkMat4 m);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Inverse(SparkMat4 m);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Identity();
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Translate(SparkVec3 translation);
@@ -492,8 +491,10 @@ SPARKAPI SparkMat4 SPARKCALL SparkMat4Rotate(SparkScalar angle, SparkVec3 axis);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateX(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateY(SparkScalar angle);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4RotateZ(SparkScalar angle);
+SPARKAPI SparkMat4 SPARKCALL SparkTransformToMat4(SparkTransformComponent transform);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
 	SparkVec3 up);
+SPARKAPI SparkScalar SPARKCALL SparkMat4Determinant(SparkMat4 m);
 SPARKAPI SparkMat4 SPARKCALL SparkMat4Perspective(SparkScalar fovy,
 	SparkScalar aspect,
 	SparkScalar near,
@@ -1168,6 +1169,47 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 	SparkConstString filename,
 	SparkConstString entry);
 SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader);
+SPARKAPI SparkShaderInputData SparkCreateShaderInput(
+	SparkConstString name,
+	SparkHandle data,
+	SparkSize size,
+	SparkBool dynamic,
+	SparkBool per_instance
+);
+
+SPARKAPI SparkSize SparkGetVertexAttributeSize(SparkShaderVariable* attribute);
+SPARKAPI SparkBufferInfo SparkCreateBuffer(
+	SparkApplication app,
+	SparkHandle data,
+	SparkSize size,
+	SparkU32 usage,
+	SparkBool dynamic
+);
+SPARKAPI SparkResult SparkUpdateMaterialDescriptors(
+	SparkApplication app,
+	SparkMaterialData material,
+	SparkGraphicsPipelineConfig pipeline
+);
+// Helper function to destroy buffer info
+SPARKAPI SparkVoid SparkDestroyBufferInfo(SparkApplication app, SparkBufferInfo buffer);
+// Creates renderable with shader-defined inputs
+SPARKAPI SparkRenderableData SparkCreateRenderable(
+	SparkApplication app,
+	SparkGraphicsPipelineConfig pipeline,
+	SparkVector shader_inputs    // Vector<SparkShaderInputData>
+);
+// Simple API to update any shader input
+SPARKAPI SparkResult SparkUpdateShaderInput(
+	SparkRenderableData renderable_data,
+	SparkConstString input_name,
+	SparkHandle data,
+	SparkSize size
+);
+SPARKAPI SparkMaterialData SparkCreateMaterialData();
+SPARKAPI SparkResult SparkSetMaterialUniform(
+	SparkMaterialData material,
+	SparkShaderInputData input
+);
 
 /* Shader utility functions */
 SPARKAPI SparkResult SPARKCALL

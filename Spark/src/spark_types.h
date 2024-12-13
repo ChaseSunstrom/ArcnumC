@@ -115,6 +115,7 @@ typedef enum SparkShaderStage {
 #define SPARK_CAMERA_COMPONENT "__CAMERA_COMPONENT__"
 #define SPARK_ANIMATION_COMPONENT "__ANIMATION_COMPONENT__"
 #define SPARK_AI_BEHAVIOR_COMPONENT "__AI_BEHAVIOR_COMPONENT__"
+#define SPARK_RENDERABLE_COMPONENT "__RENDERABLE_COMPONENT__"
 
 #define SPARK_RESOURCE_TYPE_STATIC_MESH "__STATIC_MESH_RESOURCE__"
 #define SPARK_RESOURCE_TYPE_DYNAMIC_MESH "__DYNAMIC_MESH_RESOURCE__"
@@ -1408,14 +1409,6 @@ typedef struct SparkEventHandlerT {
 	SparkMutex mutex;
 } *SparkEventHandler;
 
-typedef struct SparkShaderT {
-	SparkShaderType type;
-	struct VkShaderModule_T* module;
-	struct VkDevice_T* device;
-	SparkConstString entry_point; /* Usually main */
-	SparkConstString filename;
-	SparkShaderReflectionData shader_data;
-} *SparkShader;
 
 typedef SparkI32 SparkEntity;
 
@@ -1749,6 +1742,52 @@ typedef struct SparkFileSerializerT {
 	FILE* file;
 } *SparkFileSerializer;
 
+
+typedef struct SparkBufferInfoT {
+	VulkanMemoryAllocation buffer;
+	struct VkDescriptorBufferInfo* descriptor;
+	SparkSize size;
+	SparkHandle mapped_data;
+	SparkBool dynamic;
+} *SparkBufferInfo;
+
+typedef struct SparkShaderBindingT {
+	SparkU32 binding;
+	SparkU32 set;
+	enum VkDescriptorType type;
+	union {
+		SparkBufferInfo buffer;
+		SparkTexture texture;
+	};
+} *SparkShaderBinding;
+
+typedef struct SparkShaderInputDataT {
+	SparkConstString name;        // Input name from shader
+	SparkHandle data;            // Raw data pointer
+	SparkSize size;              // Size of data
+	SparkU32 binding;            // Binding from reflection
+	SparkU32 location;           // Vertex attribute location if applicable
+	SparkBool dynamic;           // Whether data changes frequently
+	SparkBool per_instance;      // Whether this is per-instance data
+} *SparkShaderInputData;
+
+typedef struct SparkMaterialDataT {
+	SparkVector bindings;        // Vector<SparkBufferInfo> 
+	SparkHashMap input_map;      // HashMap<name, SparkShaderInputData>
+	struct VkDescriptorSet_T** descriptor_sets; // One per frame in flight
+	struct VkDescriptorPool_T* descriptor_pool;
+	SparkBool dirty;
+} *SparkMaterialData;
+
+typedef struct SparkShaderT {
+	SparkShaderType type;
+	struct VkShaderModule_T* module;
+	struct VkDevice_T* device;
+	SparkConstString entry_point; /* Usually main */
+	SparkConstString filename;
+	SparkShaderReflectionData shader_data;
+} *SparkShader;
+
 typedef struct SparkGraphicsPipelineConfigT {
 	struct SparkApplicationT* application;
 	SparkShader vertex_shader;
@@ -1758,11 +1797,29 @@ typedef struct SparkGraphicsPipelineConfigT {
 	SparkShader tess_control_shader;
 	SparkShader tess_evaluation_shader;
 	struct VkPipelineLayout_T* pipeline_layout;
+	struct VkDescriptorLayout_T* descriptor_layout;
 	struct VkPipeline_T* pipeline;
 	struct VkRenderPass_T* render_pass;
 	SparkU32 patch_control_points;              // For tessellation
 	SparkBool owns_pipeline_layout;
 } *SparkGraphicsPipelineConfig;
+
+typedef struct SparkRenderableDataT {
+	SparkVector vertex_buffers;  // Vector<SparkBufferInfo>
+	SparkVector instance_data;   // Vector<SparkShaderInputData> for instancing
+	SparkBufferInfo index_buffer;
+	SparkMaterialData material;
+	SparkGraphicsPipelineConfig pipeline;
+	SparkU32 vertex_count;
+	SparkU32 index_count;
+	SparkU32 instance_count;
+	SparkBool visible;
+} *SparkRenderableData;
+
+// Component definitions
+typedef struct SparkRenderableComponentT {
+	SparkRenderableData renderable_data;
+} *SparkRenderableComponent;
 
 typedef struct SparkWindowT {
 	SparkWindowData window_data;

@@ -2347,6 +2347,20 @@ SPARKAPI SparkMat4 SparkMat4RotateZ(SparkScalar angle) {
 	return result;
 }
 
+SPARKAPI SparkMat4 SparkTransformToMat4(SparkTransformComponent transform) {
+	// Create individual transformation matrices
+	SparkMat4 translationMatrix = SparkMat4Translate(transform->position);
+	SparkMat4 rotationMatrix = SparkQuatToMat4(transform->rotation);
+	SparkMat4 scaleMatrix = SparkMat4ScaleVec3(transform->scale);
+
+	// Combine the transformations: Translation * Rotation * Scale
+	// Order is important: scaling is applied first, then rotation, then translation
+	SparkMat4 rotationAndScale = SparkMat4Multiply(rotationMatrix, scaleMatrix);
+	SparkMat4 finalTransform = SparkMat4Multiply(translationMatrix, rotationAndScale);
+
+	return finalTransform;
+}
+
 SPARKAPI SparkMat4 SparkMat4LookAt(SparkVec3 eye, SparkVec3 center,
 	SparkVec3 up) {
 	SparkVec3 f = SparkVec3Normalize(SparkVec3Subtract(center, eye));
@@ -6328,7 +6342,7 @@ const SparkConstString DEVICE_EXTENSIONS[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 const VkDynamicState DYNAMIC_STATES[] = { VK_DYNAMIC_STATE_VIEWPORT,
 										 VK_DYNAMIC_STATE_SCISSOR };
 
-const SparkI32 MAX_FRAMES_IN_FLIGHT = 3;
+#define MAX_FRAMES_IN_FLIGHT 3
 
 struct VulkanExtensions {
 	SparkU32 count;
@@ -7356,104 +7370,268 @@ SPARKAPI SPARKSTATIC SparkResult __SparkCreateCommandPool(SparkWindow window) {
 	return SPARK_SUCCESS;
 }
 
-SPARKAPI SPARKSTATIC SparkResult __SparkRecordCommandBuffer(
+SPARKAPI SparkResult __SparkRecordCommandBuffer(
 	SparkApplication app,
-	VkCommandBuffer command_buffer,
-	SparkU32 image_index,
-	SparkVector gps
+	VkCommandBuffer cmd,
+	SparkU32 image_index
 ) {
-	static SparkBool initialized_query = SPARK_FALSE;
-	static SparkQuery entity_query = SPARK_NULL;
-
-	if (!initialized_query) {
-		SparkConstString params[] = { SPARK_TRANSFORM_COMPONENT, SPARK_STATIC_MESH_COMPONENT, SPARK_MATERIAL_COMPONENT };
-		entity_query = SparkCreateQuery(SPARK_ARRAY_ARG(params));
-		initialized_query = SPARK_TRUE;
-	}
-
-	SparkAtomicVector entity_res = SparkPerformQuery(app->ecs, entity_query);
-
 	SparkWindow window = app->window;
 	SparkEcs ecs = app->ecs;
-	VkCommandBufferBeginInfo begin_info = { 0 };
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-		SparkDestroyAtomicVector(entity_res);
-		SPARK_LOG_ERROR("Failed to begin recording command buffer!");
+	VkCommandBufferBeginInfo begin_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
+	};
+
+	if (vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
 
-	VkRenderPassBeginInfo render_pass_info = { 0 };
-	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	render_pass_info.renderPass = window->render_pass;
-	render_pass_info.framebuffer = window->swap_chain_framebuffers[image_index];
-	render_pass_info.renderArea.offset = (VkOffset2D){ 0, 0 };
-	render_pass_info.renderArea.extent = *window->swap_chain_extent;
+	// Get all renderable entities
+	SparkConstString params[] = {
+		SPARK_TRANSFORM_COMPONENT,
+		SPARK_RENDERABLE_COMPONENT
+	};
+	SparkQuery entity_query = SparkCreateQuery(SPARK_ARRAY_ARG(params));
+	SparkAtomicVector entity_res = SparkPerformQuery(app->ecs, entity_query);
 
-	SparkResourceManager scene_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_SCENE, strlen(SPARK_RESOURCE_TYPE_SCENE));
-	SparkResourceManager smesh_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_STATIC_MESH, strlen(SPARK_RESOURCE_TYPE_STATIC_MESH));
-	SparkResourceManager material_manager = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_MATERIAL, strlen(SPARK_RESOURCE_TYPE_MATERIAL));
+	VkRenderPassBeginInfo render_pass_info = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = window->render_pass,
+		.framebuffer = window->swap_chain_framebuffers[image_index],
+		.renderArea.offset = {0, 0},
+		.renderArea.extent = *window->swap_chain_extent
+	};
 
+	// Get scene clear color
+	SparkResourceManager scene_manager = SparkGetElementHashMap(
+		app->resource_manager,
+		SPARK_RESOURCE_TYPE_SCENE,
+		strlen(SPARK_RESOURCE_TYPE_SCENE)
+	);
 	SparkScene scene = scene_manager->current_resource->data;
-	SparkVec4 sky_color = scene->sky_color;
-	VkClearValue clear_color = { sky_color.x, sky_color.y, sky_color.z, sky_color.w };
+	VkClearValue clear_color = {
+		.color.float32 = {
+			scene->sky_color.x,
+			scene->sky_color.y,
+			scene->sky_color.z,
+			scene->sky_color.w
+		}
+	};
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_color;
 
-	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(cmd, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-	SparkResource resource = gps->elements[0];
-	SparkGraphicsPipelineConfig gp = resource->data;
-
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gp->pipeline);
+	// Group entities by pipeline to minimize state changes
+	SparkHashMap pipeline_groups = SparkCreateHashMap(
+		8,
+		SparkIntegerHash,
+		SparkIntegerCompare,
+		NULL,
+		NULL,
+		NULL
+	);
 
 	for (SparkSize i = 0; i < SparkGetSizeAtomicVector(entity_res); i++) {
-		SparkEntity entity = SparkGetElementAtomicVector(entity_res, i);
-		SparkComponent transform_comp = SparkGetComponent(ecs, entity, SPARK_TRANSFORM_COMPONENT, strlen(SPARK_TRANSFORM_COMPONENT));
-		SparkComponent mesh_comp = SparkGetComponent(ecs, entity, SPARK_STATIC_MESH_COMPONENT, strlen(SPARK_STATIC_MESH_COMPONENT));
-		SparkComponent material_comp = SparkGetComponent(ecs, entity, SPARK_MATERIAL_COMPONENT, strlen(SPARK_MATERIAL_COMPONENT));
+		SparkEntity entity = (SparkEntity)(uintptr_t)SparkGetElementAtomicVector(entity_res, i);
 
-		SparkStaticMesh mesh = SparkGetResource(smesh_manager, mesh_comp->data)->data;
-
-		VkViewport viewport = { 0 };
-		viewport.width = (SparkF32)window->swap_chain_extent->width;
-		viewport.height = (SparkF32)window->swap_chain_extent->height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-		VkRect2D scissor = { 0 };
-		scissor.offset = (VkOffset2D){ 0, 0 };
-		scissor.extent = *window->swap_chain_extent;
-		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-		VkBuffer vertex_buffers[] = { mesh->vertex_buffer->buffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-
-		vkCmdBindIndexBuffer(command_buffer, mesh->index_buffer->buffer, 0, VK_INDEX_TYPE_UINT16);
-
-		vkCmdBindDescriptorSets(
-			command_buffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			gp->pipeline_layout,
-			0,
-			1,
-			&window->descriptor_sets[window->current_frame],
-			0,
-			SPARK_NULL
+		SparkComponent render_comp = SparkGetComponent(
+			ecs,
+			entity,
+			SPARK_RENDERABLE_COMPONENT,
+			strlen(SPARK_RENDERABLE_COMPONENT)
 		);
 
-		vkCmdDrawIndexed(command_buffer, mesh->index_count, 1, 0, 0, 0);
+		SparkRenderableComponent renderable_data = render_comp->data;
+
+		if (!renderable_data->renderable_data->visible) continue;
+
+		// Get or create vector for this pipeline
+		SparkVector group = SparkGetElementHashMap(
+			pipeline_groups,
+			renderable_data->renderable_data->pipeline,
+			sizeof(void*)
+		);
+
+		if (!group) {
+			group = SparkCreateVector(16, NULL, NULL);
+			SparkInsertHashMap(
+				pipeline_groups,
+				renderable_data->renderable_data->pipeline,
+				sizeof(void*),
+				group
+			);
+		}
+
+		SparkPushBackVector(group, render_comp);
 	}
 
-	vkCmdEndRenderPass(command_buffer);
+	// Render each pipeline group
+	SparkHashMapIterator pipeline_it = SparkCreateHashMapIterator(
+		SPARK_ITERATOR_STATE_BEGIN,
+		SPARK_HASHMAP_ITERATOR_TYPE_KEY,
+		pipeline_groups
+	);
 
+	while (SparkHasNextHashMapIterator(pipeline_it)) {
+		SparkIterateForwardHashMapIterator(pipeline_it);
+
+		SparkGraphicsPipelineConfig pipeline = SparkGetCurrentHashMapIterator(pipeline_it);
+		SparkVector group = SparkGetElementHashMap(
+			pipeline_groups,
+			pipeline,
+			sizeof(void*)
+		);
+
+		// Bind pipeline
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+
+		// Set viewport and scissor
+		VkViewport viewport = {
+			.width = (float)window->swap_chain_extent->width,
+			.height = (float)window->swap_chain_extent->height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		};
+		vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+		VkRect2D scissor = {
+			.extent = *window->swap_chain_extent
+		};
+		vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+		// Render each entity in group
+		for (SparkSize i = 0; i < group->size; i++) {
+			SparkComponent render_comp = group->elements[i];
+			SparkRenderableComponent renderable = render_comp->data;
+			SparkRenderableData renderable_data = renderable->renderable_data;
+			SparkTransformComponent transform = SparkGetComponent(
+				ecs,
+				render_comp->entity,
+				SPARK_TRANSFORM_COMPONENT,
+				strlen(SPARK_TRANSFORM_COMPONENT)
+			);
+
+			// Update material descriptor sets if needed
+			if (renderable_data->material->dirty) {
+				SparkUpdateMaterialDescriptors(
+					app,
+					renderable_data->material,
+					pipeline
+				);
+			}
+
+			// Bind vertex buffers
+			for (SparkSize j = 0; j < renderable_data->vertex_buffers->size; j++) {
+				SparkBufferInfo buffer = renderable_data->vertex_buffers->elements[j];
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(
+					cmd,
+					j,
+					1,
+					&buffer->buffer->buffer,
+					&offset
+				);
+			}
+
+			// Bind instance buffers
+			for (SparkSize j = 0; j < renderable_data->instance_data->size; j++) {
+				SparkShaderInputData input = renderable_data->instance_data->elements[j];
+				SparkBufferInfo buffer = SparkGetElementHashMap(
+					renderable_data->material->bindings,
+					(SparkHandle)(uintptr_t)input->binding,
+					sizeof(SparkU32)
+				);
+
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(
+					cmd,
+					renderable_data->vertex_buffers->size + j,
+					1,
+					&buffer->buffer->buffer,
+					&offset
+				);
+			}
+
+			// Bind index buffer if present
+			if (renderable_data->index_buffer) {
+				vkCmdBindIndexBuffer(
+					cmd,
+					renderable_data->index_buffer->buffer->buffer,
+					0,
+					VK_INDEX_TYPE_UINT32
+				);
+			}
+
+			// Bind descriptor sets
+			vkCmdBindDescriptorSets(
+				cmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->pipeline_layout,
+				0,
+				1,
+				&renderable_data->material->descriptor_sets[window->current_frame],
+				0,
+				NULL
+			);
+
+			// Push transform constants if needed
+			if (transform) {
+				SparkMat4 model = SparkTransformToMat4(transform);
+				vkCmdPushConstants(
+					cmd,
+					pipeline->pipeline_layout,
+					VK_SHADER_STAGE_VERTEX_BIT,
+					0,
+					sizeof(SparkMat4),
+					&model
+				);
+			}
+
+			// Draw
+			if (renderable_data->index_buffer) {
+				vkCmdDrawIndexed(
+					cmd,
+					renderable_data->index_count,
+					renderable_data->instance_count,
+					0,
+					0,
+					0
+				);
+			}
+			else {
+				vkCmdDraw(
+					cmd,
+					renderable_data->vertex_count,
+					renderable_data->instance_count,
+					0,
+					0
+				);
+			}
+		}
+	}
+
+	vkCmdEndRenderPass(cmd);
+
+	// Cleanup
+	SparkHashMapIterator cleanup_it = SparkCreateHashMapIterator(
+		SPARK_ITERATOR_STATE_BEGIN,
+		SPARK_HASHMAP_ITERATOR_TYPE_VALUE,
+		pipeline_groups
+	);
+
+	while (SparkHasNextHashMapIterator(cleanup_it)) {
+		SparkIterateForwardHashMapIterator(cleanup_it);
+		SparkVector group = SparkGetCurrentHashMapIterator(cleanup_it);
+		SparkDestroyVector(group);
+	}
+
+	SparkDestroyHashMapIterator(pipeline_it);
+	SparkDestroyHashMapIterator(cleanup_it);
+	SparkDestroyHashMap(pipeline_groups);
 	SparkDestroyAtomicVector(entity_res);
 
-	if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
-		SPARK_LOG_ERROR("Failed to record command buffer!");
+	if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
 		return SPARK_ERROR_INVALID;
 	}
 
@@ -7905,7 +8083,6 @@ SPARKAPI SPARKSTATIC SparkResult __SparkTransitionImageLayout(SparkWindow window
 	return SPARK_SUCCESS;
 }
 
-
 SPARKAPI SPARKSTATIC SparkResult __SparkCreateTextureImageView(SparkWindow window, SparkTexture texture) {
 	texture->image_view = __SparkCreateImageView(window, texture->image, VK_FORMAT_R8G8B8A8_SRGB);
 	return SPARK_SUCCESS;
@@ -8177,11 +8354,7 @@ SPARKAPI SPARKSTATIC SparkResult __SparkDrawFrame(SparkApplication app) {
 
 	vkResetCommandBuffer(window->command_buffers[current_frame], 0);
 
-	SparkResourceManager rm = SparkGetElementHashMap(app->resource_manager, SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG, strlen(SPARK_RESOURCE_TYPE_GRAPHICS_PIPELINE_CONFIG));
-	SparkVector gps = SparkGetAllValuesHashMap(rm->resources);
-
-	__SparkRecordCommandBuffer(app, window->command_buffers[current_frame], image_index, gps);
-	SparkDestroyVector(gps);
+	__SparkRecordCommandBuffer(app, window->command_buffers[current_frame], image_index);
 
 	VkSemaphore wait_semaphores[] = {
 		window->image_available_semaphores[current_frame] };
@@ -9904,7 +10077,7 @@ SPARKAPI SparkShader SparkCreateShader(SparkApplication app,
 	return SparkCreateShaderE(app, type, filename, "main");
 }
 
-SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
+SPARKAPI SparkShader SparkCreateShaderE(SparkApplication app,
 	SparkShaderType type,
 	SparkConstString filename,
 	SparkConstString entry) {
@@ -9940,7 +10113,7 @@ SPARKAPI SparkShader SPARKCALL SparkCreateShaderE(SparkApplication app,
 	return shader;
 }
 
-SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader) {
+SPARKAPI SparkVoid SparkDestroyShader(SparkShader shader) {
 	if (!shader) return;
 
 	vkDestroyShaderModule(shader->device, shader->module, SPARK_NULL);
@@ -9951,6 +10124,410 @@ SPARKAPI SparkVoid SPARKCALL SparkDestroyShader(SparkShader shader) {
 	SparkFree(shader);
 }
 
+SPARKAPI SparkShaderInputData SparkCreateShaderInput(
+	SparkConstString name,
+	SparkHandle data,
+	SparkSize size,
+	SparkBool dynamic,
+	SparkBool per_instance
+) {
+	SparkShaderInputData input = SparkAllocate(sizeof(struct SparkShaderInputDataT));
+	input->name = name;
+	input->data = data;
+	input->size = size;
+	input->dynamic = dynamic;
+	input->per_instance = per_instance;
+	return input;
+}
+
+// Creates renderable with shader-defined inputs
+SPARKAPI SparkRenderableData SparkCreateRenderable(
+	SparkApplication app,
+	SparkGraphicsPipelineConfig pipeline,
+	SparkVector shader_inputs    // Vector<SparkShaderInputData>
+) {
+	SparkRenderableData renderable_data = SparkAllocate(sizeof(struct SparkRenderableDataT));
+	renderable_data->vertex_buffers = SparkCreateVector(4, NULL, NULL);
+	renderable_data->instance_data = SparkCreateVector(4, NULL, NULL);
+	renderable_data->pipeline = pipeline;
+	renderable_data->material = SparkCreateMaterialData();
+	renderable_data->visible = SPARK_TRUE;
+
+	// Process inputs based on shader reflection
+	SparkShaderReflectionData vert_reflection = pipeline->vertex_shader->shader_data;
+	SparkShaderReflectionData frag_reflection = pipeline->fragment_shader->shader_data;
+
+	// Map vertex attributes
+	for (SparkSize i = 0; i < vert_reflection->stage_input_count; i++) {
+		SparkShaderVariable* input = &vert_reflection->stage_inputs[i];
+
+		// Find matching shader input
+		for (SparkSize j = 0; j < shader_inputs->size; j++) {
+			SparkShaderInputData user_input = shader_inputs->elements[j];
+			if (strcmp(input->name, user_input->name) == 0) {
+				user_input->location = input->location;
+
+				// Create appropriate buffer
+				SparkBufferInfo buffer = SparkCreateBuffer(
+					app,
+					user_input->data,
+					user_input->size,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+					user_input->dynamic
+				);
+
+				if (user_input->per_instance) {
+					SparkPushBackVector(renderable_data->instance_data, user_input);
+					renderable_data->instance_count = user_input->size / SparkGetVertexAttributeSize(input);
+				}
+				else {
+					SparkPushBackVector(renderable_data->vertex_buffers, buffer);
+					renderable_data->vertex_count = user_input->size / SparkGetVertexAttributeSize(input);
+				}
+				break;
+			}
+		}
+	}
+
+	// Map uniform/storage buffers
+	for (SparkSize i = 0; i < vert_reflection->uniform_buffer_count; i++) {
+		SparkShaderVariable* uniform = &vert_reflection->uniform_buffers[i];
+
+		for (SparkSize j = 0; j < shader_inputs->size; j++) {
+			SparkShaderInputData user_input = shader_inputs->elements[j];
+			if (strcmp(uniform->name, user_input->name) == 0) {
+				user_input->binding = uniform->binding;
+				SparkSetMaterialUniform(renderable_data->material, user_input);
+				break;
+			}
+		}
+	}
+
+	// Do the same for fragment shader uniforms
+	for (SparkSize i = 0; i < frag_reflection->uniform_buffer_count; i++) {
+		SparkShaderVariable* uniform = &frag_reflection->uniform_buffers[i];
+
+		for (SparkSize j = 0; j < shader_inputs->size; j++) {
+			SparkShaderInputData user_input = shader_inputs->elements[j];
+			if (strcmp(uniform->name, user_input->name) == 0) {
+				user_input->binding = uniform->binding;
+				SparkSetMaterialUniform(renderable_data->material, user_input);
+				break;
+			}
+		}
+	}
+
+	return renderable_data;
+}
+
+// Simple API to update any shader input
+SPARKAPI SparkResult SparkUpdateShaderInput(
+	SparkRenderableData renderable_data,
+	SparkConstString input_name,
+	SparkHandle data,
+	SparkSize size
+) {
+	SparkShaderInputData input = SparkGetElementHashMap(
+		renderable_data->material->input_map,
+		input_name,
+		strlen(input_name)
+	);
+
+	if (!input) return SPARK_ERROR_NOT_FOUND;
+
+	if (input->size != size) {
+		SPARK_LOG_ERROR("Size mismatch for shader input %s", input_name);
+		return SPARK_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (input->dynamic) {
+		SparkBufferInfo buffer = SparkGetElementHashMap(
+			renderable_data->material->bindings,
+			(SparkHandle)(uintptr_t)input->binding,
+			sizeof(SparkU32)
+		);
+		memcpy(buffer->mapped_data, data, size);
+	}
+	else {
+		SPARK_LOG_ERROR("Attempting to update non-dynamic shader input %s", input_name);
+		return SPARK_ERROR_INVALID;
+	}
+
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkMaterialData SparkCreateMaterialData() {
+	SparkMaterialData material = SparkAllocate(sizeof(struct SparkMaterialDataT));
+	material->bindings = SparkCreateVector(4, NULL, NULL);
+	material->input_map = SparkCreateHashMap(8, SparkStringHash, SparkStringCompare, NULL, NULL, NULL);
+	material->descriptor_sets = SparkAllocate(sizeof(VkDescriptorSet) * MAX_FRAMES_IN_FLIGHT);
+	material->dirty = SPARK_TRUE;
+	return material;
+}
+
+SPARKAPI SparkResult SparkSetMaterialUniform(
+	SparkMaterialData material,
+	SparkShaderInputData input
+) {
+	SparkInsertHashMap(
+		material->input_map,
+		input->name,
+		strlen(input->name),
+		input
+	);
+	material->dirty = SPARK_TRUE;
+	return SPARK_SUCCESS;
+}
+
+SPARKAPI SparkSize SparkGetVertexAttributeSize(SparkShaderVariable* attribute) {
+	SparkSize element_size;
+
+	// Base size for types
+	switch (attribute->base_type) {
+	case SPARK_SHADER_VARIABLE_TYPE_BOOL:
+		element_size = sizeof(SparkBool);
+		break;
+	case SPARK_SHADER_VARIABLE_TYPE_INT:
+		element_size = sizeof(SparkI32);
+		break;
+	case SPARK_SHADER_VARIABLE_TYPE_UINT:
+		element_size = sizeof(SparkU32);
+		break;
+	case SPARK_SHADER_VARIABLE_TYPE_FLOAT:
+		element_size = sizeof(SparkF32);
+		break;
+	case SPARK_SHADER_VARIABLE_TYPE_DOUBLE:
+		element_size = sizeof(SparkF64);
+		break;
+	default:
+		return 0; // Unknown type
+	}
+
+	// Multiply by vector size (e.g., vec3 = 3 floats)
+	element_size *= attribute->vec_size;
+
+	// Multiply by matrix columns if it's a matrix
+	if (attribute->columns > 1) {
+		element_size *= attribute->columns;
+	}
+
+	// Account for arrays if present
+	if (attribute->array_dimension_count > 0) {
+		for (SparkU32 i = 0; i < attribute->array_dimension_count; i++) {
+			element_size *= attribute->array_sizes[i];
+		}
+	}
+
+	return element_size;
+}
+
+SPARKAPI SparkBufferInfo SparkCreateBuffer(
+	SparkApplication app,
+	SparkHandle data,
+	SparkSize size,
+	SparkU32 usage,
+	SparkBool dynamic
+) {
+	SparkBufferInfo buffer_info = SparkAllocate(sizeof(struct SparkBufferInfoT));
+	buffer_info->size = size;
+	buffer_info->dynamic = dynamic;
+
+	if (dynamic) {
+		// Create host visible buffer for dynamic data
+		buffer_info->buffer = __SparkCreateBuffer(
+			app->window,
+			usage,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			size
+		);
+
+		// Map the memory for updates
+		vkMapMemory(
+			app->window->device,
+			buffer_info->buffer->memory,
+			0,
+			size,
+			0,
+			&buffer_info->mapped_data
+		);
+
+		// Copy initial data if provided
+		if (data) {
+			memcpy(buffer_info->mapped_data, data, size);
+		}
+	}
+	else {
+		// Create staging buffer
+		VulkanMemoryAllocation staging = __SparkCreateBuffer(
+			app->window,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			size
+		);
+
+		// Copy data to staging
+		SparkHandle staged_data;
+		vkMapMemory(app->window->device, staging->memory, 0, size, 0, &staged_data);
+		memcpy(staged_data, data, size);
+		vkUnmapMemory(app->window->device, staging->memory);
+
+		// Create device local buffer
+		buffer_info->buffer = __SparkCreateBuffer(
+			app->window,
+			usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			size
+		);
+
+		// Copy from staging to device local
+		__SparkCopyBuffer(
+			app->window,
+			staging->buffer,
+			buffer_info->buffer->buffer,
+			size
+		);
+
+		// Cleanup staging buffer
+		vkDestroyBuffer(app->window->device, staging->buffer, NULL);
+		vkFreeMemory(app->window->device, staging->memory, NULL);
+		SparkFree(staging);
+	}
+
+	// Setup descriptor info
+	buffer_info->descriptor = SparkAllocate(sizeof(VkDescriptorBufferInfo));
+	buffer_info->descriptor->buffer = buffer_info->buffer->buffer;
+	buffer_info->descriptor->offset = 0;
+	buffer_info->descriptor->range = size;
+
+	return buffer_info;
+}
+
+// Helper function to destroy buffer info
+SPARKAPI SparkVoid SparkDestroyBufferInfo(SparkApplication app, SparkBufferInfo buffer) {
+	if (!buffer) return;
+
+	// Unmap memory if dynamic
+	if (buffer->dynamic && buffer->mapped_data) {
+		vkUnmapMemory(app->window->device, buffer->buffer->memory);
+	}
+
+	// Destroy buffer and free memory
+	vkDestroyBuffer(app->window->device, buffer->buffer->buffer, NULL);
+	vkFreeMemory(app->window->device, buffer->buffer->memory, NULL);
+
+	// Free allocated structures
+	SparkFree(buffer->buffer);
+	SparkFree(buffer->descriptor);
+	SparkFree(buffer);
+}
+
+SPARKAPI SparkResult SparkUpdateMaterialDescriptors(
+	SparkApplication app,
+	SparkMaterialData material,
+	SparkGraphicsPipelineConfig pipeline
+) {
+	// Create descriptor pool if needed
+	if (!material->descriptor_pool) {
+		VkDescriptorPoolSize pool_sizes[] = {
+			{
+				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = MAX_FRAMES_IN_FLIGHT * 8
+			},
+			{
+				.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				.descriptorCount = MAX_FRAMES_IN_FLIGHT * 8
+			},
+			{
+				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = MAX_FRAMES_IN_FLIGHT * 8
+			}
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = MAX_FRAMES_IN_FLIGHT,
+			.poolSizeCount = 3,
+			.pPoolSizes = pool_sizes
+		};
+
+		if (vkCreateDescriptorPool(app->window->device, &pool_info, NULL, &material->descriptor_pool) != VK_SUCCESS) {
+			return SPARK_ERROR_INVALID;
+		}
+	}
+
+	// Allocate descriptor sets if needed
+	if (!material->descriptor_sets[0]) {
+		VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
+		for (SparkI32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			layouts[i] = pipeline->descriptor_layout;
+		}
+
+		VkDescriptorSetAllocateInfo alloc_info = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = material->descriptor_pool,
+			.descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+			.pSetLayouts = layouts
+		};
+
+		if (vkAllocateDescriptorSets(app->window->device, &alloc_info, material->descriptor_sets) != VK_SUCCESS) {
+			return SPARK_ERROR_INVALID;
+		}
+	}
+
+	// Update descriptor sets
+	for (SparkI32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		SparkVector writes = SparkCreateVector(8, NULL, NULL);
+
+		// Process all bindings
+		SparkHashMapIterator it = SparkCreateHashMapIterator(
+			SPARK_ITERATOR_STATE_BEGIN,
+			SPARK_HASHMAP_ITERATOR_TYPE_VALUE,
+			material->bindings
+		);
+
+		while (SparkHasNextHashMapIterator(it)) {
+			SparkIterateForwardHashMapIterator(it);
+			SparkShaderBinding binding = SparkGetCurrentHashMapIterator(it);
+
+			VkWriteDescriptorSet write = {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = material->descriptor_sets[i],
+				.dstBinding = binding->binding,
+				.descriptorCount = 1,
+				.descriptorType = binding->type
+			};
+
+			if (binding->type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+				binding->type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+				write.pBufferInfo = &binding->buffer->descriptor;
+			}
+			else if (binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+				VkDescriptorImageInfo image_info = {
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.imageView = binding->texture->image_view,
+					.sampler = binding->texture->texture_sampler
+				};
+				write.pImageInfo = &image_info;
+			}
+
+			SparkPushBackVector(writes, SparkCopyMemory(&write, sizeof(write)));
+		}
+
+		vkUpdateDescriptorSets(
+			app->window->device,
+			writes->size,
+			writes->elements,
+			0,
+			NULL
+		);
+
+		SparkDestroyHashMapIterator(it);
+		SparkDestroyVector(writes);
+	}
+
+	material->dirty = SPARK_FALSE;
+	return SPARK_SUCCESS;
+}
 
 #pragma endregion
 
